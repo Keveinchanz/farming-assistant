@@ -49,13 +49,29 @@ def _copy_tree(src: Path, dst: Path) -> None:
     shutil.copytree(src, dst, ignore=_ignore, dirs_exist_ok=True)
 
 
+def _force_rmtree(path: Path) -> None:
+    """删除目录，遇到只读文件先去掉只读位。
+
+    Windows 上 `deploy/space/.git` 里的对象文件默认是只读的，直接 rmtree 会抛
+    PermissionError。第一次组装时目录还不存在，所以这个问题只在「重建」时暴露。
+    """
+    import os
+    import stat
+
+    def on_error(func, p, _exc):
+        os.chmod(p, stat.S_IWRITE)
+        func(p)
+
+    shutil.rmtree(path, onerror=on_error)
+
+
 def main() -> int:
     if not (ROOT / "runtime_assets").exists():
         print("找不到 runtime_assets/，请先跑 scripts/50_build_runtime_assets.py")
         return 1
 
     if DST.exists():
-        shutil.rmtree(DST)
+        _force_rmtree(DST)
     DST.mkdir(parents=True)
 
     for d in CODE_DIRS:

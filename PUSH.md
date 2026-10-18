@@ -1,5 +1,22 @@
 # 推送到 GitHub，并用 Codespaces 运行演示
 
+## 在线演示地址
+
+```
+https://comfortable-tuesday-remove-islamic.trycloudflare.com
+```
+
+由 Codespace 内的 `cloudflared` 临时隧道提供，**仅在隧道进程运行期间有效**。
+Codespace 停止、终端关闭或隧道进程退出后地址失效，重新运行一次即可得到新地址：
+
+```bash
+cd /workspaces/farm-language-and-gaining-predict-assistant
+/tmp/cloudflared tunnel --url http://localhost:8000
+```
+
+> 之所以用隧道：Codespaces 的原生转发地址 `…-8000.app.github.dev` 目前返回 404，
+> 端口可见性仍为 Private。隧道路径不经过该代理，已验证可正常访问。
+
 ## 当前状态
 
 | 项 | 状态 |

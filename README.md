@@ -5,6 +5,9 @@
 
 本项目完整实现《乡村农技多方言智能服务平台 Python 开发任务清单》的六大阶段 33 项任务。
 
+在线演示：<https://comfortable-tuesday-remove-islamic.trycloudflare.com>
+（由 Cloudflare 临时隧道提供，仅在演示实例运行期间有效。）
+
 ---
 
 ## 一、快速开始

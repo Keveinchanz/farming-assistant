@@ -108,6 +108,18 @@ deepseek_html_*.html
 2026AIC-*.doc
 
 # 注意：runtime_assets/ 是**要提交**的 —— 它是让 `docker build` 能跑起来的那一小撮资源
-# （867 张卡片图 + ONNX + 知识库 + 运行时 JSON，约 180 MB）。
-# 不要把它加进忽略列表。
+# （卡片封面 + ONNX + 知识库 + 运行时 JSON）。
+# 不要把它整个加进忽略列表。
+
+# ---- 运行时用不到的构建产物（2026-10-18 从版本库移出）----
+# 这三个目录由 scripts/26、27 生成，应用运行时不读取（backend/src 里 0 处引用），
+# 前端另有打包好的 admin_divisions.js。留着只会让仓库多出 29 MB。
+runtime_assets/data/admin_divisions_cache/
+runtime_assets/data/pesticide_cache/
+runtime_assets/data/splits/
+runtime_assets/data/admin_divisions.json
+
+# 开发期截图辅助脚本，不属于项目本身
+shot.py
+shot.ps1
 

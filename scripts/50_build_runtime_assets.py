@@ -51,13 +51,13 @@ DATA_FILES = [
     "pest_label_map.json",
     "province_pest_top3.json",
     "pesticide_registry.json",
-    "admin_divisions.json",
     "policy_list.json",
+    # admin_divisions.json 已移除：运行时 0 处引用，前端另有打包好的 admin_divisions.js
 ]
-DATA_DIRS = [
-    "admin_divisions_cache",
-    "pesticide_cache",
-    "splits",
+DATA_DIRS: list[str] = [
+    # 这里原本还有 admin_divisions_cache、pesticide_cache、splits 三个目录。
+    # 它们是 scripts/26、27 的构建产物，backend/ 与 src/ 里对它们的 path_of 引用是 0 处，
+    # 前端另有打包好的 admin_divisions.js —— 放进资源包只是白占 29 MB，已移除。
 ]
 
 

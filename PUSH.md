@@ -1,73 +1,76 @@
-# 推送到 GitHub 与部署到 Hugging Face Spaces
-
-> 目标仓库：<https://github.com/Keveinchanz/farm-language-and-gaining-predict-assistant.git>
+# 推送到 GitHub，并用 Codespaces 运行演示
 
 ## 当前状态
 
-两个本地仓库都已提交完毕，只差推送（推送需要你的账号授权，我这边没有交互式终端）。
+| 项 | 状态 |
+|---|---|
+| Git | 已安装，代理已配（`http://127.0.0.1:7897`） |
+| 主仓库 | 已提交，远程指向 `Keveinchanz/farm-language-and-gaining-predict-assistant` |
+| Codespaces 配置 | `.devcontainer/devcontainer.json` 与两个启动脚本已就绪 |
+| `deploy/space/` | 保留。开通 Hugging Face PRO 后可直接推上去 |
 
-| 位置 | 提交 | 内容 |
-|---|---|---|
-| `D:\code file\insert` | `4079732` | 代码 + `runtime_assets/` + `deploy/hf/` + README，共 1,882 个文件 |
-| `D:\code file\insert\deploy\space` | `5a6f343` | 自洽的 Space 内容（代码 + 运行资源 + Dockerfile），1,872 个文件 |
+推送需要你的 GitHub 账号授权 —— 我这边的执行环境没有交互式终端，登录窗口弹不出来。
 
-已配置：
-
-- `git config --global http.proxy http://127.0.0.1:7897`（**必须走代理**，直连 github.com 会被重置）
-- `git config --global credential.helper manager`（推送时弹出 GitHub 登录窗口）
-- `.env`、`certs/`、`auth.json`、`2026AIC-submission/`、训练数据均已排除
-
-## 1. 推 GitHub
+## 1. 推送到 GitHub
 
 ```powershell
 cd "D:\code file\insert"
 git push -u origin main
 ```
 
-## 2. 建 Hugging Face Space
+## 2. 创建 Codespace
 
-在 <https://huggingface.co/new-space> 新建 **Docker** 类型的 Space（免费档）。
-创建后记下地址：`https://huggingface.co/spaces/<用户名>/<space名>`。
+打开仓库页面 → **Code** → **Codespaces** → **Create codespace on main**。
 
-## 3. 推 Space
+首次创建会自动执行 `.devcontainer/devcontainer.json` 里的 `postCreateCommand`：
+把 `runtime_assets/` 铺到应用期望的位置，安装 CPU 版 torch 与其余依赖。约 **8–15 分钟**，
+之后每次启动只需十几秒。
+
+## 3. 获取公开地址
+
+启动完成后，编辑器底部的 **Ports（端口）** 面板会出现 `8000`。
+`devcontainer.json` 已把它设为 `visibility: public`；若组织策略未生效，右键该端口 →
+**Port Visibility** → **Public**。
+
+地址形如：
+
+```
+https://<codespace 名>-8000.app.github.dev
+```
+
+## 4. 日常使用
+
+- Codespace **闲置约 30 分钟会自动停止**，期间不计时（免费额度为每月 120 核·小时，2 核机器即 60 小时）。
+- 重新打开后 `postStartCommand` 会自动拉起服务，**地址不变**，等待十几秒即可访问。
+- 不使用时在 GitHub 页面点 **Stop codespace**，停止状态不消耗额度。
+
+## 5. 故障处理
+
+服务没起来时，在 Codespace 的终端里查看：
+
+```bash
+tail -n 100 outputs/logs/codespace_server.log
+```
+
+依赖没装好时重新执行：
+
+```bash
+bash scripts/52_codespace_setup.sh
+```
+
+## 附：为什么不用 Hugging Face Spaces
+
+HF 官方的 `new-space/agents.md` 指向的技能文档写明：**Docker 与 Gradio Space 需要付费计划
+（个人账号为 PRO）**，免费账号只能建 Static Space 或最多 2 个 ZeroGPU（仅 Gradio）Space。
+本项目是 FastAPI 多页应用，两条免费通道都不适用，因此改用 Codespaces。
+
+`deploy/space/` 与 `deploy/hf/Dockerfile` 均为 Docker 部署准备好，开通 PRO 后可直接推送：
 
 ```powershell
 cd "D:\code file\insert\deploy\space"
+git init -b main
+git add -A
+git commit -m "deploy: 田语智农 demo"
 git remote add origin https://huggingface.co/spaces/<用户名>/<space名>
 git push -u origin main
 ```
-
-如果 huggingface.co 连不上，先给这个仓库单独配代理：
-
-```powershell
-git config --local http.proxy http://127.0.0.1:7897
-```
-
-推送约 180 MB，视上行带宽需要 5–15 分钟。推送完成后 Space 自动构建，约 10–20 分钟。
-
-## 4. 把演示地址发给我
-
-构建完成后访问 `https://<用户名>-<space名>.hf.space`。把这个地址告诉我，我会：
-
-1. 在 `README.md` 和 `deploy/hf/README.md` 里加入在线演示链接；
-2. 帮你验证 `/api/health`、图书库、地图、诊断接口是否正常；
-3. 提交这次改动，你再 `git push` 一次即可。
-
-## 5. 改完代码后重新发布
-
-```powershell
-python scripts/50_build_runtime_assets.py   # 资源有变动时才需要
-python scripts/51_build_space.py            # 重新组装 deploy/space
-cd deploy\space
-git add -A && git commit -m "update" && git push
-```
-
-`51_build_space.py` 组装时会自检密钥类文件，命中就中止。
-
-## 附：推送内容核对
-
-- **会推**：`src/ backend/ frontend/ configs/ scripts/ tests/ docs/ docker/`、
-  `runtime_assets/`（175 MB）、`deploy/hf/`、`requirements*.txt`、`.gitignore`、`README.md`
-- **不会推**：`.env`、`certs/`、`outputs/`、`2026AIC-submission/`、`data/pest_cls_raw/`（6 GB）、
-  `data/pest/`（781 MB）、`Sample/`、`models/checkpoints/`、`*.pt`
-- 单文件最大 91.9 MB（`inference_model.onnx`），低于 GitHub 的 100 MB 上限，不需要 LFS

@@ -1,0 +1,27 @@
+{
+  "name": "田语智农 · 演示环境",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+
+  "postCreateCommand": "bash scripts/52_codespace_setup.sh",
+  "postStartCommand": "bash scripts/52_codespace_start.sh",
+
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": {
+      "label": "田语智农",
+      "onAutoForward": "notify",
+      "visibility": "public"
+    }
+  },
+
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "8gb"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python"]
+    }
+  }
+}

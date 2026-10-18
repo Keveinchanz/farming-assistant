@@ -1,0 +1,8 @@
+# 这些脚本在 Linux 容器（Codespaces / Docker）里执行，换行符必须是 LF。
+# 本机是 Windows，如果按 core.autocrlf 转成 CRLF，bash 会报
+# "/usr/bin/env: 'bash\r': No such file or directory"。
+*.sh text eol=lf
+
+# Codespaces 与 Docker 的配置按原样保存
+Dockerfile text eol=lf
+.gitattributes text eol=lf

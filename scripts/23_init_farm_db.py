@@ -66,6 +66,10 @@ def main() -> int:
                 n = conn.execute(f"SELECT COUNT(*) AS n FROM {table}").fetchone()["n"]
                 logger.info("  %-18s %d 行", table, n)
 
+    # 与 src/farm/db.py 的 init_db() 保持一致：初始化数据库时顺带预置通用演示账号。
+    # 幂等，账号已存在时什么都不做；失败只告警，不影响库本身已建好这一事实。
+    db.ensure_demo_account(path)
+
     logger.info("完成。接下来可以：python scripts/20_run_backend.py --no-browser")
     return 0
 

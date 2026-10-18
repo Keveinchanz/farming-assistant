@@ -26,6 +26,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import date, timedelta
 
+from src.common.config import env
 from src.common.logging_utils import setup_logger
 from src.farm import repo, users
 from src.farm.timeutil import today_local
@@ -81,3 +82,45 @@ def seed_demo_fields(conn: sqlite3.Connection, user_id: int) -> list[dict]:
     logger.info("已为用户 %s 预置 %d 条示例田（%s %s）",
                 user_id, len(created), DEMO_PROVINCE, DEMO_CITY)
     return created
+
+
+# ---------------------------------------------------------------- 通用演示账号
+
+# 每个部署实例都预置一个演示账号，方便访问者直接登录体验。
+# 它是**普通账号**：没有管理员权限，也不会绕过登录校验；页面照样要求登录或注册。
+DEMO_ACCOUNT: dict[str, str] = {
+    # 用户名与 users.DEMO_ACCOUNT_USERNAME 同源：权限层要靠它把演示账号挡在管理员之外
+    "username": users.DEMO_ACCOUNT_USERNAME,
+    "password": "nihao123",
+    "nickname": "张大叔",
+}
+
+_OFF_VALUES = {"off", "0", "false", "no"}
+
+
+def seed_demo_account(conn: sqlite3.Connection) -> dict | None:
+    """预置通用演示账号：不存在才创建，已存在则原样保留。
+
+    - **幂等**：同名账号已存在时返回 None，不覆盖密码、昵称与数据
+    - **可重建**：每次服务启动都会走一遍，账号被删掉后下次启动会补回来
+    - **可关闭**：环境变量 DEMO_SEED_ACCOUNT=off 时跳过（留给不希望公开账号的部署）
+
+    创建成功后一并预置三条示例田，与正常注册后的初始状态保持一致。
+    """
+    if str(env("DEMO_SEED_ACCOUNT", "on")).strip().lower() in _OFF_VALUES:
+        return None
+
+    username = DEMO_ACCOUNT["username"]
+    if users.find_by_username(conn, username):
+        return None
+
+    user = users.create_user(
+        conn,
+        username=username,
+        email="",
+        password=DEMO_ACCOUNT["password"],
+        nickname=DEMO_ACCOUNT["nickname"],
+    )
+    seed_demo_fields(conn, user["id"])
+    logger.info("已创建通用演示账号：%s", username)
+    return user

@@ -218,3 +218,22 @@ def update_settings(conn: sqlite3.Connection, user_id: int, patch: dict) -> dict
 def is_admin(user_id: int) -> bool:
     """管理员仅 id=1（7.0.6 / 7.0.7）。没有角色表 —— 7.17 明确不做管理员以外的角色体系。"""
     return int(user_id) == 1
+
+
+# 预置演示账号的用户名。它与 seed.DEMO_ACCOUNT 保持一致。
+DEMO_ACCOUNT_USERNAME = "user"
+
+
+def is_demo_account(user: dict | sqlite3.Row | None) -> bool:
+    """是否为预置的通用演示账号。
+
+    全新部署时数据库是空的，演示账号会作为**第一条记录**插入（id=1）。
+    若只按 id=1 判定管理员，一个密码公开的账号就会拿到管理员权限 ——
+    所以 require_admin 里还要用它再挡一次。
+    """
+    if user is None:
+        return False
+    try:
+        return str(user["username"]) == DEMO_ACCOUNT_USERNAME
+    except (KeyError, IndexError, TypeError):
+        return False

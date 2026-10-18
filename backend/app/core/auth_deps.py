@@ -92,8 +92,12 @@ def current_user_id(user: dict = Depends(get_current_user)) -> int:
 
 
 def require_admin(user: dict = Depends(get_current_user)) -> dict:
-    """仅 id=1（7.0.6）。其他人 404 —— 不是 403：不暴露「这个接口存在且你需要权限」。"""
-    if not users.is_admin(user["id"]):
+    """仅 id=1（7.0.6），且排除预置的演示账号。其他人 404 —— 不是 403：不暴露「这个接口存在且你需要权限」。
+
+    排除演示账号的原因：全新部署时数据库为空，演示账号会是第一条记录（id=1）。
+    只按 id 判定的话，一个密码公开的账号就拿到了管理员权限。
+    """
+    if not users.is_admin(user["id"]) or users.is_demo_account(user):
         raise ApiError("未找到该接口", code=404, http_status=404)
     return user
 

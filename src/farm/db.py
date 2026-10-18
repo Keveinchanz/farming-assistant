@@ -121,13 +121,33 @@ def migrate(conn: sqlite3.Connection, *, verbose: bool = True) -> list[int]:
 
 
 def init_db(*, verbose: bool = True) -> Path:
-    """建库（首次）+ 迁移到最新版本。幂等，可反复调用。返回库文件路径。"""
+    """建库（首次）+ 迁移到最新版本 + 预置通用演示账号。幂等，可反复调用。返回库文件路径。"""
     path = farm_db_path()
     with connect(path) as conn:
         done = migrate(conn, verbose=verbose)
     if verbose and done:
         logger.info("数据库就绪：%s（v%s）", path, applied_version_of(path))
+    ensure_demo_account(path)
     return path
+
+
+def ensure_demo_account(path: Path | None = None) -> None:
+    """预置通用演示账号（当前实例的库里没有该账号时才创建）。
+
+    放在**独立的连接与事务**里：演示账号不是核心功能，创建失败（例如密码规则变了）
+    只应留下一条 warning，不能把服务启动整个拖垮；失败时也只会回滚这一小段。
+    延迟导入避免 db 模块在顶层依赖 seed（seed 又依赖 users / repo）。
+
+    `init_db()` 与 `scripts/23_init_farm_db.py` 都调用它，两处行为保持一致。
+    """
+    target = path or farm_db_path()
+    try:
+        from src.farm.seed import seed_demo_account
+
+        with connect(target) as conn:
+            seed_demo_account(conn)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("演示账号初始化失败（不影响服务启动）：%s", e)
 
 
 def applied_version_of(path: Path | None = None) -> int:

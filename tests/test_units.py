@@ -3134,6 +3134,52 @@ def _():
         assert s["default_city"] == seed.DEMO_CITY
 
 
+@case("演示账号：空库自动创建并预置示例田，已存在时保持不变")
+def _():
+    from src.farm import seed, users
+
+    with _farm_db() as conn:
+        first = seed.seed_demo_account(conn)
+        assert first is not None, "空库里应创建演示账号"
+        assert first["username"] == users.DEMO_ACCOUNT_USERNAME
+
+        n_fields = conn.execute(
+            "SELECT COUNT(*) AS n FROM fields WHERE user_id = ?", (first["id"],)
+        ).fetchone()["n"]
+        assert n_fields == 3, f"演示账号应预置三条示例田，实际 {n_fields}"
+
+        # 全新库里它是第一条记录（id=1），按 7.0.6 的规则 id=1 就是管理员。
+        # 权限层必须靠 is_demo_account 把它挡在外面，否则密码公开的账号会拿到管理员权限。
+        assert first["id"] == 1, "空库中演示账号应是第一条记录"
+        assert users.is_admin(first["id"]), "id=1 仍按规则是管理员"
+        assert users.is_demo_account(first), "但它必须被识别为演示账号"
+
+        before = conn.execute("SELECT COUNT(*) AS n FROM users").fetchone()["n"]
+        assert seed.seed_demo_account(conn) is None, "账号已存在时应直接跳过"
+        after = conn.execute("SELECT COUNT(*) AS n FROM users").fetchone()["n"]
+        assert after == before, "重复调用不应新建账号"
+
+
+@case("演示账号：DEMO_SEED_ACCOUNT=off 时一个也不建")
+def _():
+    import os
+
+    from src.farm import seed
+
+    old = os.environ.get("DEMO_SEED_ACCOUNT")
+    os.environ["DEMO_SEED_ACCOUNT"] = "off"
+    try:
+        with _farm_db() as conn:
+            assert seed.seed_demo_account(conn) is None
+            n = conn.execute("SELECT COUNT(*) AS n FROM users").fetchone()["n"]
+            assert n == 0, "关闭开关后不应创建任何账号"
+    finally:
+        if old is None:
+            os.environ.pop("DEMO_SEED_ACCOUNT", None)
+        else:
+            os.environ["DEMO_SEED_ACCOUNT"] = old
+
+
 @case("逐日气温与快照：查出来的行都限制在自己的 user_id 内")
 def _():
     from src.farm import repo

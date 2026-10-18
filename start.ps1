@@ -1,4 +1,4 @@
-# ============================================================================
+﻿# ============================================================================
 # 乡村农技多方言智能服务平台 —— 一键启动（任务 6.3）
 #
 # 用法（在项目根目录执行）：
@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [int]$Port = 8000,
-    [string]$Host = "127.0.0.1",
+    [string]$BindHost = "127.0.0.1",
     [switch]$Setup,
     [switch]$NoBrowser,
     [string]$EnvName = "az"
@@ -54,8 +54,17 @@ $required = @("fastapi", "uvicorn", "onnxruntime", "torch", "yaml", "PIL")
 $missing = @()
 foreach ($pkg in $required) {
     $import = if ($pkg -eq "yaml") { "yaml" } else { $pkg }
-    $null = & $python -c "import $import" 2>$null
-    if ($LASTEXITCODE -ne 0) { $missing += $pkg }
+    # PowerShell 5.1 下，原生命令写到 stderr 的内容在 $ErrorActionPreference="Stop" 时
+    # 会变成终止性错误（NativeCommandError），于是「缺少依赖」的友好提示会被一段 traceback
+    # 打断、脚本直接退出。这里用 try/catch 把它归一成「这个包不可用」。
+    $ok = $true
+    try {
+        & $python -c "import $import" 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { $ok = $false }
+    } catch {
+        $ok = $false
+    }
+    if (-not $ok) { $missing += $pkg }
 }
 
 if ($missing.Count -gt 0) {
@@ -136,20 +145,20 @@ if (Test-Path $envFile) {
 # ---------------------------------------------------------------- 启动
 
 Write-Step "启动服务"
-Write-Host "  首页      http://${Host}:${Port}/" -ForegroundColor White
-Write-Host "  我的农田  http://${Host}:${Port}/farm.html   （首次访问需注册，会自动建三条示例田）" -ForegroundColor White
-Write-Host "  接口文档  http://${Host}:${Port}/docs" -ForegroundColor White
-Write-Host "  服务状态  http://${Host}:${Port}/api/health" -ForegroundColor White
+Write-Host "  首页      http://${BindHost}:${Port}/" -ForegroundColor White
+Write-Host "  我的农田  http://${BindHost}:${Port}/farm.html   （首次访问需注册，会自动建三条示例田）" -ForegroundColor White
+Write-Host "  接口文档  http://${BindHost}:${Port}/docs" -ForegroundColor White
+Write-Host "  服务状态  http://${BindHost}:${Port}/api/health" -ForegroundColor White
 Write-Host "`n  按 Ctrl+C 停止服务`n" -ForegroundColor Gray
 
 # 录音（农田页语音记账、诊断页、图书库语音检索）只在安全上下文里可用：
 # http://127.0.0.1 与 localhost 算，局域网 IP 不算。用 IP 打开时页面会明确提示，
 # 但在这里先说一句，免得演示时才发现。
-if ($Host -ne "127.0.0.1" -and $Host -ne "localhost") {
-    Write-Warn2 "当前用 $Host 打开：浏览器的录音 API 只在 127.0.0.1 / localhost 下可用，语音功能会提示需要安全上下文"
+if ($BindHost -ne "127.0.0.1" -and $BindHost -ne "localhost") {
+    Write-Warn2 "当前用 $BindHost 打开：浏览器的录音 API 只在 127.0.0.1 / localhost 下可用，语音功能会提示需要安全上下文"
 }
 
-$args = @("scripts\20_run_backend.py", "--host", $Host, "--port", $Port)
+$args = @("scripts\20_run_backend.py", "--host", $BindHost, "--port", $Port)
 if ($NoBrowser) { $args += "--no-browser" }
 
 & $python @args

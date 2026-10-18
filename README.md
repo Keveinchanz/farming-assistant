@@ -94,20 +94,59 @@
 
 ## 三、快速开始
 
-环境要求：Python 3.11，已在 Windows + conda 环境 `az` 下验证。
+环境要求：Python 3.11（本项目验证版本），Windows、macOS、Linux 均可。
+仓库已包含推理模型、知识库与前端资源，无需另外下载模型。
+
+以下命令均在项目根目录执行。
+
+### 方式一：使用 conda
 
 ```powershell
-# 1. 激活环境
+# 首次使用先创建环境
+conda create -n az python=3.11 -y
 conda activate az
-cd /d "D:\code file\insert"
 
-# 2. 安装依赖（首次）
+# 把仓库中的运行时资源铺到程序读取的位置，只需执行一次
+python scripts\53_prepare_runtime.py
+
+# 安装依赖；requirements-rag.txt 是知识库检索所需，约 1 至 2 GB
 python -m pip install -r requirements.txt
+python -m pip install -r requirements-rag.txt
 
-# 3. 启动（会先体检数据与模型，再拉起服务并打开浏览器）
+# 启动
 .\start.ps1
+```
 
-# 也可以直接启动
+### 方式二：不使用 conda
+
+```powershell
+# 先确认 Python 版本；若不是 3.11，用 py -3.11 指定解释器
+python --version
+
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# 若提示「无法加载文件，因为在此系统上禁止运行脚本」，先放开当前会话的执行策略
+#   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+python -m pip install --upgrade pip
+
+# 只运行、不训练时先装 CPU 版 torch，避免 pip 拉取约 2 GB 的 CUDA 版本
+python -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision
+
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-rag.txt
+
+python scripts\53_prepare_runtime.py
+.\start.ps1
+```
+
+macOS 或 Linux 下，激活命令为 `source .venv/bin/activate`，启动命令换成
+`python scripts/20_run_backend.py`。
+
+### 方式三：环境已就绪
+
+```powershell
 python scripts\20_run_backend.py
 ```
 
@@ -116,8 +155,12 @@ python scripts\20_run_backend.py
 | 入口 | 地址 |
 |---|---|
 | 前端首页 | http://127.0.0.1:8000/ |
+| 我的农田 | http://127.0.0.1:8000/farm.html |
 | 接口文档 | http://127.0.0.1:8000/docs |
 | 服务状态 | http://127.0.0.1:8000/api/health |
+
+首次启动会自动创建农田数据库。`start.ps1` 会依次检查解释器、依赖与数据产物并打印每一步结果；
+若提示「数据集划分缺失」之类的信息，那是训练期产物，不影响页面功能。
 
 `.env` 不存在时，`start.ps1` 会从 `.env.example` 复制一份模板。
 

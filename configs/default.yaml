@@ -1,0 +1,94 @@
+# 全局默认配置
+# 所有路径均相对于项目根目录（本文件所在目录的上一级），代码里统一经 src/common/paths.py 解析成绝对路径。
+version: 1
+
+project:
+  name: 乡村农技多方言智能服务平台
+  short_name: rural-agri-platform
+
+paths:
+  raw_dataset: Sample                      # 原始只读样本数据集（271 类 / 10165 张）
+  label_rename: Sample/label_rename.txt    # 原始「中文类别名 -> 数字目录号」映射
+  data_dir: data
+  processed_dataset: data/processed/dataset # 1.1 归档产物：<作物大类>/<病虫害名>/*.jpg
+  splits_dir: data/splits                   # 1.2 产物
+  label_map: data/label_map.json            # 1.4 产物（全局单一事实源）
+  province_pest: data/province_pest_top3.json  # 1.5 产物
+  policy_list: data/policy_list.json        # 1.6 产物
+  # 「防治对象 → 登记农药」索引，来源是农业农村部农药管理司《农药登记信息》的
+  # 附件（.xls）。抓取见 scripts/26_fetch_pesticide_registry.py；
+  # 属于运行期抓取的数据，不随仓库走，缺失时知识图书库自动回退到通用用药提醒。
+  pesticide_registry: data/pesticide_registry.json
+  knowledge_dir: knowledge
+  documents_dir: knowledge/documents        # 4.4 RAG 切分源
+  library_dir: knowledge/library            # 4.5 知识图书库数据与封面
+  vectorstore_dir: knowledge/vectorstore    # 4.4 ChromaDB 持久化
+  models_dir: models
+  checkpoints_dir: models/checkpoints
+  onnx_dir: models/onnx
+  pretrained_dir: models/pretrained         # 2.2 ImageNet 权重本地缓存
+  model_registry: models/registry.json
+  outputs_dir: outputs
+  logs_dir: outputs/logs
+  figures_dir: outputs/figures
+  reports_dir: outputs/reports
+  frontend_dir: frontend
+
+  # ---- 阶段 2.7：虫害检测（IP102 / YOLOv8n）----
+  # 与上面的 271 类病害是两套互相独立的标签空间，目录也刻意分开，
+  # 免得哪次改动顺手把病虫害混成一套（作物词表 configs/crops.yaml 同样不许混）。
+  pest_dataset: data/pest                  # 数据集根目录
+  pest_raw: data/pest/_raw                 # 原始 zip（下载完可删）
+  pest_yaml: data/pest/data.yaml           # YOLO 训练入口
+  pest_label_map: data/pest_label_map.json # 102 类中英文名（全局单一事实源）
+  pest_onnx: models/onnx/pest_yolo.onnx    # 自包含单文件，服务时用
+  # 虫害对比实验（34→39）的暂存与外部数据目录。
+  # 与 farm_models_staging 同理：staging 是**线上不会加载**的暂存区 ——
+  # get_pest_detector() 只认 registry 里 pest_yolov8n.onnx 记的路径与上面的
+  # pest_onnx 约定路径，这个目录里的权重没有任何代码会去读。
+  pest_models_staging: models/pest_staging      # 34 的候选权重，不碰 models/checkpoints
+  pest_cls_raw: data/pest_cls_raw               # 36 下载的 IP102 分类集原始包（不进版本库）
+  pest_aug_dataset: data/pest_aug               # 37 用 copy-paste 造出来的稀有类增广样本
+  pest_aug_yaml: data/pest_aug/data_aug.yaml    # 37 写的训练入口（train 为目录列表）
+  pest24_dataset: data/pest24                   # 38/39 的 Pest24 负样本（YOLO 格式）
+  pest24_raw: data/pest24/_raw                  # 38 下载的原始包（下载完可删）
+  pest_mixed_yaml: data/pest_mixed/data_mixed.yaml   # 39 组装的混训入口
+
+  # ---- 阶段 7：我的农田 ----
+  # 这是本项目**唯一的可变状态**：前面所有阶段的产物都是只读文件（JSON/CSV/图片），
+  # 谁来读都一样；账号、田块、农事记录是第一个「每个用户一份、会被改写」的数据，
+  # 所以单独放一个目录、单独一个 sqlite 文件，不与只读产物混在一起。
+  # 省 → 市 → 县 三级联动用的离线行政区划（含中心经纬度）。
+  # 抓取见 scripts/27_build_admin_divisions.py；前端打包版在
+  # frontend/assets/data/admin_divisions.js（同一趟生成，两者内容同源）。
+  admin_divisions: data/admin_divisions.json
+  farm_db: data/farm/farm.db               # sqlite 库（7.0/7.1 的表，迁移器见 src/farm/db.py）
+  farm_images: data/farm_images            # 病虫害入档图片 {user_id}/{field_id}/{date}_{id}.jpg
+  farm_models: models/farm                 # 收获日预测的三分位模型 harvest_xgb_q*.json
+  # 用公开物候数据集训练收获模型的那条离线管线（29→32）。
+  # 与 farm_models 的区别很重要：staging 是**线上不会加载**的暂存区，
+  # models_available() 只认 models/farm/harvest_xgb_q*.json 三个确切路径。
+  phenology_raw: data/phenology/_raw       # 29 下载的原始 zip 与解压目录（不进版本库）
+  phenology_weather: data/phenology/weather  # 30 的逐县逐日气温缓存，一县一文件（存在即跳过）
+  phenology_calendar: data/phenology/rice_calendar.csv   # 31 的长表：一季一行
+  phenology_train: data/phenology/harvest_train.csv      # 31 的训练样本：一 cutoff 一行
+  farm_models_staging: models/farm_staging  # 32 的暂存目录，过闸门 + --install 才复制进 models/farm
+
+runtime:
+  seed: 42
+  device: auto            # auto|cuda|cpu
+  num_workers: 4          # Windows 下 DataLoader 多进程需 __main__ 保护，见 src/data/dataset.py
+  log_level: INFO
+  timezone: Asia/Shanghai
+
+# 类别中文名里出现的「健康」类样本（无病害），前端/知识库需要区别于病害条目展示
+healthy_markers: ["健康", "键康", "健株", "键叶"]
+
+# 推理置信度阈值：top1 低于此值时后端置 low_confidence=true，前端提示补充文字/语音描述
+confidence_threshold: 0.45
+
+# 虫害检测阈值，与上面的分类阈值不是一回事、不要合并：
+# 分类是 271 选 1，0.45 以下基本是「模型在猜」；而检测会在一张图上出多个框，
+# 0.25 是 YOLO 系列的通行起点，漏检（虫子没报出来）比误检代价大得多。
+pest_confidence_threshold: 0.25
+pest_iou_threshold: 0.7        # NMS 用的 IoU 阈值

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>管理员 · 多方言 AI 农技与农田数字孪生平台</title>
+<meta name="description" content="仅管理员（id=1）可见：查看各能力状态、重新加载模型与数据缓存。">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/layout.css">
+<link rel="stylesheet" href="/assets/css/pages.css">
+</head>
+<body data-page="admin">
+
+<a class="visually-hidden" data-skip-link href="#main">跳到主要内容</a>
+
+<header class="site-header">
+  <div class="site-header__inner" data-layout-header></div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <div class="page-head__title">
+      <h1 class="mb-0">管理员</h1>
+      <span class="badge badge--warning">仅 id=1 可见</span>
+    </div>
+    <p class="page-head__desc mb-0">
+      各能力的当前状态。这里显示的是**真实**状态：模型没就位、Key 没配、天气取不到，
+      都会如实标成「降级」并说明原因。
+    </p>
+  </div>
+
+  <section class="card auth-card auth-card--wide">
+    <div class="admin-head">
+      <h2 class="auth-card__title">能力状态</h2>
+      <div class="admin-ops">
+        <button type="button" class="btn btn--outline btn--sm" id="admin-reload">重新加载缓存</button>
+      </div>
+    </div>
+    <div id="admin-health">
+      <span class="spinner" role="status" aria-label="加载中"></span>
+    </div>
+    <p class="form-hint">
+      「重新加载缓存」会清空模型与数据的内存缓存，下次请求重新加载 ——
+      重新训练模型、重建知识库或改完数据文件后用它，不必重启服务。
+    </p>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div data-layout-footer></div>
+</footer>
+
+<script src="/assets/js/icons.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/dialect.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script src="/assets/js/auth.js"></script>
+</body>
+</html>

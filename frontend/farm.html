@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的农田 · 多方言 AI 农技与农田数字孪生平台</title>
+<meta name="description" content="按积温推算作物生育阶段与收获期，3D 展示田块长势，支持方言语音记账与诊断入档。">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/layout.css">
+<link rel="stylesheet" href="/assets/css/pages.css">
+</head>
+<body>
+
+<a class="visually-hidden" data-skip-link href="#main">跳到主要内容</a>
+
+<header class="site-header">
+  <div class="site-header__inner" data-layout-header></div>
+</header>
+
+<main id="main" class="page page--farm">
+
+  <p class="notice" data-degraded-bar hidden></p>
+
+  <!-- 工具栏：新建 / 扫一下。选田块改由下面的 8 格卡片承担，不再用一个下拉框。 -->
+  <div class="farm-toolbar">
+    <!-- 只有「进到某一块田里」时才出现：那一刻 8 格已收起，没有它就没路回去。 -->
+    <button type="button" class="btn btn--outline btn--sm" id="farm-back" hidden>← 返回田块</button>
+    <span class="farm-toolbar__label" id="my-fields-label">我的田块</span>
+    <button type="button" class="btn btn--outline btn--sm" id="btn-new-field">+ 新建田地</button>
+    <button type="button" class="btn btn--outline btn--sm" id="farm-scan">扫一下病虫害</button>
+  </div>
+
+  <!-- 8 格：已有的田块各占一格，空的几格显示「新建田地」，点进去先填信息。
+       有 3 条示例田的新用户打开就是 3 格实田 + 5 格空位。 -->
+  <div class="farm-plots" id="field-grid" role="group" aria-labelledby="my-fields-label"></div>
+
+  <!-- 首次进来给一句怎么用：8 格是"目录"，点进去才是那块田的 3D 和账。 -->
+  <p class="farm-guide" id="farm-guide">
+    点任意一块田，看它现在的长势、今天该干啥；虚线格子可以新建一块田。
+  </p>
+
+  <!-- 唯一选中状态的载体：?field= 深链、键盘与脚本都还走它，只是视觉上藏起来 ——
+       真正的控件是上面的格子按钮。既然不可见就不要留在可访问性树里，
+       所以连带 tabindex="-1"（aria-hidden 不能加在仍可聚焦的元素上）。 -->
+  <label class="visually-hidden" for="field-select">选择田块</label>
+  <select class="visually-hidden" id="field-select" tabindex="-1" aria-hidden="true"></select>
+
+  <!-- 新建田块（默认收起） -->
+  <form class="card farm-newform" id="new-field-form" hidden>
+    <div class="farm-newform__grid">
+      <div class="form-field">
+        <label class="form-label" for="new-field-name">田块名称</label>
+        <input class="input" id="new-field-name" required maxlength="24" placeholder="如：东头那块">
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="new-field-crop">作物</label>
+        <select class="select" id="new-field-crop"></select>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="new-field-area">面积（亩）</label>
+        <input class="input" id="new-field-area" type="number" min="0" step="0.1" value="1">
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="new-field-sow">播种日</label>
+        <input class="input" id="new-field-sow" type="date" required>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="new-field-province">省</label>
+        <select class="select" id="new-field-province"></select>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="new-field-city">市</label>
+        <select class="select" id="new-field-city"></select>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="new-field-county">县 / 区</label>
+        <select class="select" id="new-field-county"></select>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="new-field-lng">经度</label>
+        <input class="input" id="new-field-lng" type="number" step="0.0001" placeholder="114.30">
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="new-field-lat">纬度</label>
+        <input class="input" id="new-field-lat" type="number" step="0.0001" placeholder="30.58">
+      </div>
+    </div>
+    <p class="form-hint">
+      选到县就行：经纬度按省、市、县三级中心点自动取平均算出，也可手动微调。
+      坐标用来取当地气温推算积温（留空则该田块算不出生长阶段）。
+    </p>
+    <div class="farm-newform__ops">
+      <button type="submit" class="btn btn--primary" id="new-field-submit">创建</button>
+      <button type="button" class="btn btn--ghost" onclick="document.getElementById('new-field-form').hidden = true">取消</button>
+    </div>
+  </form>
+
+  <!-- 左 68% 3D / 右 32% 信息（7.11）。
+       静态就带 hidden：没进田块前它是空的，先显示一下再藏会闪一帧空布局；
+       真正显不显由 farm.js 的状态机说了算（renderIdle / enterField）。 -->
+  <div class="farm-layout" hidden>
+
+    <section class="farm-stage" aria-label="3D 田块视图">
+      <div id="farm3d" class="farm-stage__canvas"></div>
+
+      <div class="farm-overlay farm-overlay--tl" id="model-overlay"></div>
+      <div class="farm-overlay farm-overlay--tr" id="weather-overlay"></div>
+
+      <button type="button" class="farm-mic" id="farm-mic"
+              aria-label="语音记账" title="说一句农事，自动填表">
+        <span id="ico-farm-mic"></span>
+      </button>
+    </section>
+
+    <aside class="farm-side" aria-label="农田信息面板">
+      <section class="card farm-card farm-card--head">
+        <div class="farm-field-head" id="field-head">
+          <strong>加载中…</strong>
+        </div>
+      </section>
+      <div id="panel"></div>
+    </aside>
+
+  </div>
+
+  <!-- 语音记账 / 手工记一笔（7.8 的五步流程） -->
+  <div class="modal" id="voice-modal" hidden>
+    <div class="modal__backdrop" id="voice-modal-backdrop"></div>
+    <div class="modal__panel modal__panel--narrow" role="dialog" aria-modal="true"
+         aria-labelledby="voice-modal-title">
+      <button type="button" class="modal__close" id="modal-voice-close" aria-label="关闭"></button>
+      <div class="modal__body">
+        <h2 class="modal-detail__title" id="voice-modal-title">记一笔农事</h2>
+
+        <div class="voice-record">
+          <button type="button" class="voice-record__mic" id="voice-mic" aria-pressed="false"
+                  aria-label="按下开始录音，再按一下结束">
+            <span id="ico-voice-mic"></span>
+          </button>
+          <span class="voice-record__hint" id="voice-status">点麦克风说话，或直接在下面打字</span>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="voice-text">说了什么（可直接修改，改完点「重新解析」）</label>
+          <textarea class="textarea" id="voice-text" rows="2"
+                    placeholder="如：昨天给东头那块施了20斤尿素"></textarea>
+          <div class="voice-ops">
+            <button type="button" class="btn btn--outline btn--sm" id="voice-reparse">重新解析</button>
+          </div>
+        </div>
+
+        <p class="notice notice--warning" id="voice-reason" hidden></p>
+
+        <div id="voice-fields" hidden>
+          <div class="farm-newform__grid">
+            <div class="form-field">
+              <label class="form-label" for="voice-field">田块</label>
+              <select class="select" id="voice-field"></select>
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="voice-type">类型</label>
+              <select class="select" id="voice-type"></select>
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="voice-date">日期</label>
+              <input class="input" id="voice-date" type="date">
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="voice-item">物品</label>
+              <input class="input" id="voice-item" maxlength="40" placeholder="如：尿素">
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="voice-amount">数量</label>
+              <input class="input" id="voice-amount" maxlength="20" placeholder="如：20斤">
+            </div>
+          </div>
+          <div class="voice-ops voice-ops--confirm">
+            <button type="button" class="btn btn--primary" id="voice-confirm">确认落库</button>
+            <button type="button" class="btn btn--outline" id="voice-cancel">取消</button>
+          </div>
+          <p class="form-hint">不点「确认落库」，这条记录不会写进数据库。</p>
+        </div>
+
+        <div id="voice-result" hidden></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <div data-layout-footer></div>
+</footer>
+
+<script src="/assets/js/icons.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/dialect.js"></script>
+<script src="/assets/js/layout.js"></script>
+<!-- Three.js 本地打包（r160 UMD 单文件，挂全局 THREE）：与 echarts 同一套约定，
+     零外网依赖。必须排在 farm3d.js 之前。 -->
+<script src="/assets/vendor/three/three.min.js"></script>
+<!-- 录音采集（与诊断页、图书库共用的一份），必须排在 farm.js 之前且不带 defer。 -->
+<script src="/assets/js/recorder.js"></script>
+<!-- 省 / 市 / 县 离线行政区划（含中心经纬度），由 scripts/27_build_admin_divisions.py
+     生成。本地文件、不走网络 —— 三级联动与经纬度推导都不依赖外网。 -->
+<script src="/assets/data/admin_divisions.js"></script>
+<script src="/assets/js/farm3d.js"></script>
+<script src="/assets/js/farm.js"></script>
+</body>
+</html>

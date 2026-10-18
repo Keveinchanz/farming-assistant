@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>个人中心 · 多方言 AI 农技与农田数字孪生平台</title>
+<meta name="description" content="修改昵称、查看账号信息、修改密码或注销账号。">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/layout.css">
+<link rel="stylesheet" href="/assets/css/pages.css">
+</head>
+<body data-page="profile">
+
+<a class="visually-hidden" data-skip-link href="#main">跳到主要内容</a>
+
+<header class="site-header">
+  <div class="site-header__inner" data-layout-header></div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <div class="page-head__title">
+      <h1 class="mb-0">个人中心</h1>
+    </div>
+  </div>
+
+  <div class="auth-wrap auth-wrap--wide">
+
+    <section class="card auth-card">
+      <div class="profile-head">
+        <span class="user-menu__avatar user-menu__avatar--lg" id="profile-avatar-preview" aria-hidden="true">?</span>
+        <div class="profile-head__text">
+          <strong id="profile-name">—</strong>
+          <span class="text-muted" id="profile-username">—</span>
+        </div>
+      </div>
+      <dl class="profile-meta">
+        <dt>邮箱</dt><dd id="profile-email">—</dd>
+        <dt>注册时间</dt><dd id="profile-created">—</dd>
+        <dt>上次登录</dt><dd id="profile-last-login">—</dd>
+      </dl>
+    </section>
+
+    <section class="card auth-card">
+      <h2 class="auth-card__title">修改资料</h2>
+      <form id="profile-form" novalidate>
+        <div class="form-field">
+          <label class="form-label" for="profile-nickname">昵称</label>
+          <input class="input" id="profile-nickname" maxlength="24" placeholder="显示在顶栏的名字">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="profile-avatar">头像地址</label>
+          <input class="input" id="profile-avatar" maxlength="200" placeholder="留空则用昵称首字">
+          <span class="form-hint">项目里没有内置头像图，留空时顶栏显示昵称的第一个字。</span>
+        </div>
+        <p class="notice notice--danger" id="profile-error" hidden></p>
+        <button type="submit" class="btn btn--primary" id="profile-submit">保存</button>
+      </form>
+    </section>
+
+    <section class="card auth-card">
+      <h2 class="auth-card__title">修改密码</h2>
+      <form id="password-form" novalidate>
+        <!-- 浏览器要求密码表单带一个（可隐藏的）用户名字段，否则报可访问性告警。
+             这里不收集输入：值由 auth.js 在渲染个人资料时回填当前用户名。 -->
+        <input type="text" id="password-username" autocomplete="username"
+               class="visually-hidden" tabindex="-1" aria-hidden="true" readonly>
+        <div class="form-field">
+          <label class="form-label" for="password-old">当前密码</label>
+          <input class="input" id="password-old" type="password" autocomplete="current-password" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="password-new">新密码</label>
+          <input class="input" id="password-new" type="password" autocomplete="new-password"
+                 required placeholder="至少 8 位，含字母和数字">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="password-confirm">确认新密码</label>
+          <input class="input" id="password-confirm" type="password" autocomplete="new-password" required>
+        </div>
+        <p class="notice notice--warning">
+          改完密码后所有登录状态都会失效，需要用新密码重新登录。
+        </p>
+        <p class="notice notice--danger" id="password-error" hidden></p>
+        <button type="submit" class="btn btn--primary" id="password-submit">修改密码</button>
+      </form>
+    </section>
+
+    <section class="card auth-card auth-card--danger">
+      <h2 class="auth-card__title">注销账号</h2>
+      <p class="text-muted">
+        注销会永久删除你的田块、农事记录、诊断记录与入档图片，<b>无法恢复</b>。
+      </p>
+      <!-- 密码框必须在 <form> 里，Chrome 才不报「Password field is not contained in a form」。
+           按钮仍是 type="button"（走 auth.js 的 click 绑定），这里再加一个 submit 兜底，
+           防止在密码框里回车时按浏览器默认行为把页面刷掉。 -->
+      <form id="delete-form" novalidate>
+        <input type="text" id="delete-username" autocomplete="username"
+               class="visually-hidden" tabindex="-1" aria-hidden="true" readonly>
+        <div class="form-field">
+          <label class="form-label" for="delete-password">输入当前密码以确认</label>
+          <input class="input" id="delete-password" type="password" autocomplete="current-password">
+        </div>
+        <p class="notice notice--danger" id="delete-error" hidden></p>
+        <button type="button" class="btn btn--outline" id="delete-account">永久注销账号</button>
+      </form>
+    </section>
+
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <div data-layout-footer></div>
+</footer>
+
+<script src="/assets/js/icons.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/dialect.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script src="/assets/js/auth.js"></script>
+</body>
+</html>

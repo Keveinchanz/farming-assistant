@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>知识图书库 · 多方言 AI 农技与农田数字孪生平台</title>
+<meta name="description" content="250 类病害、102 类虫害的防治知识与 47 种农作物养护要点，卡片式浏览，支持关键词检索与方言朗读。">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/layout.css">
+<link rel="stylesheet" href="/assets/css/pages.css">
+</head>
+<body>
+
+<a class="visually-hidden" data-skip-link href="#main">跳到主要内容</a>
+
+<header class="site-header">
+  <div class="site-header__inner" data-layout-header></div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <div class="page-head__title">
+      <h1 class="mb-0">知识图书库</h1>
+      <span class="badge badge--primary" id="total-badge">—</span>
+    </div>
+    <p class="page-head__desc mb-0">
+      每张卡片就是一本"书"：点击后全屏查看发病规律、防治方法与配图，并可方言朗读。
+      <b>病害</b>按病原类型讲、<b>虫害</b>按取食方式讲 —— 用药时机完全不同，别混着套。
+    </p>
+  </div>
+
+  <p class="notice" data-degraded-bar hidden></p>
+
+  <!-- 快照兜底提示。**另建一个元素**，不复用上面的 data-degraded-bar：
+       那一条归 layout.js 的 renderDegradedBar() 所有（数据源 /api/health），
+       两边都往同一个节点写会互相覆盖。 -->
+  <p class="notice notice--warning" id="library-notice" hidden></p>
+
+  <!-- 分类标签 + 搜索 -->
+  <div class="library-toolbar">
+    <div class="library-tabs" role="tablist" aria-label="知识分类" id="library-tabs"></div>
+
+    <div class="library-search">
+      <span class="library-search__icon" id="ico-search"></span>
+      <label class="visually-hidden" for="library-search">搜索知识</label>
+      <input class="input" type="search" id="library-search" placeholder="搜索作物、病害、虫害或症状关键词，如「霜霉」「玉米」「稻纵卷叶螟」">
+      <!-- 语音检索：按导航栏当前选中的方言识别，识别结果直接填进上面的输入框并开始检索。
+           图标与「正在录音」的脉冲点都复用既有资源（icons.js 的 mic、.record-status）。 -->
+      <button type="button" class="library-search__mic" id="library-mic"
+              aria-label="语音输入搜索关键词" title="语音输入" aria-pressed="false">
+        <span id="ico-mic"></span>
+      </button>
+    </div>
+
+    <span class="text-sm text-muted" id="search-summary"></span>
+  </div>
+
+  <!-- 卡片网格 -->
+  <div id="library-grid" class="card-grid" aria-live="polite"></div>
+
+  <div class="load-more">
+    <button type="button" class="btn btn--outline" id="btn-load-more" hidden>加载更多</button>
+  </div>
+
+  <!-- 详情全屏模态层：详情比卡片长得多，内联展开会把网格撑成一条竖线，
+       还会把后面几十张卡片的相对位置全推走。改为覆盖全屏读一页，
+       关闭后回到原来的位置。 -->
+  <div class="modal" id="library-modal" hidden>
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button type="button" class="modal__close" data-modal-close id="modal-close" aria-label="关闭详情"></button>
+      <div class="modal__body" id="modal-body"></div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <div data-layout-footer></div>
+</footer>
+
+<script src="/assets/js/icons.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/dialect.js"></script>
+<script src="/assets/js/layout.js"></script>
+<!-- 录音采集（与诊断页共用的一份）。必须排在 library.js 之前且不带 defer。 -->
+<script src="/assets/js/recorder.js"></script>
+<!-- 图书库的本地快照（brief，不含正文）：同步脚本，library.js 执行时数据一定已就位，
+     首屏不必等 /api/library 就能画出卡片。由 scripts/15_bundle_frontend_data.py
+     与 scripts/07_build_library.py 重打。 -->
+<script src="/assets/data/library_preload.js"></script>
+<script src="/assets/js/library.js"></script>
+</body>
+</html>

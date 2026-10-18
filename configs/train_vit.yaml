@@ -1,0 +1,79 @@
+# ViT-B/16 训练配置（任务 2.2：ResNet50、ViT-B/16 双骨干）
+#
+# 注意：8GB 显存下 ViT-B/16 必须 batch_size=16 + 梯度累积 + 梯度检查点，否则 OOM。
+# 本项目交付时以 ResNet50 为主线真实训练；ViT 配置与代码一并提供，按需自行运行：
+#     python scripts/11_train_vit.py
+version: 1
+
+model:
+  arch: vit_base_patch16_224        # timm 模型名
+  backend: timm                     # timm 权重走 HuggingFace，本地缓存在 models/pretrained
+  pretrained: true
+  num_classes: 271
+  input_size: 224
+  dropout: 0.1
+  gradient_checkpointing: true      # 8GB 显存必需，用时间换显存
+
+data:
+  train_csv: data/splits/train.csv
+  val_csv: data/splits/val.csv
+  test_csv: data/splits/test.csv
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+  weighted_sampler: true
+  class_weight_loss: false
+
+augment:
+  random_resized_crop:
+    size: 224
+    scale: [0.7, 1.0]
+    ratio: [0.8, 1.25]
+  horizontal_flip: 0.5
+  rotation_degrees: 10
+  color_jitter:
+    brightness: 0.2
+    contrast: 0.2
+    saturation: 0.2
+    hue: 0.03
+  gaussian_noise:
+    enabled: true
+    sigma: 0.02
+    p: 0.2
+
+train:
+  epochs: 30
+  batch_size: 16
+  grad_accum_steps: 2               # 等效 batch = 16 * 2 = 32
+  amp: true
+  optimizer: adamw
+  weight_decay: 0.05
+  lr_head: 0.001
+  lr_backbone: 0.00005
+  scheduler: cosine
+  warmup_epochs: 3
+  loss: cross_entropy
+  label_smoothing: 0.1
+  grad_clip_norm: 1.0
+  early_stop:
+    enabled: true
+    monitor: val_acc
+    mode: max
+    patience: 6
+
+eval:
+  batch_size: 32
+  confusion_matrix:
+    normalize: true
+    figsize: [40, 40]
+    dpi: 120
+    tick_step: 1
+
+output:
+  checkpoint: models/checkpoints/best_vit.pth
+  last_checkpoint: models/checkpoints/last_vit.pth
+  log_csv: outputs/logs/train_vit.csv
+  tensorboard_dir: outputs/logs/tensorboard_vit
+  confusion_matrix: outputs/figures/confusion_matrix_vit.png
+  report: outputs/reports/eval_vit.json
+  registry: models/registry.json

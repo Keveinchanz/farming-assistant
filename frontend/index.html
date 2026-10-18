@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>首页 · 多方言 AI 农技与农田数字孪生平台</title>
+<meta name="description" content="交互式中国地图，一屏查看各省当季高发的 TOP3 病虫害，点击省份直达防治知识。">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/layout.css">
+<link rel="stylesheet" href="/assets/css/pages.css">
+</head>
+<body>
+
+<a class="visually-hidden" data-skip-link href="#main">跳到主要内容</a>
+
+<header class="site-header">
+  <div class="site-header__inner" data-layout-header></div>
+</header>
+
+<main id="main" class="map-page">
+
+  <!-- 季节分带：首屏第一眼回答「现在是什么时令、当季该防什么」。
+       文字由 map.js 从本地预加载快照就地算出（renderSeasonBand），
+       不发请求、不新造数字。 -->
+  <div class="season-band" id="season-band" data-season-host aria-live="polite">
+    <span class="season-band__label">当季</span>
+    <span class="season-band__season" id="season-band-season"></span>
+    <span class="season-band__text" id="season-band-text"></span>
+  </div>
+
+  <section class="map-stage" data-season-host aria-labelledby="map-heading">
+    <h1 id="map-heading" class="visually-hidden">各省当季高发病虫害地图</h1>
+
+    <!-- 左上角季节切换 -->
+    <div class="season-switch" role="group" aria-label="按季节切换病虫害数据" id="season-switch"></div>
+
+    <!-- 地图容器 -->
+    <div id="china-map" role="img" aria-label="中国各省高发病虫害分布地图"></div>
+
+    <!-- 省份卡片：悬停预览、点击停住，由 map.js 填充与定位。
+         做成自有 DOM 而不是 ECharts tooltip，是为了拿到固定宽度与真正的换行
+         （长病害名原先会被顶出卡片），TOP3 也才能是真正可点的按钮。 -->
+    <div class="map-card" id="map-card" role="dialog" aria-label="省份病虫害详情" hidden></div>
+
+    <!-- 右上角图例 -->
+    <aside class="map-legend" aria-label="图例与数据说明">
+      <div class="map-legend__title" id="legend-title">病虫害种类规模</div>
+      <div class="map-legend__items" id="legend-items"></div>
+      <div class="text-sm text-muted" id="legend-note"></div>
+    </aside>
+
+    <!-- 加载 / 错误遮罩 -->
+    <div class="map-overlay" id="map-overlay">
+      <div>
+        <span class="spinner" role="status" aria-label="地图数据加载中"></span>
+        <p class="mt-0" style="margin-top:12px">正在加载各省病虫害数据…</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div data-layout-footer></div>
+</footer>
+
+<!-- three.js：首页的 3D 沙盘（map3d.js）靠它。本地打包，运行时不依赖 CDN。
+     **必须在 map3d.js 之前同步加载** —— 后者执行时就会用到全局 THREE。 -->
+<script src="/assets/vendor/three/three.min.js"></script>
+<!-- 本地预加载：底图与各省数据打包成一个 JS 变量文件，同步加载。
+     map.js 执行时数据一定已就位，首屏不发任何接口请求，接口没起也能正常显示。
+     生成：python scripts/15_bundle_frontend_data.py（04 号脚本会自动刷新它） -->
+<script src="/assets/data/home_preload.js"></script>
+<script src="/assets/js/icons.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/dialect.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script src="/assets/js/map3d.js"></script>
+<script src="/assets/js/map.js"></script>
+</body>
+</html>

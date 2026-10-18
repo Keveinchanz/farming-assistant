@@ -1,0 +1,113 @@
+# ---- 环境与密钥 ----
+.env
+# 局域网调试用的自签 https 证书（scripts/33_make_dev_cert.py 生成，含私钥）
+certs/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ---- 项目产物（体积大或可由脚本重新生成）----
+data/processed/
+data/splits/
+data/label_map.json
+data/province_pest_top3.json
+data/policy_list.json
+data/manifest.json
+data/raw_idadp/
+data/admin_divisions.json
+data/admin_divisions_cache/
+data/pesticide_registry.json
+data/pesticide_cache/
+
+# 外部物候数据集（scripts/29–31）：原始 zip 45 MB、解压后的 xlsx、逐县天气缓存、
+# 以及拼出来的训练表，都能由脚本重新生成，不进版本库
+data/phenology/
+
+# 虫害对比实验（scripts/34–39）：暂存权重、外部数据集（IP102 分类集 / Pest24）、
+# copy-paste 增广样本、混训入口，全部能由脚本重新生成。
+# 注意：data/pest/ 本身**没有**被忽略（那是 IP102 检测子集，775 MB），
+# 这里的四个新目录是新加的，别把它一并带进去。
+models/pest_staging/
+data/pest_cls_raw/
+data/pest_aug/
+data/pest24/
+data/pest_mixed/
+
+knowledge/documents/
+knowledge/library/
+knowledge/vectorstore/
+knowledge/agri_lexicon.txt
+
+models/checkpoints/
+models/onnx/
+models/pretrained/
+models/registry.json
+# 外部物候数据集训练出来的收获模型先落暂存目录，过闸门 + --install 才进 models/farm/
+models/farm_staging/
+
+outputs/logs/
+outputs/figures/
+outputs/reports/
+outputs/shots/
+
+frontend/audio/tts_*
+
+# ---- 阶段 7：我的农田（运行期数据，不进版本库）----
+# 账号、田块、农事记录、诊断入档图片都是用户数据 —— 既不该进版本库，
+# 也不该被谁 clone 走。库建不出来时服务起不来农田功能，但那是「运行期状态」
+# 而不是「交付物缺失」：scripts/23_init_farm_db.py 或服务启动时会自动建。
+data/farm/
+data/farm_images/
+# 收获日预测的模型（全平台累计 30 条记录后才会训练出来）
+models/farm/
+
+# 前端第三方库按需重新下载（见 README），但保留地图数据以便离线部署
+# frontend/assets/vendor/echarts.min.js
+# 同理：Three.js（r160 UMD）按需下载，见 README
+# frontend/assets/vendor/three/three.min.js
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+desktop.ini
+~$*
+
+# ---- 参赛交付与训练数据（本仓库只留「代码 + 能跑起来的最小资源」）----
+# 交付包里有用户的 docx 原件，既大又不该随代码公开
+2026AIC-submission/
+# IP102 检测集 781 MB：训练用。运行期只需要知识卡片引用到的 97 张，
+# 那些由 scripts/50_build_runtime_assets.py 摘进 runtime_assets/ 后再提交。
+data/pest/
+data/pest_pseudo/
+Sample/
+weights/
+runs/
+
+# 手工 / 生成物
+deploy/space/
+*.log
+*.pid
+
+# 运行期产物与调试脚本（outputs/ 下还有几百个 _probe/_check 的一次性脚本和一份旧备份）
+outputs/
+.claude/
+
+# 无关的散落文件
+yolov8n.pt
+*.pt
+.merkle-snapshot.json
+deepseek_html_*.html
+2026AIC-*.doc
+
+# 注意：runtime_assets/ 是**要提交**的 —— 它是让 `docker build` 能跑起来的那一小撮资源
+# （867 张卡片图 + ONNX + 知识库 + 运行时 JSON，约 180 MB）。
+# 不要把它加进忽略列表。
+

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>惠农政策 · 多方言 AI 农技与农田数字孪生平台</title>
+<meta name="description" content="2026 年官方发布的惠农政策，含核心内容摘要与发布单位。">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/layout.css">
+<link rel="stylesheet" href="/assets/css/pages.css">
+</head>
+<body>
+
+<a class="visually-hidden" data-skip-link href="#main">跳到主要内容</a>
+
+<header class="site-header">
+  <div class="site-header__inner" data-layout-header></div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <div class="page-head__title">
+      <h1 class="mb-0">惠农政策</h1>
+      <span class="badge badge--primary">2026 年</span>
+    </div>
+  </div>
+
+  <!-- 用户反馈过「点了标题没反应」：链接是好的，只是看不出是链接。
+       这句把「能点」说在前面，样式上标题也已改成链接色 + 常驻下划线。 -->
+  <p class="text-sm text-muted policy-hint">
+    标题可以直接点开农业农村部官网原文（新窗口）；「要点」为原文逐字摘录，可与原网页核对。
+  </p>
+
+  <p class="notice" data-degraded-bar hidden></p>
+
+  <!-- 政策列表 -->
+  <div class="policy-list" id="policy-list" aria-live="polite"></div>
+
+</main>
+
+<footer class="site-footer">
+  <div data-layout-footer></div>
+</footer>
+
+<script src="/assets/js/icons.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/dialect.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script src="/assets/js/policy.js"></script>
+</body>
+</html>

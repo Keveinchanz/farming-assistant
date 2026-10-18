@@ -1,0 +1,500 @@
+/* ==========================================================================
+   设计令牌与基础样式
+   配色：单一强调色 —— 大地绿 #15803D（取农业语义，不是「紫的替代色」）；
+        中性底色是极低饱和的浅绿灰，既不是冷绿 SaaS 默认底，也不是暖奶油
+        （#F4F1EA 那类「有品味的逃跑路线」如今本身就是一种 AI 套路）。
+        深色只按语义需要覆盖令牌，不再出现组件里的硬编码色值。
+   风格：两级圆角（控件 8 / 表面 12），阴影用品牌绿而非通用灰 rgba(0,0,0,.1)
+   字体：只用系统字体栈 —— 不声明任何未随包发布的字体，也不依赖外网 webfont。
+        农村弱网/离线环境同样可用，这是本平台面向的典型使用场景。
+   ========================================================================== */
+
+:root {
+  /* 主色板：一个强调色 + 它自己的深浅档，没有第二个色相的「第二主色」 */
+  --color-primary: #15803d;
+  --color-primary-hover: #166534;
+  --color-primary-soft: #dcfce7;
+  --color-primary-line: #a7d7bb;   /* 悬停/描边用的低饱和绿 */
+  --color-primary-fg: #166534;     /* 落在 primary-soft 上的文字 */
+  --color-on-primary: #ffffff;
+  --color-link: #15803d;
+
+  /* 中性色 */
+  --color-bg: #f1f7f3;
+  --color-card: #ffffff;
+  --color-fg: #14532d;
+  --color-fg-body: #1f2d26;
+  --color-muted: #e8f0f1;
+  --color-muted-fg: #5b6b64;
+  --color-border: #cfe9d8;
+
+  /* 语义色：每个语义色都成对给出「底 / 边 / 字」三档，
+     组件里一律引用令牌 —— 深色模式漏覆盖某一档，就是之前那批
+     提示条变成深底深字（≈1.9:1，读不了）的成因。 */
+  --color-destructive: #dc2626;
+  --color-destructive-soft: #fee2e2;
+  --color-destructive-line: #fecaca;
+  --color-destructive-fg: #991b1b;
+  --color-warning: #b45309;
+  --color-warning-soft: #fef3c7;
+  --color-warning-line: #fde68a;
+  --color-warning-fg: #92400e;
+  --color-info: #0369a1;
+  --color-info-soft: #e0f2fe;
+  --color-info-line: #bae6fd;
+  --color-info-fg: #075985;
+  --color-ring: #15803d;
+
+  /* 间距（density 7：标准档 4→64） */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* 字号阶梯：正文 16px 起，最小 13px。
+     受众含中老年农户，手机上还要在强光下看 —— 不再有 12px 这一档。 */
+  --text-xs: 0.8125rem;   /* 13px  元信息、脚注 */
+  --text-sm: 0.875rem;    /* 14px  次要正文 */
+  --text-base: 1rem;      /* 16px  正文 */
+  --text-md: 1.0625rem;   /* 17px  小节标题 */
+  --text-lg: 1.125rem;    /* 18px  区块标题 */
+  --text-xl: 1.375rem;    /* 22px  页面标题 */
+  --text-2xl: 1.75rem;    /* 28px  主标题 */
+
+  /* 圆角：两级制 —— 控件 8 / 表面 12。
+     胶囊形只留给真正的徽标（.badge），不再往导航、页签、进度条上套。 */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 12px;
+
+  /* 阴影：自然、低对比，且带品牌绿而不是中性灰 */
+  --shadow-sm: 0 1px 2px rgba(20, 83, 45, 0.06), 0 1px 3px rgba(20, 83, 45, 0.04);
+  --shadow-md: 0 4px 12px rgba(20, 83, 45, 0.08), 0 2px 4px rgba(20, 83, 45, 0.04);
+  --shadow-lg: 0 12px 32px rgba(20, 83, 45, 0.12), 0 4px 8px rgba(20, 83, 45, 0.06);
+
+  --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* 地图配色。3D 沙盘画的是 canvas（顶点色与材质），CSS 的 @media 管不到它，
+     map.js 只能 runtime 读这些令牌 —— 放在这里是为了让深浅两套只有这一份定义。
+     两族：四季的非语义配色（底/界/省名/无数据），和风险色阶（编码病害种类多少）。
+
+     色阶为什么把季节写进令牌名（--map-spring-risk-1）而不是挂 [data-season]：
+     一是时序，renderAll() 首次跑的时候 data-season 才刚写上去，同一轮里读会读到上一季；
+     二是层叠，浅色/深色两套 [data-season] 规则特异性相同，跨文件时靠源码顺序分胜负，
+     静默失效。令牌名自带季节，继续从 documentElement 读，两个坑一起绕开。 */
+  --map-spring-area: #eaf5ec;
+  --map-spring-border: #ffffff;
+  --map-spring-label: #3d5a49;
+  --map-spring-nodata: #e4f1e7;
+  --map-summer-area: #e7f4ea;
+  --map-summer-border: #ffffff;
+  --map-summer-label: #37543f;
+  --map-summer-nodata: #dcefdf;
+  --map-autumn-area: #f7f1e2;
+  --map-autumn-border: #fffdf6;
+  --map-autumn-label: #5a4a2c;
+  --map-autumn-nodata: #f0e6cd;
+  --map-winter-area: #e9eff7;
+  --map-winter-border: #ffffff;
+  --map-winter-label: #3a4a5e;
+  --map-winter-nodata: #dfe8f3;
+  /* 通用风险色阶：四季令牌全缺时的兜底，也仍是 map.js 里 p.color 之外的最后一道防线。 */
+  --map-risk-1: #d7ede0;
+  --map-risk-2: #a8d8b9;
+  --map-risk-3: #6cbe8b;
+  --map-risk-4: #2f8f52;
+  --map-risk-5: #17663a;
+
+  /* 四季各自的风险色阶：色相跟着季节走，明度顺序永远不变 ——
+     1 档（病害种类最少）最浅，5 档（最多）最深。
+     编码的仍然是「深浅 = 多少」，色相只回答「这是哪一季」，
+     所以图例和地图读的是同一份令牌，两边不可能对不上。 */
+  --map-spring-risk-1: #e8f4e6;
+  --map-spring-risk-2: #b7dfb0;
+  --map-spring-risk-3: #7cc47a;
+  --map-spring-risk-4: #3f9147;
+  --map-spring-risk-5: #1d6b33;
+  --map-summer-risk-1: #e4f6ea;
+  --map-summer-risk-2: #a9e0c0;
+  --map-summer-risk-3: #5dbb8b;
+  --map-summer-risk-4: #248a5c;
+  --map-summer-risk-5: #0f6140;
+  --map-autumn-risk-1: #faf0dc;
+  --map-autumn-risk-2: #eccf9a;
+  --map-autumn-risk-3: #d9a955;
+  --map-autumn-risk-4: #a8722a;
+  --map-autumn-risk-5: #6f4614;
+  --map-winter-risk-1: #eef2f8;
+  --map-winter-risk-2: #c3d3e6;
+  --map-winter-risk-3: #8fa8c9;
+  --map-winter-risk-4: #55749b;
+  --map-winter-risk-5: #2f4a6e;
+
+  --font-sans: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB",
+    system-ui, -apple-system, "Segoe UI", sans-serif;
+  --nav-height: 64px;
+  --content-max: 1280px;
+}
+
+/* 深色支持：只覆盖令牌，组件样式无需改动。
+   凡是在组件里能当「底」「边」「字」用的令牌，这里都要给一份 —— 漏一个就是一档低对比。 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0f1a14;
+    --color-card: #16241c;
+    --color-fg: #d9f2e3;
+    --color-fg-body: #cfe3d8;
+    --color-muted: #1e2f26;
+    --color-muted-fg: #9db5a8;
+    --color-border: #2c4438;
+
+    /* 主色在深色下分成两个用途：当按钮底要够深（白字才够对比），
+       当文字/链接要够亮（深底上才够对比）—— 一个值兼顾不了两边。 */
+    --color-primary: #1f7a45;
+    --color-primary-hover: #279052;
+    --color-primary-soft: #14351f;
+    --color-primary-line: #2f5c42;
+    --color-primary-fg: #7cc79b;
+    --color-link: #45a874;
+    --color-ring: #45a874;
+
+    --color-destructive-soft: #3a1414;
+    --color-destructive-line: #6b2222;
+    --color-destructive-fg: #fca5a5;
+    --color-warning-soft: #3a2c0c;
+    --color-warning-line: #6b4f11;
+    --color-warning-fg: #fcd34d;
+    --color-info-soft: #0c2a3a;
+    --color-info-line: #1d4f6b;
+    --color-info-fg: #7dd3fc;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+
+    /* 深色地图：舞台本身已是近黑，省份跟着压暗、省名转浅，
+       风险色阶整体上移一档 —— 否则深底上还是一块亮绿，像贴了张白天的图。 */
+    --map-spring-area: #16281c;
+    --map-spring-border: #0f1a14;
+    --map-spring-label: #a8c4b1;
+    --map-spring-nodata: #1a2b20;
+    --map-summer-area: #16301e;
+    --map-summer-border: #0f1a14;
+    --map-summer-label: #a3c6ae;
+    --map-summer-nodata: #1b2f21;
+    --map-autumn-area: #2a2418;
+    --map-autumn-border: #16130c;
+    --map-autumn-label: #c9bb99;
+    --map-autumn-nodata: #241f14;
+    --map-winter-area: #17222e;
+    --map-winter-border: #121821;
+    --map-winter-label: #a9bccf;
+    --map-winter-nodata: #1a2430;
+    --map-risk-1: #1c3324;
+    --map-risk-2: #24503a;
+    --map-risk-3: #2f6f4c;
+    --map-risk-4: #3c8f62;
+    --map-risk-5: #4fae7c;
+
+    /* 四季风险色阶的深色版：极性翻过来 —— 病害种类越多越亮。
+       这不是跟浅色打架：浅色靠墨色加重量，深色只能靠亮度。
+       亮度压在 L* 约 30–70、相邻档 ΔL* ≥ 8，最深一档对舞台约 1.2:1、
+       最亮一档不超过 8:1 —— 照搬浅色的 #faf0dc / #eef2f8 会到 15:1 以上，刺眼。
+       数值由 tests/test_units.py 的对比度断言守住，改这里先跑测试。 */
+    --map-spring-risk-1: #1b3022;
+    --map-spring-risk-2: #294f37;
+    --map-spring-risk-3: #3d7a52;
+    --map-spring-risk-4: #57a06e;
+    --map-spring-risk-5: #6cba86;
+    --map-summer-risk-1: #17301f;
+    --map-summer-risk-2: #1f4f38;
+    --map-summer-risk-3: #2d7a58;
+    --map-summer-risk-4: #3fa37a;
+    --map-summer-risk-5: #4fb488;
+    --map-autumn-risk-1: #332612;
+    --map-autumn-risk-2: #523a1a;
+    --map-autumn-risk-3: #754f24;
+    --map-autumn-risk-4: #9c6a30;
+    --map-autumn-risk-5: #c99a55;
+    --map-winter-risk-1: #1b2733;
+    --map-winter-risk-2: #2b3f56;
+    --map-winter-risk-3: #405e7d;
+    --map-winter-risk-4: #5d84ab;
+    --map-winter-risk-5: #84a7cd;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* hidden 属性必须真的把元素藏起来。
+   只靠 UA 样式表那条 [hidden] { display: none } 是不够的 —— 作者样式里任何一条 display
+   （例如 .notice { display: flex }）都会把它盖掉，于是「已隐藏」的提示条变成一个
+   有边框、有底色、没有内容的空框。本项目已经踩到多处：图书库顶部的两条提示条
+   （用户报的「两个空白框框」）、诊断页的图片/音频预览条与录音状态、政策页顶部的服务状态条。
+   !important 在这里是标准做法：hidden 的语义就是「不显示」，没有任何一处代码需要
+   「带着 hidden 却仍然可见」这个反直觉状态。要显示就显式写 hidden = false ——
+   凡是「给元素填内容 + 想让它出现」的地方都必须带上这一句（见 layout.js 的降级条错误分支）。 */
+[hidden] {
+  display: none !important;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-fg-body);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  margin: 0 0 var(--space-3);
+  color: var(--color-fg);
+  line-height: 1.35;
+  font-weight: 600;
+}
+/* 层级靠「字号 + 字重」两个维度拉开，不再是一律 600 只靠字号 */
+h1 { font-size: var(--text-2xl); font-weight: 600; }
+h2 { font-size: var(--text-xl); font-weight: 600; }
+h3 { font-size: var(--text-lg); font-weight: 600; }
+h4 { font-size: var(--text-md); font-weight: 500; }
+
+p { margin: 0 0 var(--space-3); }
+a { color: var(--color-link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+img { max-width: 100%; display: block; }
+
+/* 键盘可达性：统一的可见焦点环 */
+:focus-visible {
+  outline: 3px solid var(--color-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* 尊重减少动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------------------------------------------------------------- 按钮 */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 44px;              /* 触控目标 ≥44px */
+  padding: 0 var(--space-5);
+  font: inherit;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition),
+    transform var(--transition), box-shadow var(--transition);
+}
+.btn:hover:not(:disabled) { background: var(--color-muted); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled,
+.btn[aria-busy="true"] { opacity: 0.55; cursor: not-allowed; }
+
+.btn--primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+.btn--primary:hover:not(:disabled) { background: var(--color-primary-hover); }
+
+.btn--outline {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-fg);
+}
+.btn--outline:hover:not(:disabled) { background: var(--color-primary-soft); border-color: var(--color-primary); }
+
+.btn--ghost { background: transparent; border-color: transparent; color: var(--color-link); }
+.btn--ghost:hover:not(:disabled) { background: var(--color-primary-soft); }
+
+.btn--lg { min-height: 52px; padding: 0 var(--space-7); font-size: var(--text-md); }
+/* 小号按钮只在字号/内边距上小，热区仍然是 44px —— 手机触屏按得中 */
+.btn--sm { min-height: 44px; padding: 0 var(--space-4); font-size: var(--text-sm); }
+.btn--block { width: 100%; }
+
+/* 按钮内联加载指示 */
+.btn .spinner { width: 18px; height: 18px; border-width: 2px; }
+
+.spinner {
+  display: inline-block;
+  width: 28px; height: 28px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------------------------------------------------------------- 表单 */
+
+.form-field { margin-bottom: var(--space-4); }
+
+.form-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: 500;
+  color: var(--color-fg);
+  font-size: var(--text-sm);
+}
+.form-label .required { color: var(--color-destructive); margin-left: 2px; }
+
+.form-hint { display: block; margin-top: var(--space-1); font-size: var(--text-xs); color: var(--color-muted-fg); }
+.form-error { display: block; margin-top: var(--space-1); font-size: var(--text-xs); color: var(--color-destructive); font-weight: 500; }
+
+.input, .select, .textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+  font: inherit;
+  color: var(--color-fg-body);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition);
+}
+.input:hover, .select:hover, .textarea:hover { border-color: var(--color-primary-line); }
+/* 焦点用实心描边环，不用半透明光晕 —— 光晕在深色底上几乎看不见 */
+.input:focus-visible, .select:focus-visible, .textarea:focus-visible {
+  outline: 3px solid var(--color-ring);
+  outline-offset: 1px;
+  border-color: var(--color-primary);
+}
+.textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
+
+/* ---------------------------------------------------------------- 卡片 / 徽标 */
+
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: 1.6;
+  border-radius: 999px;          /* 真正的徽标才用胶囊形 */
+  background: var(--color-muted);
+  color: var(--color-muted-fg);
+  white-space: nowrap;
+}
+.badge--primary { background: var(--color-primary-soft); color: var(--color-primary-fg); }
+.badge--danger { background: var(--color-destructive-soft); color: var(--color-destructive-fg); }
+.badge--warning { background: var(--color-warning-soft); color: var(--color-warning-fg); }
+.badge--info { background: var(--color-info-soft); color: var(--color-info-fg); }
+
+/* ---------------------------------------------------------------- 提示条 */
+
+.notice {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-muted);
+  font-size: var(--text-sm);
+}
+.notice__icon { flex: 0 0 auto; margin-top: 2px; color: inherit; opacity: 0.85; }
+.notice--info { background: var(--color-info-soft); border-color: var(--color-info-line); color: var(--color-info-fg); }
+.notice--warning { background: var(--color-warning-soft); border-color: var(--color-warning-line); color: var(--color-warning-fg); }
+.notice--danger { background: var(--color-destructive-soft); border-color: var(--color-destructive-line); color: var(--color-destructive-fg); }
+.notice--primary { background: var(--color-primary-soft); border-color: var(--color-primary-line); color: var(--color-primary-fg); }
+.notice a { color: inherit; text-decoration: underline; }
+
+/* ---------------------------------------------------------------- 骨架屏 */
+
+.skeleton {
+  background: var(--color-muted);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+/* ---------------------------------------------------------------- 轻提示 */
+
+#toast-host {
+  position: fixed;
+  z-index: 2000;
+  right: var(--space-5);
+  bottom: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: min(420px, calc(100vw - 32px));
+}
+.toast {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  animation: toast-in var(--transition);
+}
+/* 状态靠「底色 + 文字色」表达。原先那根 4px 左边条是纯装饰，
+   而且只靠颜色区分状态，对色觉障碍用户等于没有信号。 */
+.toast--error { background: var(--color-destructive-soft); border-color: var(--color-destructive-line); }
+.toast--error .toast__text { color: var(--color-destructive-fg); }
+.toast--warning { background: var(--color-warning-soft); border-color: var(--color-warning-line); }
+.toast--warning .toast__text { color: var(--color-warning-fg); }
+.toast__text { font-size: var(--text-sm); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ---------------------------------------------------------------- 工具类 */
+
+.stack > * + * { margin-top: var(--space-4); }
+.row { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
+.row--between { justify-content: space-between; }
+.grow { flex: 1 1 auto; }
+.text-muted { color: var(--color-muted-fg); }
+.text-sm { font-size: var(--text-sm); }
+.text-center { text-align: center; }
+.mt-0 { margin-top: 0; }
+.mb-0 { margin-bottom: 0; }

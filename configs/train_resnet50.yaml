@@ -1,0 +1,76 @@
+# ResNet50 训练配置（任务 2.2 / 2.3 / 2.4）
+# 目标环境：RTX 5060 Laptop 8GB 显存，271 类、10165 张、类间严重不均衡（多数类 10 张，10 个类 500~1122 张）
+version: 1
+
+model:
+  arch: resnet50
+  pretrained: true                 # 加载 ImageNet 预训练权重（优先读 models/pretrained 本地缓存）
+  num_classes: 271                 # 由 data/label_map.json 的 num_classes 覆盖，此处仅为缺省
+  input_size: 224
+  dropout: 0.3                     # 替换分类头时插入的 Dropout
+
+data:
+  train_csv: data/splits/train.csv
+  val_csv: data/splits/val.csv
+  test_csv: data/splits/test.csv
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+  # 类间极不均衡：用 WeightedRandomSampler（权重 ∝ 1/类频次）抵消长尾大类的影响。
+  # 若关闭，模型会严重偏向 10 个样本量 500+ 的大类，261 个小类几乎全错。
+  weighted_sampler: true
+  class_weight_loss: false         # 与 weighted_sampler 二选一即可，默认不叠加
+
+augment:                           # 任务 1.3 数据增强 Pipeline
+  random_resized_crop:
+    size: 224
+    scale: [0.7, 1.0]
+    ratio: [0.8, 1.25]
+  horizontal_flip: 0.5
+  rotation_degrees: 15
+  color_jitter:
+    brightness: 0.25
+    contrast: 0.25
+    saturation: 0.25
+    hue: 0.05
+  gaussian_noise:
+    enabled: true
+    sigma: 0.03                    # 加性高斯噪声标准差（0~1 张量尺度）
+    p: 0.3
+
+train:
+  epochs: 40
+  batch_size: 32                   # 8GB 显存下 ResNet50@224 + AMP 的安全值
+  amp: true                        # torch.amp.autocast(float16) + GradScaler，速度近翻倍
+  optimizer: adamw
+  weight_decay: 0.05
+  lr_head: 0.001                   # 新初始化的分类头用大学习率
+  lr_backbone: 0.0001              # 预训练骨干用小学习率，避免破坏特征
+  scheduler: cosine
+  warmup_epochs: 3
+  loss: cross_entropy
+  label_smoothing: 0.1             # 小样本 + 不均衡下的过拟合抑制
+  grad_clip_norm: 5.0
+  early_stop:
+    enabled: true
+    monitor: val_acc
+    mode: max
+    patience: 7
+
+eval:
+  batch_size: 64
+  # 271 类混淆矩阵过大，按类归一化并抽样刻度，避免标签糊成一团
+  confusion_matrix:
+    normalize: true
+    figsize: [40, 40]
+    dpi: 120
+    tick_step: 1
+
+output:
+  checkpoint: models/checkpoints/best_resnet50.pth
+  last_checkpoint: models/checkpoints/last_resnet50.pth
+  log_csv: outputs/logs/train_resnet50.csv
+  tensorboard_dir: outputs/logs/tensorboard_resnet50
+  confusion_matrix: outputs/figures/confusion_matrix_resnet50.png
+  report: outputs/reports/eval_resnet50.json
+  registry: models/registry.json

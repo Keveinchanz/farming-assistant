@@ -1,0 +1,332 @@
+/* ==========================================================================
+   全局布局：顶部固定横向导航栏 + 主体内容区 + 底部信息栏（任务 5.1）
+   ========================================================================== */
+
+/* 顶栏吸顶、用不透明底。
+   原先的 backdrop-filter 玻璃效果在这个 92% 不透明度下几乎看不出区别，
+   却让底下的地图透上来影响读字 —— 受众有中老年农户，手机上还要在强光下看。
+
+   **position: sticky 而不是 fixed**：顶栏折行后高度会变（窄屏上 2–3 行，
+   比 --nav-height 高），fixed 是脱离文档流的，正文只能靠手写的 padding-top
+   去躲它 —— 一折行就估不准，内容被压住。sticky 仍在文档流里，
+   正文自然接在它下面，折几行都不会被盖住；视觉上同样吸顶。 */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  min-height: var(--nav-height);
+  background: var(--color-card);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.site-header__inner {
+  /* 顶栏**不跟随正文的居中上限**（原来这里是 max-width: var(--content-max)）。
+     2560px 宽的屏上，跟着正文一起居中意味着顶栏内容被压在正中 1280px 里、
+     左右各空约 640px —— 用户报的「导航栏左右侧还有大片空白」就是这一段，
+     与导航入口怎么摆无关。现在顶栏铺满整屏，只留左右各 24px 内边距。
+     令牌 --content-max 本身不动：正文 .page 仍在用它居中。 */
+  max-width: none;
+  margin: 0 auto;
+  min-height: var(--nav-height);
+  padding: 0 var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+/* ---- 品牌区 ---- */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 0 0 auto;
+  min-height: 44px;              /* 触控目标 ≥44px */
+  color: var(--color-fg);
+  text-decoration: none;
+}
+.brand:hover { text-decoration: none; }
+.brand__mark {
+  display: grid;
+  place-items: center;
+  width: 40px; height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);   /* 单色实底：不再用 primary→secondary 的渐变方块 */
+  color: var(--color-on-primary);
+  flex: 0 0 auto;
+}
+.brand__text { display: flex; flex-direction: column; line-height: 1.2; }
+.brand__name { font-weight: 600; font-size: var(--text-base); color: var(--color-fg); }
+.brand__sub { font-size: var(--text-xs); color: var(--color-muted-fg); }
+
+/* ---- 横向菜单 ---- */
+/* 顶栏三段：品牌区最左、导航入口位于中间偏右、方言选择器最右。
+   flex-grow 必须是 0 —— 原来写的是 flex: 1 1 auto，导航条会把剩余宽度全吃掉，
+   自动外边距就没有富余空间可推，导航入口其实是紧贴着标题的。
+   margin-inline: auto（两侧都自动）让这一组落在「品牌区右缘」与「方言选择器左缘」
+   之间的**正中间** —— 用户的说法是「靠中间偏右，不要紧靠方言」。品牌区比方言选择器
+   宽得多，所以这段区域的中心天然落在整页中线右侧，正好是「中间偏右」。
+   不用 justify-content: center 排中间：内容溢出时它会把「首页」裁到滚动够不着的左侧；
+   而 auto 外边距在空间不足时会退化成 0，导航条照常内部滚动，没有这个问题。
+   min-width: 0 + 内部滚动：顶栏在 900–1150px 这段（品牌区文字很长）会让导航收缩后
+   自己滚，而不是把 .site-header__inner 撑破、给整页拉出横向滚动条。
+   想让它整体更靠右，把 margin-inline: auto 换成
+   margin-left: auto; margin-right: var(--space-7); 即可。 */
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 0 1 auto;
+  margin-inline: auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.site-nav::-webkit-scrollbar { display: none; }
+
+.site-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;              /* 触控目标 ≥44px */
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  color: var(--color-fg-body);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+.site-nav__link:hover { background: var(--color-primary-soft); color: var(--color-primary-fg); text-decoration: none; }
+.site-nav__link[aria-current="page"] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.site-nav__link[aria-current="page"]:hover { background: var(--color-primary-hover); color: var(--color-on-primary); }
+
+/* ---- 方言切换（导航最右侧） ---- */
+.dialect-picker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+}
+.dialect-picker__label { font-size: var(--text-xs); color: var(--color-muted-fg); white-space: nowrap; }
+.dialect-picker .select {
+  width: auto;
+  min-width: 132px;
+  min-height: 44px;              /* 触控目标 ≥44px */
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+/* ---- 用户名菜单（阶段 7，导航最右侧、紧挨方言选择器） ----
+   未登录时这里是 [登录][注册] 两个按钮；已登录时是头像 + 昵称 + 下拉。
+   头像用「昵称首字」而不是图片：项目里没有任何头像资源，而给每个用户生成一张图
+   是另一件事。首字母圆圈零资源、零请求、任何昵称都能用。
+   圆角用 50% 而不是 999px —— 项目规则只允许 .badge 用那一个胶囊圆角。 */
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+  position: relative;            /* 下拉层的定位基准 */
+}
+.user-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;              /* 触控目标 ≥44px */
+  padding: 0 var(--space-3);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-fg-body);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.user-menu__trigger:hover { background: var(--color-primary-soft); color: var(--color-primary-fg); }
+
+.user-menu__avatar {
+  display: grid;
+  place-items: center;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+.user-menu__avatar--lg { width: 48px; height: 48px; font-size: var(--text-lg); }
+.user-menu__name {
+  max-width: 7em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-menu__list {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 1001;                 /* 高于 .site-header 的 1000 */
+  min-width: 184px;
+  padding: var(--space-2);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+.user-menu__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+}
+.user-menu__head span { color: var(--color-muted-fg); font-size: var(--text-xs); }
+.user-menu__item {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-fg-body);
+  text-align: left;
+  text-decoration: none;
+  line-height: 44px;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.user-menu__item:hover { background: var(--color-primary-soft); color: var(--color-primary-fg); text-decoration: none; }
+
+/* ---- 主体 ---- */
+.page {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  /* 顶栏已改 sticky（在文档流里），正文自然接在它下面，不再需要按 --nav-height 手工让位 */
+  padding: var(--space-6) var(--space-5) var(--space-8);
+}
+.page--flush { padding-left: 0; padding-right: 0; max-width: none; }
+
+.page-head { margin-bottom: var(--space-5); }
+.page-head__title { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); }
+.page-head__desc { color: var(--color-muted-fg); max-width: 76ch; }
+
+.section { margin-top: var(--space-6); }
+.section__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-4);
+}
+
+/* ---- 底部信息栏 ---- */
+.site-footer {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-card);
+  padding: var(--space-6) var(--space-5);
+  margin-top: var(--space-8);
+}
+.site-footer__inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-6);
+  justify-content: space-between;
+  font-size: var(--text-sm);
+  color: var(--color-muted-fg);
+}
+.site-footer__group { display: flex; flex-direction: column; gap: var(--space-1); }
+.site-footer strong { color: var(--color-fg); font-weight: 600; }
+.site-footer__tags { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+/* ---- 全局降级提示条（三处能力走 Mock 时显示） ---- */
+.degraded-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+  border-radius: var(--radius);
+  /* 颜色一律走令牌：原先这里硬编码了浅色模式的值，
+     深色下就变成深底深字（≈1.8:1），整条读不了。 */
+  background: var(--color-warning-soft);
+  border: 1px solid var(--color-warning-line);
+  color: var(--color-warning-fg);
+  font-size: var(--text-sm);
+}
+.degraded-bar__tags { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+/* --------------------------------------------------------------------------
+   响应式：把导航折成两行（品牌+方言+用户名 / 五个导航入口）
+   不引入汉堡菜单 —— 任务规范要求导航「横向展开」，折行比汉堡更贴合
+
+   断点取 1150 而不是原来的 900：品牌名 14 个汉字很长，900–1150px 这段五个入口
+   会被挤到只剩 .site-nav 的内部滚动，而滚动条被完全隐藏
+   （scrollbar-width: none + ::-webkit-scrollbar{display:none}）——
+   链接被悄悄裁掉却没有任何可见提示，用户报的「缩小窗口导航栏显示不全」正是这一段。
+   宁可顶栏多占一行，也不要这种「看不见的丢失」。
+   （.site-nav 自身那 4 条声明保持原样，单元测试逐条锁着。）
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1150px) {
+  .site-header__inner { flex-wrap: wrap; padding-top: var(--space-2); padding-bottom: var(--space-2); row-gap: var(--space-2); }
+  .brand { order: 1; }
+  .dialect-picker { order: 2; margin-left: auto; }
+  /* 折行后第一行是「品牌 + 方言 + 用户名」，第二行才是五个导航入口（阶段 7 起） */
+  .user-menu { order: 3; }
+  .site-nav { order: 4; flex-basis: 100%; }
+  /* 入口左右内边距收紧一档，五个才排得下这一行 */
+  .site-nav__link { padding: 0 var(--space-2); }
+  /* 折行后顶栏比 --nav-height 高 —— 但顶栏是 sticky（在文档流里），
+     正文自然就接在它下面，这里不再需要按 --nav-height 手工让位。 */
+}
+
+@media (max-width: 520px) {
+  .page { padding-left: var(--space-4); padding-right: var(--space-4); }
+  .brand__sub { display: none; }
+  .dialect-picker__label { display: none; }
+  .page-head__title { flex-wrap: wrap; }
+}
+
+/* --------------------------------------------------------------------------
+   响应式续（本轮）：手机首行与超窄屏的导航入口
+   新媒体查询一律追加到文件末尾 —— 单元测试的 _rule_body 取的是「第一次出现」
+   的规则体，在文件更靠前处再写一遍同名选择器会改变那些锁的判定对象。
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  /* 手机上第一行要同时容下「品牌 + 方言 + 用户名」。品牌名是 14 个汉字，
+     360px 屏上一个人就占满一行 —— 让品牌区可收缩、站名允许折行，
+     其余控件才挤得上来（品牌文案本身不动，只改它的换行行为）。 */
+  .brand { flex: 1 1 auto; min-width: 0; }
+  .brand__text { min-width: 0; }
+  .brand__name { white-space: normal; overflow-wrap: anywhere; line-height: 1.15; }
+  /* 这一档宽度不足以同时放下「方言」二字标签、副标题与其余控件：
+     副标题（「病虫害识别、方言服务、知识图书库、惠农政策」）比站名还宽，
+     它一在，品牌区就撑到 448px，把登录/注册挤下一行。两样都省掉，
+     控件间距再收紧一档，顶栏就从三行回到两行。 */
+  .brand__sub { display: none; }
+  .dialect-picker__label { display: none; }
+  .site-header__inner { gap: var(--space-2) var(--space-3); }
+}
+
+@media (max-width: 420px) {
+  /* 360px 上下，五个入口一行排不下 —— 让导航自己折行（比在隐藏的滚动区里
+     被裁掉强），并再降一级字号（字号必须走 --text-* 令牌）。 */
+  .site-nav { flex-wrap: wrap; justify-content: center; }
+  .site-nav__link { padding: 0 var(--space-2); font-size: var(--text-xs); }
+}

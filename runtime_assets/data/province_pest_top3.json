@@ -1,0 +1,4882 @@
+{
+  "version": 1,
+  "demo_data": true,
+  "disclaimer": "全国维度趋势取自全国农技中心《2026 年全国农作物病虫害发生趋势预报》，逐省分布按各省主要作物与病原类型的季节性规律细化。",
+  "source": "全国农技中心《2026 年全国农作物病虫害发生趋势预报》(全国维度) + 各省作物分布推导",
+  "generated_from": "data/label_map.json（病害名称与知识库条目一一对应）",
+  "seasons": [
+    {
+      "key": "spring",
+      "name": "春"
+    },
+    {
+      "key": "summer",
+      "name": "夏"
+    },
+    {
+      "key": "autumn",
+      "name": "秋"
+    },
+    {
+      "key": "winter",
+      "name": "冬"
+    }
+  ],
+  "provinces": [
+    {
+      "name": "北京市",
+      "adcode": "110000",
+      "short_name": "北京",
+      "crops": [
+        "大白菜",
+        "番茄",
+        "黄瓜",
+        "苹果"
+      ],
+      "threat_scope": 34,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          },
+          {
+            "rank": 3,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          },
+          {
+            "rank": 3,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          },
+          {
+            "rank": 3,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "大白菜缺镁病",
+            "crop": "大白菜",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_13"
+          },
+          {
+            "rank": 2,
+            "pest": "苹果小叶病",
+            "crop": "苹果",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_175"
+          },
+          {
+            "rank": 3,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          }
+        ]
+      }
+    },
+    {
+      "name": "天津市",
+      "adcode": "120000",
+      "short_name": "天津",
+      "crops": [
+        "大白菜",
+        "黄瓜",
+        "番茄",
+        "辣椒"
+      ],
+      "threat_scope": 33,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          },
+          {
+            "rank": 3,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          },
+          {
+            "rank": 3,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          },
+          {
+            "rank": 3,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "大白菜缺镁病",
+            "crop": "大白菜",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_13"
+          },
+          {
+            "rank": 2,
+            "pest": "辣椒脐腐病",
+            "crop": "辣椒",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_235"
+          },
+          {
+            "rank": 3,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          }
+        ]
+      }
+    },
+    {
+      "name": "河北省",
+      "adcode": "130000",
+      "short_name": "河北",
+      "crops": [
+        "小麦",
+        "玉米",
+        "大白菜",
+        "苹果",
+        "棉花"
+      ],
+      "threat_scope": 65,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 2,
+            "pest": "大白菜缺镁病",
+            "crop": "大白菜",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_13"
+          },
+          {
+            "rank": 3,
+            "pest": "苹果小叶病",
+            "crop": "苹果",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_175"
+          }
+        ]
+      }
+    },
+    {
+      "name": "山西省",
+      "adcode": "140000",
+      "short_name": "山西",
+      "crops": [
+        "玉米",
+        "小麦",
+        "谷子",
+        "苹果",
+        "马铃薯"
+      ],
+      "threat_scope": 49,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 2,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 3,
+            "pest": "谷子叶枯病",
+            "crop": "谷子",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_217"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 2,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 3,
+            "pest": "谷子叶枯病",
+            "crop": "谷子",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_217"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 2,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 3,
+            "pest": "谷子叶枯病",
+            "crop": "谷子",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_217"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 2,
+            "pest": "苹果小叶病",
+            "crop": "苹果",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_175"
+          },
+          {
+            "rank": 3,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          }
+        ]
+      }
+    },
+    {
+      "name": "内蒙古自治区",
+      "adcode": "150000",
+      "short_name": "内蒙古",
+      "crops": [
+        "马铃薯",
+        "向日葵",
+        "玉米",
+        "小麦",
+        "谷子"
+      ],
+      "threat_scope": 41,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 2,
+            "pest": "向日葵黑斑病",
+            "crop": "向日葵",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_5"
+          },
+          {
+            "rank": 3,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 2,
+            "pest": "向日葵细菌性叶斑病",
+            "crop": "向日葵",
+            "pathogen_type": "细菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高温高湿、暴雨或灌溉后伤口易侵染",
+            "library_id": "lib_pest_4"
+          },
+          {
+            "rank": 3,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 2,
+            "pest": "向日葵黑斑病",
+            "crop": "向日葵",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_5"
+          },
+          {
+            "rank": 3,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 2,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 3,
+            "pest": "向日葵黑斑病",
+            "crop": "向日葵",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_5"
+          }
+        ]
+      }
+    },
+    {
+      "name": "辽宁省",
+      "adcode": "210000",
+      "short_name": "辽宁",
+      "crops": [
+        "玉米",
+        "大豆",
+        "花生",
+        "苹果",
+        "马铃薯"
+      ],
+      "threat_scope": 66,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 2,
+            "pest": "大豆霜霉病",
+            "crop": "大豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_35"
+          },
+          {
+            "rank": 3,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 2,
+            "pest": "大豆霜霉病",
+            "crop": "大豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_35"
+          },
+          {
+            "rank": 3,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 2,
+            "pest": "大豆霜霉病",
+            "crop": "大豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_35"
+          },
+          {
+            "rank": 3,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 2,
+            "pest": "大豆日烧病",
+            "crop": "大豆",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_19"
+          },
+          {
+            "rank": 3,
+            "pest": "花生缺磷症",
+            "crop": "花生",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_155"
+          }
+        ]
+      }
+    },
+    {
+      "name": "吉林省",
+      "adcode": "220000",
+      "short_name": "吉林",
+      "crops": [
+        "玉米",
+        "大豆",
+        "马铃薯",
+        "高粱"
+      ],
+      "threat_scope": 54,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 2,
+            "pest": "大豆霜霉病",
+            "crop": "大豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_35"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 2,
+            "pest": "大豆霜霉病",
+            "crop": "大豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_35"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 2,
+            "pest": "大豆霜霉病",
+            "crop": "大豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_35"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 2,
+            "pest": "大豆日烧病",
+            "crop": "大豆",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_19"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ]
+      }
+    },
+    {
+      "name": "黑龙江省",
+      "adcode": "230000",
+      "short_name": "黑龙江",
+      "crops": [
+        "大豆",
+        "玉米",
+        "马铃薯",
+        "小麦"
+      ],
+      "threat_scope": 53,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "大豆霜霉病",
+            "crop": "大豆",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_35"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "大豆霜霉病",
+            "crop": "大豆",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_35"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "大豆霜霉病",
+            "crop": "大豆",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_35"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "大豆日烧病",
+            "crop": "大豆",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_19"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ]
+      }
+    },
+    {
+      "name": "上海市",
+      "adcode": "310000",
+      "short_name": "上海",
+      "crops": [
+        "大白菜",
+        "菠菜",
+        "黄瓜",
+        "番茄"
+      ],
+      "threat_scope": 25,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "菠菜黑斑病",
+            "crop": "菠菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_191"
+          },
+          {
+            "rank": 3,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "菠菜黑斑病",
+            "crop": "菠菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_191"
+          },
+          {
+            "rank": 3,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "菠菜黑斑病",
+            "crop": "菠菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_191"
+          },
+          {
+            "rank": 3,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "大白菜缺镁病",
+            "crop": "大白菜",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_13"
+          },
+          {
+            "rank": 2,
+            "pest": "菠菜黑斑病",
+            "crop": "菠菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_191"
+          },
+          {
+            "rank": 3,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          }
+        ]
+      }
+    },
+    {
+      "name": "江苏省",
+      "adcode": "320000",
+      "short_name": "江苏",
+      "crops": [
+        "小麦",
+        "玉米",
+        "大白菜",
+        "黄瓜",
+        "番茄"
+      ],
+      "threat_scope": 57,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 2,
+            "pest": "大白菜缺镁病",
+            "crop": "大白菜",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_13"
+          },
+          {
+            "rank": 3,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          }
+        ]
+      }
+    },
+    {
+      "name": "浙江省",
+      "adcode": "330000",
+      "short_name": "浙江",
+      "crops": [
+        "番茄",
+        "黄瓜",
+        "辣椒",
+        "草莓",
+        "桑树"
+      ],
+      "threat_scope": 28,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          },
+          {
+            "rank": 2,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          },
+          {
+            "rank": 2,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          },
+          {
+            "rank": 2,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "辣椒脐腐病",
+            "crop": "辣椒",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_235"
+          },
+          {
+            "rank": 2,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          },
+          {
+            "rank": 3,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          }
+        ]
+      }
+    },
+    {
+      "name": "安徽省",
+      "adcode": "340000",
+      "short_name": "安徽",
+      "crops": [
+        "小麦",
+        "玉米",
+        "大豆",
+        "辣椒",
+        "大白菜"
+      ],
+      "threat_scope": 72,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "大豆霜霉病",
+            "crop": "大豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_35"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "大豆霜霉病",
+            "crop": "大豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_35"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "大豆霜霉病",
+            "crop": "大豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_35"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 2,
+            "pest": "大豆日烧病",
+            "crop": "大豆",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_19"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒脐腐病",
+            "crop": "辣椒",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_235"
+          }
+        ]
+      }
+    },
+    {
+      "name": "福建省",
+      "adcode": "350000",
+      "short_name": "福建",
+      "crops": [
+        "甘薯",
+        "花生",
+        "辣椒",
+        "香椿",
+        "蓝莓"
+      ],
+      "threat_scope": 39,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "甘薯缺镁症",
+            "crop": "甘薯",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_127"
+          },
+          {
+            "rank": 2,
+            "pest": "花生缺磷症",
+            "crop": "花生",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_155"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒脐腐病",
+            "crop": "辣椒",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_235"
+          }
+        ]
+      }
+    },
+    {
+      "name": "江西省",
+      "adcode": "360000",
+      "short_name": "江西",
+      "crops": [
+        "辣椒",
+        "甘薯",
+        "花生",
+        "桑树",
+        "芝麻"
+      ],
+      "threat_scope": 39,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 3,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 3,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 3,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "辣椒脐腐病",
+            "crop": "辣椒",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_235"
+          },
+          {
+            "rank": 2,
+            "pest": "甘薯缺镁症",
+            "crop": "甘薯",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_127"
+          },
+          {
+            "rank": 3,
+            "pest": "花生缺磷症",
+            "crop": "花生",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_155"
+          }
+        ]
+      }
+    },
+    {
+      "name": "山东省",
+      "adcode": "370000",
+      "short_name": "山东",
+      "crops": [
+        "小麦",
+        "玉米",
+        "花生",
+        "苹果",
+        "大白菜",
+        "马铃薯"
+      ],
+      "threat_scope": 71,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 2,
+            "pest": "花生缺磷症",
+            "crop": "花生",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_155"
+          },
+          {
+            "rank": 3,
+            "pest": "苹果小叶病",
+            "crop": "苹果",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_175"
+          }
+        ]
+      }
+    },
+    {
+      "name": "河南省",
+      "adcode": "410000",
+      "short_name": "河南",
+      "crops": [
+        "小麦",
+        "玉米",
+        "花生",
+        "大豆",
+        "辣椒"
+      ],
+      "threat_scope": 74,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 2,
+            "pest": "花生缺磷症",
+            "crop": "花生",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_155"
+          },
+          {
+            "rank": 3,
+            "pest": "大豆日烧病",
+            "crop": "大豆",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_19"
+          }
+        ]
+      }
+    },
+    {
+      "name": "湖北省",
+      "adcode": "420000",
+      "short_name": "湖北",
+      "crops": [
+        "小麦",
+        "玉米",
+        "棉花",
+        "芝麻",
+        "辣椒"
+      ],
+      "threat_scope": 55,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "棉花炭疽病",
+            "crop": "棉花",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_69"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "棉花炭疽病",
+            "crop": "棉花",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_69"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "棉花炭疽病",
+            "crop": "棉花",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_69"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 2,
+            "pest": "棉花缺钾症",
+            "crop": "棉花",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_72"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒脐腐病",
+            "crop": "辣椒",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_235"
+          }
+        ]
+      }
+    },
+    {
+      "name": "湖南省",
+      "adcode": "430000",
+      "short_name": "湖南",
+      "crops": [
+        "辣椒",
+        "甘薯",
+        "玉米",
+        "桑树",
+        "芝麻"
+      ],
+      "threat_scope": 47,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 3,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 3,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 3,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "辣椒脐腐病",
+            "crop": "辣椒",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_235"
+          },
+          {
+            "rank": 2,
+            "pest": "甘薯缺镁症",
+            "crop": "甘薯",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_127"
+          },
+          {
+            "rank": 3,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          }
+        ]
+      }
+    },
+    {
+      "name": "广东省",
+      "adcode": "440000",
+      "short_name": "广东",
+      "crops": [
+        "甘薯",
+        "花生",
+        "辣椒",
+        "豇豆",
+        "桑树"
+      ],
+      "threat_scope": 43,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "甘薯缺镁症",
+            "crop": "甘薯",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_127"
+          },
+          {
+            "rank": 2,
+            "pest": "花生缺磷症",
+            "crop": "花生",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_155"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒脐腐病",
+            "crop": "辣椒",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_235"
+          }
+        ]
+      }
+    },
+    {
+      "name": "广西壮族自治区",
+      "adcode": "450000",
+      "short_name": "广西",
+      "crops": [
+        "甘薯",
+        "花生",
+        "豇豆",
+        "桑树",
+        "萝卜"
+      ],
+      "threat_scope": 41,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          },
+          {
+            "rank": 3,
+            "pest": "豇豆斑枯病",
+            "crop": "豇豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_221"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          },
+          {
+            "rank": 3,
+            "pest": "豇豆斑枯病",
+            "crop": "豇豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_221"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          },
+          {
+            "rank": 3,
+            "pest": "豇豆斑枯病",
+            "crop": "豇豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_221"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "甘薯缺镁症",
+            "crop": "甘薯",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_127"
+          },
+          {
+            "rank": 2,
+            "pest": "花生缺磷症",
+            "crop": "花生",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_155"
+          },
+          {
+            "rank": 3,
+            "pest": "豇豆斑枯病",
+            "crop": "豇豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_221"
+          }
+        ]
+      }
+    },
+    {
+      "name": "海南省",
+      "adcode": "460000",
+      "short_name": "海南",
+      "crops": [
+        "甘薯",
+        "豇豆",
+        "辣椒",
+        "甜瓜",
+        "萝卜"
+      ],
+      "threat_scope": 34,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "豇豆斑枯病",
+            "crop": "豇豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_221"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "豇豆斑枯病",
+            "crop": "豇豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_221"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "豇豆斑枯病",
+            "crop": "豇豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_221"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "甘薯缺镁症",
+            "crop": "甘薯",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_127"
+          },
+          {
+            "rank": 2,
+            "pest": "辣椒脐腐病",
+            "crop": "辣椒",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_235"
+          },
+          {
+            "rank": 3,
+            "pest": "豇豆斑枯病",
+            "crop": "豇豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_221"
+          }
+        ]
+      }
+    },
+    {
+      "name": "重庆市",
+      "adcode": "500000",
+      "short_name": "重庆",
+      "crops": [
+        "辣椒",
+        "甘薯",
+        "玉米",
+        "生姜",
+        "萝卜"
+      ],
+      "threat_scope": 53,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 3,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 3,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 3,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "辣椒脐腐病",
+            "crop": "辣椒",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_235"
+          },
+          {
+            "rank": 2,
+            "pest": "甘薯缺镁症",
+            "crop": "甘薯",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_127"
+          },
+          {
+            "rank": 3,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          }
+        ]
+      }
+    },
+    {
+      "name": "四川省",
+      "adcode": "510000",
+      "short_name": "四川",
+      "crops": [
+        "辣椒",
+        "玉米",
+        "甘薯",
+        "生姜",
+        "萝卜"
+      ],
+      "threat_scope": 53,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "辣椒脐腐病",
+            "crop": "辣椒",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_235"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 3,
+            "pest": "甘薯缺镁症",
+            "crop": "甘薯",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_127"
+          }
+        ]
+      }
+    },
+    {
+      "name": "贵州省",
+      "adcode": "520000",
+      "short_name": "贵州",
+      "crops": [
+        "辣椒",
+        "玉米",
+        "马铃薯",
+        "生姜",
+        "甘薯"
+      ],
+      "threat_scope": 48,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "辣椒脐腐病",
+            "crop": "辣椒",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_235"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 3,
+            "pest": "甘薯缺镁症",
+            "crop": "甘薯",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_127"
+          }
+        ]
+      }
+    },
+    {
+      "name": "云南省",
+      "adcode": "530000",
+      "short_name": "云南",
+      "crops": [
+        "辣椒",
+        "玉米",
+        "马铃薯",
+        "烟草",
+        "生姜"
+      ],
+      "threat_scope": 48,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "辣椒叶枯病",
+            "crop": "辣椒",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_229"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "辣椒脐腐病",
+            "crop": "辣椒",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_235"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ]
+      }
+    },
+    {
+      "name": "西藏自治区",
+      "adcode": "540000",
+      "short_name": "西藏",
+      "crops": [
+        "小麦",
+        "马铃薯",
+        "甘蓝",
+        "萝卜"
+      ],
+      "threat_scope": 21,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 3,
+            "pest": "萝卜黑斑病",
+            "crop": "萝卜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_197"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 3,
+            "pest": "甘蓝药害",
+            "crop": "甘蓝",
+            "pathogen_type": "药害肥害",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "施药施肥后 3～7 天集中显现",
+            "library_id": "lib_pest_119"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 3,
+            "pest": "萝卜黑斑病",
+            "crop": "萝卜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_197"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 3,
+            "pest": "萝卜黑斑病",
+            "crop": "萝卜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_197"
+          }
+        ]
+      }
+    },
+    {
+      "name": "陕西省",
+      "adcode": "610000",
+      "short_name": "陕西",
+      "crops": [
+        "小麦",
+        "玉米",
+        "苹果",
+        "猕猴桃",
+        "辣椒"
+      ],
+      "threat_scope": 56,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "苹果圆斑病",
+            "crop": "苹果",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_174"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "苹果圆斑病",
+            "crop": "苹果",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_174"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "苹果圆斑病",
+            "crop": "苹果",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_174"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 2,
+            "pest": "苹果小叶病",
+            "crop": "苹果",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_175"
+          },
+          {
+            "rank": 3,
+            "pest": "辣椒脐腐病",
+            "crop": "辣椒",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_235"
+          }
+        ]
+      }
+    },
+    {
+      "name": "甘肃省",
+      "adcode": "620000",
+      "short_name": "甘肃",
+      "crops": [
+        "马铃薯",
+        "小麦",
+        "玉米",
+        "苹果",
+        "向日葵"
+      ],
+      "threat_scope": 47,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 2,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 3,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 2,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 3,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 2,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 3,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 2,
+            "pest": "苹果小叶病",
+            "crop": "苹果",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_175"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ]
+      }
+    },
+    {
+      "name": "青海省",
+      "adcode": "630000",
+      "short_name": "青海",
+      "crops": [
+        "小麦",
+        "马铃薯",
+        "甘蓝",
+        "萝卜"
+      ],
+      "threat_scope": 21,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 3,
+            "pest": "萝卜黑斑病",
+            "crop": "萝卜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_197"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 3,
+            "pest": "甘蓝药害",
+            "crop": "甘蓝",
+            "pathogen_type": "药害肥害",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "施药施肥后 3～7 天集中显现",
+            "library_id": "lib_pest_119"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 3,
+            "pest": "萝卜黑斑病",
+            "crop": "萝卜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_197"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          },
+          {
+            "rank": 3,
+            "pest": "萝卜黑斑病",
+            "crop": "萝卜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_197"
+          }
+        ]
+      }
+    },
+    {
+      "name": "宁夏回族自治区",
+      "adcode": "640000",
+      "short_name": "宁夏",
+      "crops": [
+        "小麦",
+        "玉米",
+        "马铃薯",
+        "向日葵"
+      ],
+      "threat_scope": 37,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 2,
+            "pest": "玉米圆斑病",
+            "crop": "玉米",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_96"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "玉米日灼病",
+            "crop": "玉米",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_100"
+          },
+          {
+            "rank": 2,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          },
+          {
+            "rank": 3,
+            "pest": "马铃薯早疫病",
+            "crop": "马铃薯",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_246"
+          }
+        ]
+      }
+    },
+    {
+      "name": "新疆维吾尔自治区",
+      "adcode": "650000",
+      "short_name": "新疆",
+      "crops": [
+        "棉花",
+        "番茄",
+        "小麦",
+        "向日葵",
+        "甜瓜",
+        "葡萄",
+        "枣树"
+      ],
+      "threat_scope": 33,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "棉花炭疽病",
+            "crop": "棉花",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_69"
+          },
+          {
+            "rank": 2,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          },
+          {
+            "rank": 3,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "棉花炭疽病",
+            "crop": "棉花",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_69"
+          },
+          {
+            "rank": 2,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          },
+          {
+            "rank": 3,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "棉花炭疽病",
+            "crop": "棉花",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_69"
+          },
+          {
+            "rank": 2,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          },
+          {
+            "rank": 3,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "棉花缺钾症",
+            "crop": "棉花",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_72"
+          },
+          {
+            "rank": 2,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          },
+          {
+            "rank": 3,
+            "pest": "小麦叶枯病",
+            "crop": "小麦",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_37"
+          }
+        ]
+      }
+    },
+    {
+      "name": "台湾省",
+      "adcode": "710000",
+      "short_name": "台湾",
+      "crops": [
+        "甘薯",
+        "花生",
+        "豇豆",
+        "甜瓜",
+        "蓝莓"
+      ],
+      "threat_scope": 35,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          },
+          {
+            "rank": 3,
+            "pest": "豇豆斑枯病",
+            "crop": "豇豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_221"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          },
+          {
+            "rank": 3,
+            "pest": "豇豆斑枯病",
+            "crop": "豇豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_221"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "甘薯煤污病",
+            "crop": "甘薯",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_124"
+          },
+          {
+            "rank": 2,
+            "pest": "花生炭疽病",
+            "crop": "花生",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_151"
+          },
+          {
+            "rank": 3,
+            "pest": "豇豆斑枯病",
+            "crop": "豇豆",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_221"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "甘薯缺镁症",
+            "crop": "甘薯",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_127"
+          },
+          {
+            "rank": 2,
+            "pest": "花生缺磷症",
+            "crop": "花生",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_155"
+          },
+          {
+            "rank": 3,
+            "pest": "蓝莓缺铁症",
+            "crop": "蓝莓",
+            "pathogen_type": "生理性",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_214"
+          }
+        ]
+      }
+    },
+    {
+      "name": "香港特别行政区",
+      "adcode": "810000",
+      "short_name": "香港",
+      "crops": [
+        "大白菜",
+        "菠菜",
+        "黄瓜",
+        "番茄"
+      ],
+      "threat_scope": 25,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "菠菜黑斑病",
+            "crop": "菠菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_191"
+          },
+          {
+            "rank": 3,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "菠菜黑斑病",
+            "crop": "菠菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_191"
+          },
+          {
+            "rank": 3,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "菠菜黑斑病",
+            "crop": "菠菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_191"
+          },
+          {
+            "rank": 3,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "大白菜缺镁病",
+            "crop": "大白菜",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_13"
+          },
+          {
+            "rank": 2,
+            "pest": "菠菜黑斑病",
+            "crop": "菠菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_191"
+          },
+          {
+            "rank": 3,
+            "pest": "黄瓜炭疽病",
+            "crop": "黄瓜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_262"
+          }
+        ]
+      }
+    },
+    {
+      "name": "澳门特别行政区",
+      "adcode": "820000",
+      "short_name": "澳门",
+      "crops": [
+        "大白菜",
+        "菠菜",
+        "番茄",
+        "黄瓜"
+      ],
+      "threat_scope": 25,
+      "seasons": {
+        "spring": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "菠菜黑斑病",
+            "crop": "菠菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_191"
+          },
+          {
+            "rank": 3,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "3～5月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          }
+        ],
+        "summer": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "菠菜黑斑病",
+            "crop": "菠菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_191"
+          },
+          {
+            "rank": 3,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "6～8月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          }
+        ],
+        "autumn": [
+          {
+            "rank": 1,
+            "pest": "大白菜灰斑病",
+            "crop": "大白菜",
+            "pathogen_type": "真菌",
+            "risk": "高",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_6"
+          },
+          {
+            "rank": 2,
+            "pest": "菠菜黑斑病",
+            "crop": "菠菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_191"
+          },
+          {
+            "rank": 3,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "9～11月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          }
+        ],
+        "winter": [
+          {
+            "rank": 1,
+            "pest": "大白菜缺镁病",
+            "crop": "大白菜",
+            "pathogen_type": "生理性",
+            "risk": "高",
+            "peak_window": "12～2月",
+            "note": "苗期与逆境（低温/干旱/缺素）阶段集中显现",
+            "library_id": "lib_pest_13"
+          },
+          {
+            "rank": 2,
+            "pest": "菠菜黑斑病",
+            "crop": "菠菜",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_191"
+          },
+          {
+            "rank": 3,
+            "pest": "番茄叶斑病",
+            "crop": "番茄",
+            "pathogen_type": "真菌",
+            "risk": "中",
+            "peak_window": "12～2月",
+            "note": "高湿连阴雨后 5～10 天为发病高峰",
+            "library_id": "lib_pest_139"
+          }
+        ]
+      }
+    }
+  ]
+}

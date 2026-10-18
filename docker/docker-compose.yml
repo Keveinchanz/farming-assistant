@@ -1,0 +1,50 @@
+# ============================================================================
+# 乡村农技多方言智能服务平台 —— compose 部署（任务 6.3 可选）
+#
+# 用法：
+#     cd docker
+#     docker compose up -d
+#     docker compose logs -f
+#
+# 前置：在项目根目录准备好 .env、data/、knowledge/、models/
+#       （即在宿主机上完整跑过阶段 1 与阶段 2）
+# ============================================================================
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: rural-agri-platform:1.0.0
+    container_name: rural-agri-api
+    restart: unless-stopped
+
+    ports:
+      - "8000:8000"
+
+    # 敏感信息放 .env（不入镜像）
+    env_file:
+      - ../.env
+
+    environment:
+      # 容器内必须监听 0.0.0.0，否则宿主访问不到
+      HOST: 0.0.0.0
+      PORT: "8000"
+      LOG_LEVEL: INFO
+
+    volumes:
+      # 只读挂载数据与产物：容器不产出这些文件，挂只读更安全
+      - ../data:/app/data:ro
+      - ../knowledge:/app/knowledge
+      - ../models:/app/models:ro
+      - ../Sample:/app/Sample:ro
+      # 输出目录可写（TTS 音频、日志）
+      - ../outputs:/app/outputs
+      - ../frontend/audio:/app/frontend/audio
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3

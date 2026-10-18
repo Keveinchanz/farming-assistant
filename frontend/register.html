@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>注册 · 多方言 AI 农技与农田数字孪生平台</title>
+<meta name="description" content="注册后自动获得三条示例田，可以立刻看到积温阶段与 3D 长势。">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/layout.css">
+<link rel="stylesheet" href="/assets/css/pages.css">
+</head>
+<body data-page="register">
+
+<a class="visually-hidden" data-skip-link href="#main">跳到主要内容</a>
+
+<header class="site-header">
+  <div class="site-header__inner" data-layout-header></div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="auth-wrap">
+    <div class="card auth-card">
+      <h1 class="auth-card__title">注册</h1>
+      <p class="auth-card__desc">
+        注册后会自动给你建三块<b>示例田</b>（水稻·分蘖期 / 玉米·抽穗期 / 油菜·成熟期），
+        一进去就能看到积温、天气与 3D 长势。示例田可以随时改名或删掉。
+      </p>
+
+      <form id="register-form" novalidate>
+        <div class="form-field">
+          <label class="form-label" for="register-username">用户名<span class="required">*</span></label>
+          <input class="input" id="register-username" name="username" autocomplete="username"
+                 required maxlength="24" placeholder="英文字母、数字或下划线，2~24 位">
+          <span class="form-hint">用户名用于登录，只能用英文/数字/下划线；中文名请填在昵称里。</span>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="register-nickname">昵称</label>
+          <input class="input" id="register-nickname" name="nickname" maxlength="24"
+                 placeholder="可以是中文，如：张大叔">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="register-password">密码<span class="required">*</span></label>
+          <input class="input" id="register-password" name="password" type="password"
+                 autocomplete="new-password" required placeholder="至少 8 位，含字母和数字">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="register-confirm">确认密码<span class="required">*</span></label>
+          <input class="input" id="register-confirm" name="confirm" type="password"
+                 autocomplete="new-password" required>
+        </div>
+
+        <p class="notice notice--danger" id="register-error" hidden></p>
+
+        <button type="submit" class="btn btn--primary btn--block" id="register-submit">注册并进入</button>
+      </form>
+
+      <p class="auth-card__foot">已有账号？<a href="/login.html">去登录</a></p>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <div data-layout-footer></div>
+</footer>
+
+<script src="/assets/js/icons.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/dialect.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script src="/assets/js/auth.js"></script>
+</body>
+</html>

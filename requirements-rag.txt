@@ -1,0 +1,13 @@
+# RAG 依赖（任务 4.4）—— 体积较大（约 1~2GB），按需安装
+#     conda activate az
+#     python -m pip install -r requirements-rag.txt
+#
+# 未安装时 RAG_ENABLED=auto 会自动降级为 MockRAG（返回空 sources），
+# 多模态诊断接口契约不变、流程不中断。
+
+langchain
+langchain-community
+langchain-text-splitters
+chromadb
+sentence-transformers
+transformers

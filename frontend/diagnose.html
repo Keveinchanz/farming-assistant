@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智能诊断 · 多方言 AI 农技与农田数字孪生平台</title>
+<meta name="description" content="上传作物照片、录一段方言描述或直接写症状，三路信息融合后给出病虫害诊断与防治方案。">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/layout.css">
+<link rel="stylesheet" href="/assets/css/pages.css">
+</head>
+<body>
+
+<a class="visually-hidden" data-skip-link href="#main">跳到主要内容</a>
+
+<header class="site-header">
+  <div class="site-header__inner" data-layout-header></div>
+</header>
+
+<main id="main" class="page">
+  <div class="diagnose-layout">
+
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1 class="mb-0">智能诊断</h1>
+      </div>
+      <p class="page-head__desc mb-0">
+        图片、语音、文字三路输入<b>任选其一或组合使用</b>：只拍照可以诊断，只描述症状也可以。
+        信息越充分，判断越准确。
+      </p>
+    </div>
+
+    <p class="notice" data-degraded-bar hidden></p>
+
+    <!-- ==================== 输入态 ==================== -->
+    <form id="diagnose-form" novalidate>
+
+      <!-- 图片 -->
+      <section class="card input-section" aria-labelledby="sec-image">
+        <div class="input-section__head">
+          <span class="input-section__num" aria-hidden="true">1</span>
+          <div>
+            <h2 class="input-section__title" id="sec-image">上传作物照片</h2>
+            <p class="input-section__desc">病叶正反面各拍一张效果最好；光线充足、对准病斑区域。</p>
+          </div>
+        </div>
+
+        <div class="input-section__actions">
+          <button type="button" class="btn btn--outline" id="btn-camera">
+            <span id="ico-camera"></span><span>调用摄像头拍摄</span>
+          </button>
+          <button type="button" class="btn btn--outline" id="btn-choose-image">
+            <span id="ico-image"></span><span>上传本地图片</span>
+          </button>
+        </div>
+
+        <input type="file" id="input-camera" accept="image/*" capture="environment" class="visually-hidden">
+        <input type="file" id="input-image" accept="image/*" class="visually-hidden">
+
+        <div class="dropzone" id="image-dropzone" role="button" tabindex="0"
+             aria-label="拖拽图片到此处，或点击选择图片">
+          <div class="dropzone__icon" id="ico-dropzone"></div>
+          <div class="dropzone__main">把照片拖到这里</div>
+          <div class="dropzone__sub">支持 JPG / PNG / BMP / WEBP，单张不超过 20 MB；也可以直接粘贴截图</div>
+        </div>
+
+        <div class="preview-strip" id="image-preview" hidden></div>
+      </section>
+
+      <!-- 语音 -->
+      <section class="card input-section" aria-labelledby="sec-audio">
+        <div class="input-section__head">
+          <span class="input-section__num" aria-hidden="true">2</span>
+          <div>
+            <h2 class="input-section__title" id="sec-audio">语音输入</h2>
+            <p class="input-section__desc">
+              直接说就行 —— 用家乡话讲清楚"什么作物、哪里出问题、多久了"，
+              底层按方言识别，并自动匹配农业专业术语。
+            </p>
+          </div>
+        </div>
+
+        <div class="input-section__actions">
+          <button type="button" class="btn btn--outline" id="btn-record">
+            <span id="ico-mic"></span><span id="btn-record-label">麦克风录制</span>
+          </button>
+          <button type="button" class="btn btn--outline" id="btn-choose-audio">
+            <span id="ico-upload"></span><span>上传本地音频</span>
+          </button>
+          <span class="record-status" id="record-status" hidden>
+            <span class="record-status__dot"></span>
+            <span>录制中 <span id="record-time">00:00</span></span>
+          </span>
+        </div>
+
+        <input type="file" id="input-audio" accept="audio/*,.wav,.amr,.m4a" class="visually-hidden">
+
+        <div class="preview-strip" id="audio-preview" hidden></div>
+      </section>
+
+      <!-- 文字 -->
+      <section class="card input-section" aria-labelledby="sec-text">
+        <div class="input-section__head">
+          <span class="input-section__num" aria-hidden="true">3</span>
+          <div>
+            <h2 class="input-section__title" id="sec-text">描述症状</h2>
+            <p class="input-section__desc">
+              例如"玉米叶片上出现梭形大斑，边缘褐色、中间灰白，最近连续下雨"。
+            </p>
+          </div>
+        </div>
+
+        <label class="visually-hidden" for="input-text">症状描述</label>
+        <textarea class="textarea" id="input-text" maxlength="1000"
+                  placeholder="请描述：① 作物名称　② 发病部位（叶片/茎秆/根部/果实）　③ 症状表现（颜色、形状、是否腐烂、有无霉层）　④ 发病时间与近期天气、用药情况"></textarea>
+        <span class="form-hint"><span id="text-count">0</span> / 1000 字</span>
+      </section>
+
+      <div class="submit-row">
+        <button type="submit" class="btn btn--primary btn--lg" id="btn-submit">
+          <span id="ico-submit"></span><span>开始诊断</span>
+        </button>
+      </div>
+    </form>
+
+    <!-- ==================== 结果态 ==================== -->
+    <section id="result-root" hidden aria-live="polite"></section>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div data-layout-footer></div>
+</footer>
+
+<script src="/assets/js/icons.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/dialect.js"></script>
+<script src="/assets/js/layout.js"></script>
+<!-- 录音采集（诊断页与知识图书库共用的一份）。必须排在 diagnose.js 之前且不带
+     defer —— 否则点录音时 window.Recorder 还是 undefined，整个录音入口报错。 -->
+<script src="/assets/js/recorder.js"></script>
+<!-- 摄像头取景（相机采集只在这一份里）。同样必须排在 diagnose.js 之前且
+     不带 defer —— diagnose.js 里 bindImageInputs 会读 window.Camera。 -->
+<script src="/assets/js/camera.js"></script>
+<script src="/assets/js/diagnose.js"></script>
+</body>
+</html>

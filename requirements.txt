@@ -1,0 +1,81 @@
+# 项目依赖（Python 3.11 / conda 环境 az）
+#
+# 说明：torch / torchvision 由 conda 环境自带（torch 2.14.0+cu130），
+#       此处不锁定，避免 pip 覆盖掉 CUDA 版本。重建环境时请先按官方指引装好 torch。
+#
+# 安装（Windows PowerShell）：
+#     conda activate az
+#     python -m pip install -r requirements.txt
+
+# ---- 阶段2：训练 / 评估 / 导出 ----
+timm==1.0.30
+albumentations==2.0.8
+scikit-learn==1.9.1
+pandas==3.0.6
+seaborn==0.13.2
+matplotlib
+tqdm==4.70.1
+tensorboard
+
+# ---- 阶段2.6 / 阶段4.2：ONNX 导出与后端推理 ----
+# 只装 CPU 版 onnxruntime：本机 torch 是 cu130，onnxruntime-gpu 通常滞后于 CUDA 13，
+# 强行装 GPU 版易踩版本地狱。单图 CPU 推理耗时毫秒级，完全够用。
+onnx==1.23.1
+onnxruntime==1.30.0
+
+# ---- 阶段2.7：虫害目标检测（IP102 / YOLOv8n）----
+#
+# 许可证：ultralytics 是 **AGPL-3.0**。本项目仅在训练/导出阶段用它，产出的 ONNX
+# 权重与服务端代码均不含 ultralytics 代码，但请在分发时留意这一条。
+# 数据集 IP102（经 phtrungagu321o/Yolov5_IP102 镜像取得）与 PestYOLO 仓库
+# 均标注「仅供学习和研究使用」，不要用于商业用途。
+#
+# 不锁 torch / torchvision 的理由同本文件开头：它们由 conda 环境自带
+# （实测 2.14.0+cu130），这里锁了反而会让 pip 把 CUDA 版覆盖掉。
+# ultralytics 要求 torch>=1.8.0，现有版本已满足。
+#
+# 实测这条装上之后 numpy / torch / torchvision / onnxruntime 的版本一个都没变，
+# 唯一新增的是 opencv-python（与本机既有的 opencv-python-headless 同版本并存，
+# 两者都提供 cv2，后者可能被覆盖——装完务必跑一遍 scripts/22_verify_artifacts.py）。
+ultralytics==8.4.174
+# simplify=True 导出 ONNX 时要用（属 ultralytics 的 export extra，不在默认依赖里）
+onnxslim==0.1.97
+
+# ---- 阶段7.15：农药登记索引（知识图书库的用药提醒）----
+#
+# 只多这一个依赖：农业农村部《农药登记信息》的附件是 BIFF8 的 .xls
+# （老式 OLE 复合文档，不是 xlsx 的 zip），pandas 读它必须借道 xlrd。
+# xlrd 2.x 是纯 Python、约 96 KB，且只用来读 .xls —— 不引入 Excel 写入能力。
+# 缺席时 scripts/26_fetch_pesticide_registry.py 会失败并回退，
+# 07 号脚本随即退回原来的通用用药提醒，知识图书库照常生成。
+#
+# 实测 pypi.org 国内常直连超时，装它同样建议走镜像：
+#     python -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple xlrd
+xlrd>=2.0.1
+
+# ---- 阶段3 / 阶段4：后端服务 ----
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+python-multipart==0.0.32
+pydantic==2.13.5
+pydantic-settings==2.15.0
+requests==2.34.2
+python-dotenv==1.2.4
+pyyaml==6.0.3
+
+# ---- 阶段4.4：农业 RAG 知识库 ----
+# 需要时再单独安装（体积较大，约 1~2GB）：
+#     python -m pip install -r requirements-rag.txt
+
+# ---- 阶段7：我的农田（收获日预测）----
+#
+# 只多这一个依赖：账号/会话/田块/积温全部用标准库（sqlite3、hashlib、hmac、secrets）
+# 实现，天气走已有的 requests，叙述层复用阶段 3 的大模型抽象。
+#
+# xgboost 只在 scripts/24_train_harvest_model.py 里用到，而且是懒加载：
+# 没装的时候收获预测自动走纯积温法（method=gdd_fallback），功能照常可用。
+# 因此它缺席不会让服务起不来 —— 但装了它训练才能真跑。
+#
+# 注意：**pypi.org 在国内常常直连超时**，装它请走镜像：
+#     python -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple xgboost
+xgboost>=2.0

@@ -1,0 +1,32 @@
+{
+  "resnet50": {
+    "arch": "resnet50",
+    "num_classes": 271,
+    "input_size": 224,
+    "checkpoint": "models/checkpoints/best_resnet50.pth",
+    "onnx": "models/onnx/inference_model.onnx",
+    "best_epoch": 15,
+    "best_val_acc": 0.90407,
+    "epochs_run": 22,
+    "elapsed_seconds": 644.9,
+    "onnx_opset": 17,
+    "onnx_size_mb": 91.9
+  },
+  "pest_yolov8n": {
+    "arch": "yolov8n",
+    "task": "detect",
+    "num_classes": 102,
+    "input_size": 640,
+    "checkpoint": "models/checkpoints/pest_best.pt",
+    "run_dir": "D:\\code file\\insert\\outputs\\runs\\pest_ip102",
+    "best_mAP50": 0.50619,
+    "epochs_run": 30,
+    "elapsed_seconds": 2969.2,
+    "onnx": "models/onnx/pest_yolo.onnx",
+    "onnx_opset": 17,
+    "onnx_size_mb": 13.0,
+    "onnx_input_size": 640,
+    "onnx_dynamic": false,
+    "onnx_nms_baked": false
+  }
+}

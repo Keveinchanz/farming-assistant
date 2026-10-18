@@ -1,0 +1,177 @@
+# 八大方言注册表（任务 3.4：全局动态切换八大方言）
+#
+# 为什么是这八种：只保留「讯飞 /v2/tts 接口确实有发音人」的方言 ——
+#   普通话、粤语、四川话、河南话、东北话、湖南话、陕西话、台湾话
+# 被删掉的四种都不是凭印象删的，每种都有具体原因：
+#   · 上海话 / 闽南语 / 北京话：讯飞的方言发音人列表里根本没有这几种。
+#   · 天津话：唯一音色 x4_zijin_oral 属「超拟人」Hyper TTS 接口（另一个 wss 端点
+#     加另一套请求体），在本项目用的 /v2/tts 上实测返回 11200；ViviVoice 那套
+#     vix* 方言音色里没有天津话。
+# 删掉而不是留着，是因为留下来只能「回退普通话音色」——那等于对外宣称支持天津话、
+# 实际播的是普通话，正是要求里要避免的假支持。
+#
+# 百度侧参数来源均为官方文档实测抓取，非凭记忆填写：
+#   · TTS 发音人 per 值 —— 《音色列表》https://aca.bce.baidu.com/doc/SPEECH/s/Rluv3uq3d（页面标注更新日期 2026-09-09）
+#   · ASR dev_pid 值  —— 《短语音识别标准版 API》dev_pid 参数表（vop.baidu.com/server_api）
+#
+# ASR 重要事实：短语音识别 REST 接口官方仅支持 4 个模型 ——
+#   1537 普通话(纯中文识别,有标点,支持自定义词库)
+#   1737 英语(无标点)
+#   1637 粤语(有标点)
+#   1837 四川话(有标点)
+# 其余方言在 REST 接口上没有独立模型，只能回退 dev_pid=1537（普通话）。
+# 百度另有「中文多方言」统一模型 dev_pid=15376，但仅在【实时语音识别 WebSocket API】提供，
+# 且调用时须额外带 "user":"XXX" 参数。本项目 REST 走 vop.baidu.com，故非粤语/四川话一律
+# 按 asr_dev_pid_fallback 回退，并在接口响应里标注 asr_fallback=true，绝不假装支持。
+# 河南话/湖南话在百度侧连发音人都没核实到，tts_per 直接取基础音库的度小美（全账号可用）。
+#
+# TTS 重要事实：大模型音库（per ≥ 4000 / 20100 段位）的方言音色通常需在控制台单独开通，
+# 且部分仅在【流式文本在线合成】可用。若调用返回权限/音色错误，把该方言的 tts_per 改成
+# tts_per_fallback（0=度小美,基础音库,全账号可用）即可降级，代码无需改动。
+#
+# ---------------------------------------------------------------------------
+# 科大讯飞方言识别大模型（VOICE_PROVIDER=iflytek 时生效，见 src/voice/iflytek_provider.py）
+#
+# ASR 侧不需要在这里配任何东西：讯飞用一个 accent="mulacc" 的方言大模型覆盖 202 种方言，
+# 八种方言调用参数完全相同，没有百度那种 dev_pid 逐方言映射。因此只要选了讯飞，
+# 八种方言的 asr_supported 全部为 true —— 这是换讯飞的主要收益。
+#
+# TTS 侧方言靠 vcn 发音人区分，故每个方言块有以下四个键：
+#   xfyun_vcn             发音人 id
+#   xfyun_voice_name      发音人中文名（给接口响应用）
+#   xfyun_tts_supported   是否确信该方言有可用发音人
+#   xfyun_note            不支持时的说明（会随响应返回给用户）
+#
+# 八种方言对应的发音人（均属 ViviVoice 引擎，已在 2026-10-06 用真实 Key 逐个实测出声）：
+#   普通话 x5_lingxiaoxuan_flow 聆小璇 · 粤语 vixm 小梅 · 四川话 vixr 小蓉
+#   河南话 vixk 小坤 · 东北话 vixyun 小芸 · 湖南话 vixqa 小强
+#   陕西话 vixying 小莹 · 台湾话 vixl 小莉
+# 因为留下的八种全部实测可用，正常配置下走不到「回退普通话音色」那条分支；
+# 该分支保留给「以后新增方言但一时没核实到发音人」的情况。
+# 注：发音人需在讯飞控制台为当前应用开通后才可用；若返回 11200（功能未授权），
+# 按控制台实际开通的发音人改这里的 xfyun_vcn 即可，无需改代码。
+
+version: 1
+
+default: mandarin
+
+dialects:
+  - key: mandarin
+    name: 普通话
+    baidu_name: 普通话
+    asr_dev_pid: 1537
+    asr_supported: true
+    tts_per: "0"                      # 度小美-标准女主播（基础音库）
+    tts_voice_name: 度小美-标准女主播
+    tts_library: 基础音库
+    tts_per_fallback: "0"
+    xfyun_vcn: x5_lingxiaoxuan_flow   # 聆小璇-普通话女声（方言大模型的通用音色）
+    xfyun_voice_name: 讯飞聆小璇-普通话女声
+    xfyun_tts_supported: true
+    xfyun_note: ""
+    regions: [全国]
+
+  - key: cantonese
+    name: 粤语
+    baidu_name: 粤语
+    asr_dev_pid: 1637                 # 官方独立粤语模型
+    asr_supported: true
+    tts_per: "20100"                  # 度小粤-粤语女声（大模型音库）
+    tts_voice_name: 度小粤-粤语女声
+    tts_library: 大模型音库
+    tts_per_fallback: "0"
+    xfyun_vcn: vixm                   # 小梅-粤语女声（ViviVoice 引擎，需控制台开通）
+    xfyun_voice_name: 讯飞小梅-粤语女声
+    xfyun_tts_supported: true
+    xfyun_note: ""
+    regions: [广东, 广西, 香港, 澳门]
+
+  - key: sichuan
+    name: 四川话
+    baidu_name: 四川话
+    asr_dev_pid: 1837                 # 官方独立四川话模型
+    asr_supported: true
+    tts_per: "4139"                   # 度小蓉-四川女声（大模型音库）
+    tts_voice_name: 度小蓉-四川女声
+    tts_library: 大模型音库
+    tts_per_fallback: "0"
+    xfyun_vcn: vixr                   # 小蓉-四川话女声（ViviVoice 引擎）
+    xfyun_voice_name: 讯飞小蓉-四川话女声
+    xfyun_tts_supported: true
+    xfyun_note: ""
+    regions: [四川, 重庆]
+
+  - key: henan
+    name: 河南话
+    baidu_name: 河南话
+    asr_dev_pid: null                 # 百度 REST 无独立模型 -> 回退 1537
+    asr_supported: false
+    tts_per: "0"                      # 百度未核实到河南话发音人，用基础音库的度小美
+    tts_voice_name: 度小美-标准女主播
+    tts_library: 基础音库
+    tts_per_fallback: "0"
+    xfyun_vcn: vixk                   # 小坤-河南话男声（ViviVoice 引擎）
+    xfyun_voice_name: 讯飞小坤-河南话男声
+    xfyun_tts_supported: true
+    xfyun_note: ""
+    regions: [河南]
+
+  - key: northeast
+    name: 东北话
+    baidu_name: 东北话
+    asr_dev_pid: null                 # REST 无独立模型 -> 回退 1537
+    asr_supported: false
+    tts_per: "4134"                   # 度阿锦-东北女声（大模型音库）
+    tts_voice_name: 度阿锦-东北女声
+    tts_library: 大模型音库
+    tts_per_fallback: "0"
+    xfyun_vcn: vixyun                 # 小芸-东北话女声（ViviVoice 引擎）
+    xfyun_voice_name: 讯飞小芸-东北话女声
+    xfyun_tts_supported: true
+    xfyun_note: ""
+    regions: [辽宁, 吉林, 黑龙江]
+
+  - key: hunan
+    name: 湖南话
+    baidu_name: 湖南话
+    asr_dev_pid: null                 # 百度 REST 无独立模型 -> 回退 1537
+    asr_supported: false
+    tts_per: "0"                      # 百度未核实到湖南话发音人，用基础音库的度小美
+    tts_voice_name: 度小美-标准女主播
+    tts_library: 基础音库
+    tts_per_fallback: "0"
+    xfyun_vcn: vixqa                  # 小婉-湖南话女声（ViviVoice 引擎）
+    xfyun_voice_name: 讯飞小婉-湖南话女声
+    xfyun_tts_supported: true
+    xfyun_note: ""
+    regions: [湖南]
+
+  - key: shaanxi
+    name: 陕西话
+    baidu_name: 陕西话
+    asr_dev_pid: null
+    asr_supported: false
+    tts_per: "4150"                   # 度湘玉-陕西女声（大模型音库）
+    tts_voice_name: 度湘玉-陕西女声
+    tts_library: 大模型音库
+    tts_per_fallback: "0"
+    xfyun_vcn: vixying                # 小莹-陕西话女声（ViviVoice 引擎）
+    xfyun_voice_name: 讯飞小莹-陕西话女声
+    xfyun_tts_supported: true
+    xfyun_note: ""
+    regions: [陕西]
+
+  - key: taiwan
+    name: 台湾话
+    baidu_name: 台湾话
+    asr_dev_pid: null
+    asr_supported: false
+    tts_per: "4007"                   # 度小台-台湾女声（大模型音库）
+    tts_voice_name: 度小台-台湾女声
+    tts_library: 大模型音库
+    tts_per_fallback: "0"
+    xfyun_vcn: vixl                   # 小玲-台湾话女声（ViviVoice 引擎）
+    xfyun_voice_name: 讯飞小玲-台湾话女声
+    xfyun_tts_supported: true
+    xfyun_note: ""
+    regions: [台湾]

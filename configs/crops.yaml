@@ -1,0 +1,79 @@
+# 作物大类词表
+# 用途：把数据集里的类别中文名（如「大白菜霜霉病」）切分为「作物大类 + 病害描述」，
+#       供 1.1 归档（二级目录）、1.4 标签映射、4.5 知识图书库分组、3.3 大模型融合共用。
+# 匹配规则：按 name 长度降序做 startswith 最长前缀匹配（见 src/data/crop_parser.py）。
+#           —— 长名优先可保证「猕猴桃」先于「桃」、「大白菜」不会被切成「大」+「白菜」。
+# 覆盖校验：对 Sample/label_rename.txt 全部 271 个类别名实测，覆盖率 100%
+#          （0 个未命中、0 个闲置作物），共 47 个作物大类。
+version: 1
+
+# 健康态标记。含源数据里的错别字（键康/健株/键叶），用于 is_healthy 判定。
+healthy_markers: ["健康", "键康", "健株", "键叶"]
+
+# 病原/病因推断：按顺序首次命中即取用（顺序敏感，病毒/细菌优先于真菌）。
+pathogen_rules:
+  - {type: 病毒,     keywords: ["病毒", "花叶", "皱缩", "条纹", "黄矮", "扇叶", "卷叶", "潜隐", "斑驳", "红叶"]}
+  - {type: 细菌,     keywords: ["细菌", "角斑", "疮痂", "溃疡", "青枯", "枯萎", "黑腐"]}
+  - {type: 真菌,     keywords: ["霜霉", "白粉", "锈病", "炭疽", "灰霉", "黑斑", "褐斑", "叶斑", "斑枯",
+                                "疫病", "纹枯", "赤星", "黑星", "白星", "靶斑", "圆斑", "大斑", "小斑",
+                                "灰斑", "煤污", "菌核", "叶枯", "黑痘", "紫斑", "豹纹", "煤纹", "蛇眼",
+                                "网斑", "焦斑", "叶点", "黄斑", "尾孢", "球腔菌", "根腐", "烂", "枯萎"]}
+  - {type: 生理性,   keywords: ["缺氮", "缺磷", "缺钾", "缺锌", "缺铁", "缺镁", "缺钙", "缺素",
+                                "日烧", "日灼", "冻害", "冰雹", "脐腐", "小叶", "遗传性"]}
+  - {type: 药害肥害, keywords: ["药害", "除草剂", "肥害", "臭氧"]}
+# 注：健康类样本（如「玉米健康」「甘薯健康叶片」）由 is_healthy 单独判定，
+#     pathogen_type 直接置为「健康」，不走上表推断。
+
+# 作物大类。category 用于前端分组与统计展示。
+crops:
+  # ---- 粮食作物 ----
+  - {name: 玉米,     category: 粮食作物}
+  - {name: 小麦,     category: 粮食作物}
+  - {name: 大豆,     category: 粮食作物}
+  - {name: 高粱,     category: 粮食作物}
+  - {name: 谷子,     category: 粮食作物}
+  - {name: 马铃薯,   category: 粮食作物}
+  - {name: 甘薯,     category: 粮食作物}
+  - {name: 紫薯,     category: 粮食作物}
+  - {name: 绿豆,     category: 粮食作物}
+  # ---- 经济作物 ----
+  - {name: 棉花,     category: 经济作物}
+  - {name: 烟草,     category: 经济作物}
+  - {name: 花生,     category: 经济作物}
+  - {name: 芝麻,     category: 经济作物}
+  - {name: 向日葵,   category: 经济作物}
+  - {name: 桑树,     category: 经济作物}
+  # ---- 蔬菜 ----
+  - {name: 大白菜,   category: 蔬菜}
+  - {name: 叶芥菜,   category: 蔬菜}
+  - {name: 甘蓝,     category: 蔬菜}
+  - {name: 菠菜,     category: 蔬菜}
+  - {name: 芹菜,     category: 蔬菜}
+  - {name: 萝卜,     category: 蔬菜}
+  - {name: 葱,       category: 蔬菜}
+  - {name: 韭菜,     category: 蔬菜}
+  - {name: 生姜,     category: 蔬菜}
+  - {name: 茄子,     category: 蔬菜}
+  - {name: 辣椒,     category: 蔬菜}
+  - {name: 黄瓜,     category: 蔬菜}
+  - {name: 南瓜,     category: 蔬菜}
+  - {name: 西葫芦,   category: 蔬菜}
+  - {name: 甜瓜,     category: 蔬菜}
+  - {name: 番茄,     category: 蔬菜}
+  - {name: 草莓,     category: 蔬菜}
+  - {name: 豇豆,     category: 蔬菜}
+  - {name: 扁豆,     category: 蔬菜}
+  - {name: 菜豆,     category: 蔬菜}
+  - {name: 香椿,     category: 蔬菜}
+  # ---- 果树 ----
+  - {name: 苹果,     category: 果树}
+  - {name: 梨树,     category: 果树}
+  - {name: 桃树,     category: 果树}
+  - {name: 油桃,     category: 果树}
+  - {name: 樱桃,     category: 果树}
+  - {name: 猕猴桃,   category: 果树}
+  - {name: 葡萄,     category: 果树}
+  - {name: 山楂,     category: 果树}
+  - {name: 核桃,     category: 果树}
+  - {name: 枣树,     category: 果树}
+  - {name: 蓝莓,     category: 果树}

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="renderer" content="webkit" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui"
+    />
+    <title>农药登记信息（2026年第3期）</title>
+    <link rel="shortcut icon" href="/resources/hplus/favicon.ico"> 
+    <link rel="stylesheet" href="/resources/web/lib/layui/css/layui.css" />
+    <link rel="stylesheet" href="/resources/web/css/reset.css?version=3.5" />
+    <link rel="stylesheet" href="/resources/web/css/main.css?version=3.7" />
+    <link rel="stylesheet" href="/resources/web/css/media.css" />
+    <link rel="stylesheet" href="/resources/share/css/share.min.css" />
+  </head>
+  
+  <style>
+	.social-share * {
+	 font-family: "socialshare" !important;
+	 vertical-align: inherit;
+	}
+  .social-share .social-share-icon {
+    display: inline-block;
+    width: 64px;
+    height: 64px;
+    font-size: 32px;
+    border-radius: 50%;
+    line-height: 64px;
+    text-align: center;
+    transition: background 0.6s ease-out 0s;
+	}
+	.social-share .icon-wechat .wechat-qrcode {
+	line-height: initial;
+	}
+	p {
+		text-align: justify;
+	}
+  </style>
+  
+  
+  
+  <body>
+     <div class="header-tool-bar">
+      <div class="container">
+        <div class="left">
+          <a href="http://www.chinapesticide.org.cn/eng/index">English</a>
+		  <a
+        	href="http://oa.icama.org.cn/seeyon/index.jsp"
+            rel="noopener noreferrer"
+            target="_blank"
+            >办公平台</a
+          >
+          <a
+        	href="https://mail.agri.gov.cn/nsmail/index.php"
+            rel="noopener noreferrer"
+            class="mail"
+            target="_blank"
+			style="padding-right: 17.25px;"
+          >
+            <span>政务邮箱</span>
+            <img src="/resources/web/images/home/icon_mail.png" alt="icon_mail" />
+          </a>
+          <a
+            href="http://www.chinapesticide.org.cn/kgls/index"
+            target="_blank"
+            rel="noopener noreferrer"
+            >农药科学与管理</a
+          >
+        </div>
+        <div id="current_lunar" class="right"></div>
+      </div>
+    </div>
+    <div
+      class="header-banner"
+      style="background-image: url(/nyupload/image/202302/08e70253-d413-46cd-8cdb-28079f72a6e4.png)"
+    >
+      <div class="container">
+        <a href="#">
+          <img class="web-logo" src="/nyupload/image/202301/c4656dee-8927-4c04-9f68-d0aa98bdb1ab.png" alt="web-logo" />
+        </a>
+        <div class="search">
+          <input
+            type="text"
+            placeholder="请输入关键字…"
+            class="header-search-input" value="" maxlength="20"
+          />
+          <button type="submit" class="header-search-btn">搜索</button>
+        </div>
+      </div>
+    </div>
+    <div class="header-nav">
+      <div class="container">
+        <div class="close-box">
+          <span class="menu-close" id="menu-close"></span>
+        </div>
+        <div class="mobile-other mobile-show-flex">
+          <a href="http://www.chinapesticide.org.cn/zwb/index" target="_blank" rel="noopener noreferrer">中文版</a>
+          <a href="http://www.chinapesticide.org.cn/kgls/index" target="_blank" rel="noopener noreferrer">农药科学与管理</a>
+          <a href="http://www.chinapesticide.org.cn/eng/index">English</a>
+        </div>
+        <a href="/zwb/index" class="item active"><span>首页</span></a>
+        <a href="/zwb/drugTest" class="item"><span>药检系统</span></a>
+        <a href="/zwb/news" class="item"><span>新闻动态</span></a>
+        <a href="/zwb/infoPublic" class="item"><span>信息公开</span></a>
+        <a href="/zwb/serviceHall" class="item"><span>服务大厅</span></a>
+        <a href="/zwb/topic" class="item"><span>专题栏目</span></a>
+        <a href="/zwb/dataCenter" class="item"><span>数据中心</span></a>
+        <a href="https://www.icama.cn/" target="_blank" rel="noopener noreferrer" class="item"><span>数字平台</span></a>
+        <a href="/kgls/index" target="_blank" rel="noopener noreferrer" class="item" ><span>农药科学与管理</span></a>
+      </div>
+    </div>
+
+    <div class="mobile-nav">
+      <div class="nav">
+        <div>
+        <a href="/zwb/index" class="item active"><span>首页</span></a>
+        <a href="/zwb/drugTest" class="item"><span>药检系统</span></a>
+        <a href="/zwb/news" class="item"><span>新闻动态</span></a>
+        <a href="/zwb/infoPublic" class="item"><span>信息公开</span></a>
+        <a href="/zwb/serviceHall" class="item"><span>服务大厅</span></a>
+        <a href="/zwb/topic" class="item"><span>专题栏目</span></a>
+        <a href="/zwb/dataCenter" class="item"><span>数据中心</span></a>
+        <a href="/zwb/servicePlatform" class="item"><span>服务平台</span></a>
+        <a href="https://www.icama.cn/" target="_blank" rel="noopener noreferrer" class="item" ><span>数字平台</span></a>
+        <a href="/kgls/index" target="_blank" rel="noopener noreferrer" class="item" ><span>农药科学与管理</span></a>
+        </div>
+      </div>
+      <div class="icon" id="open-menu">
+        <img src="/resources/web/images/home/m-nav-icon.png" />
+      </div>
+    </div>
+    <div class="mobile-search">
+      <input
+        type="text"
+        placeholder="请输入关键字…"
+        class="header-search-input" maxlength="20"
+      />
+      <button type="submit" class="header-search-btn">搜索</button>
+    </div>    <div class="container bread-crumbs mb-20 mobile-hide">
+      <span>当前位置：</span>
+      <a class="bread" href="/zwb/newsType/752">数据中心</a>
+      <a class="bread" href="/zwb/newsType/753">登记信息发布</a>
+    </div>
+    <div class="container article-detail bg-white mb-20">
+      <div class="article-detail-head">
+        <h1 class="article-detail-head-title">
+          农药登记信息（2026年第3期）
+        </h1>
+        <p class="article-detail-head-title-info mobile-hide">
+              <span>发布时间：2026-03-26</span>
+          
+          <span>来源：农业农村部农药管理司</span>
+          <span>浏览次数：11866</span>
+        </p>
+        <p class="article-detail-head-title-info1 mobile-show">
+          <span>农业农村部农药管理司</span>
+          <span>
+            <b><i>2026-03-26</i></b>
+            <b>
+              <i>
+                <img src="/resources/web/images/detail/icon-gkl.png" />
+              </i>
+              <i class="num">11866</i>
+            </b>
+          </span>
+        </p>
+      </div>
+      <div class="article-detail-content">
+			<p>根据《农药管理条例》、《农药登记管理办法》等有关规定，批准广西乐土生物科技有限公司等179家企业的289个农药产品登记延续。核发《农药登记证》，有效期延续5年。</p><p>　　附件：农药登记延续信息</p><p style="text-align: right;">农业农村部农药管理司</p><p style="text-align: right;">2026年2月6日&nbsp; &nbsp;&nbsp;</p><p><a href="https://zzys.moa.gov.cn/gzdt/202603/t20260325_6482645.htm" target="_blank"><span style="color: rgb(63, 49, 81);"><strong>请点击此处阅读原文并下载附件</strong></span></a><br/></p>
+      </div>
+      <div class="article-detail-like mb-40">
+        <span class="like-icon"></span>
+        <span class="like-num">5</span>
+      </div>
+      <div class="share">
+      	<div class="social-share" data-sites="wechat,weibo, qq"></div>
+      </div>
+    </div>
+    <div class="container mb-40 bg-white">
+      <h3 class="module-title">
+        <span class="title"><b>相关</b>内容</span>
+        <a href="/zwb/newsType/753" class="more">更多>></a>
+      </h3>
+      <ul class="info-list pb-20">
+        <li>
+          <a href="/zwb/detail/32599" class="item" target="_blank">
+            <h2 class="title">
+              农药登记信息（2026年第9期）
+            </h2>
+            <span class="time">2026-06-12</span>
+          </a>
+        </li>
+        <li>
+          <a href="/zwb/detail/32595" class="item" target="_blank">
+            <h2 class="title">
+              农药登记信息（2026年第8期）
+            </h2>
+            <span class="time">2026-06-12</span>
+          </a>
+        </li>
+        <li>
+          <a href="/zwb/detail/32591" class="item" target="_blank">
+            <h2 class="title">
+              农药登记信息（2026年第7期）
+            </h2>
+            <span class="time">2026-06-05</span>
+          </a>
+        </li>
+        <li>
+          <a href="/zwb/detail/32587" class="item" target="_blank">
+            <h2 class="title">
+              农药登记信息（2026年第5期）
+            </h2>
+            <span class="time">2026-06-05</span>
+          </a>
+        </li>
+        <li>
+          <a href="/zwb/detail/32280" class="item" target="_blank">
+            <h2 class="title">
+              农药登记信息（2026年第1期）
+            </h2>
+            <span class="time">2026-03-26</span>
+          </a>
+        </li>
+        <li>
+          <a href="/zwb/detail/32277" class="item" target="_blank">
+            <h2 class="title">
+              农药登记信息（2026年第4期）
+            </h2>
+            <span class="time">2026-03-26</span>
+          </a>
+        </li>
+        <li>
+          <a href="/zwb/detail/32278" class="item" target="_blank">
+            <h2 class="title">
+              农药登记信息（2026年第3期）
+            </h2>
+            <span class="time">2026-03-26</span>
+          </a>
+        </li>
+        <li>
+          <a href="/zwb/detail/32279" class="item" target="_blank">
+            <h2 class="title">
+              农药登记信息（2026年第2期）
+            </h2>
+            <span class="time">2026-03-26</span>
+          </a>
+        </li>
+        <li>
+          <a href="/zwb/detail/30311" class="item" target="_blank">
+            <h2 class="title">
+              农药登记信息（2025年第12期）
+            </h2>
+            <span class="time">2025-06-06</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+    <div class="container friendly-link bg-white mb-20">
+      <a
+        class="gov-img"
+        href="http://www.gov.cn/"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <img src="/resources/web/images/home/中国政府网.png" alt="中国政府网" />
+      </a>
+      <a
+        class="gov-img"
+        href="http://www.moa.gov.cn/"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <img src="/resources/web/images/home/png_mar.png" alt="中华人民共和国农业农村部" />
+      </a>
+      <select onchange="friendlyLinkChange(this)">
+        <option value="#">国家</option>
+        <option value="https://www.ndrc.gov.cn/">国家发展改革委</option>
+        <option value="https://www.miit.gov.cn/">工业和信息化部</option>
+        <option value="https://www.mee.gov.cn/">生态环境部</option>
+        <option value="http://www.moa.gov.cn/">农业农村部</option>
+        <option value="http://www.nhc.gov.cn/">卫生健康委</option>
+        <option value="http://www.customs.gov.cn/">海关总署</option>
+        <option value="https://www.samr.gov.cn/">市场监管总局</option>
+        <option value="http://www.cnca.gov.cn/">认监委</option>
+        <option value="http://www.sac.gov.cn/">标准委</option>
+      </select>
+      <select onchange="friendlyLinkChange(this)">
+        <option value="volvo">地方</option>
+        <option value="http://nyncj.beijing.gov.cn/">北京农业农村局</option>
+        <option value="https://nync.tj.gov.cn/">天津农业农村委</option>
+        <option value="http://nync.hebei.gov.cn/">河北农业农村厅</option>
+        <option value="http://nynct.shanxi.gov.cn/">山西农业农村厅</option>
+        <option value="http://nmt.nmg.gov.cn/">内蒙古农牧厅</option>
+        <option value="https://nync.ln.gov.cn/">辽宁农业农村厅</option>
+        <option value="http://agri.jl.gov.cn/">吉林农业农村厅</option>
+        <option value="http://xmy.jl.gov.cn/">吉林畜牧业管理局</option>
+        <option value="http://nynct.hlj.gov.cn/">黑龙江农业农村厅</option>
+        <option value="https://nyncw.sh.gov.cn/">上海农业农村委</option>
+        <option value="http://nynct.jiangsu.gov.cn/">江苏农业农村厅</option>
+        <option value="http://nynct.zj.gov.cn/">浙江农业农村厅</option>
+        <option value="http://nync.ah.gov.cn/">安徽农业农村厅</option>
+        <option value="http://nynct.fujian.gov.cn/">福建农业农村厅</option>
+        <option value="http://nync.jiangxi.gov.cn/">江西农业农村厅</option>
+        <option value="http://nync.shandong.gov.cn/">山东农业农村厅</option>
+        <option value="https://nynct.henan.gov.cn/">河南农业农村厅</option>
+        <option value="http://nyt.hubei.gov.cn/">湖北农业农村厅</option>
+        <option value="http://agri.hunan.gov.cn/?tdsourcetag=s_pcqq_aiomsg">湖南农业农村厅</option>
+        <option value="http://dara.gd.gov.cn/">广东农业农村厅</option>
+        <option value="http://nynct.gxzf.gov.cn/">广西农业农村厅</option>
+        <option value="http://agri.hainan.gov.cn/hnsnyt/">海南农业农村厅</option>
+        <option value="http://nyncw.cq.gov.cn/">重庆农业农村委</option>
+        <option value="http://nynct.sc.gov.cn/">四川农业农村厅</option>
+        <option value="http://nynct.guizhou.gov.cn/">贵州农业农村厅</option>
+        <option value="https://nync.yn.gov.cn/">云南农业农村厅</option>
+        <option value="http://nynct.xizang.gov.cn/">西藏农业农村厅</option>
+        <option value="http://nynct.shaanxi.gov.cn/">陕西农业农村厅</option>
+        <option value="http://nync.gansu.gov.cn/">甘肃农业农村厅</option>
+        <option value="http://nynct.qinghai.gov.cn/">青海农业农村厅</option>
+        <option value="http://nynct.nx.gov.cn/">宁夏农业农村厅</option>
+        <option value="http://nynct.xinjiang.gov.cn/">新疆农业农村厅</option>
+        <option value="http://nyj.xjbt.gov.cn/">新疆兵团农业局</option>
+      </select>
+      <select onchange="friendlyLinkChange(this)">
+        <option value="#">国际(地区)</option>
+        <option value="https://www.fao.org/home/en/">联合国粮食及农业组织</option>
+        <option value="https://www.who.int/zh/">世界卫生组织</option>
+        <option value="http://www.efsa.europa.eu/en/panels/pesticides">欧盟食品安全局</option>
+        <option value="http://www.epa.gov/">美国环保署</option>
+        <option value="http://apvma.gov.au/">澳大利亚农兽药管理局</option>
+      </select>
+    </div>
+    <div class="footer">
+      <div class="container">
+        <p class="website-inner-link">
+          <a href="/zwb/website_statement">网站声明</a>
+          <span>|</span>
+          <a href="/zwb/drugTest">关于我们</a>
+          <span>|</span>
+          <a href="/zwb/drugTest?contact=1">联系我们</a>
+        </p>
+        <div class="website-info">
+          <div class="website-ownership">
+            <a
+              class="sydw-icon outLink"
+              data-url="https://bszs.conac.cn/sitename?method=show&id=5D879780574CE487E053022E1AACA3D5"
+        		 href="javascript:void(0)"
+              rel="noopener noreferrer"
+            >
+              <img src="/resources/web/images/home/icon_sydy.png" alt="事业单位" />
+            </a>
+            <ul>
+              <li>主办单位：农业农村部农药检定所</li>
+              <li>
+                <span>网站管理：农业农村部农药检定所药情信息处 </span>
+                <a
+              class="outLink"
+                  data-url="https://beian.miit.gov.cn/"
+        		 href="javascript:void(0)"
+                  rel="noopener noreferrer"
+                  >备案序号：京ICP备18011029号-1</a
+                >
+              </li>
+              <li>
+                <span> 地址：北京市朝阳区麦子店22号 </span>
+                <span> 邮编：100125 </span>
+                <span>电话：010-59194018</span>
+              </li>
+              <li>
+                <a
+                class="outLink"
+                  data-url="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=11010502043033"
+        		 href="javascript:void(0)"
+                  rel="noopener noreferrer"
+                  >京公网安备 11010502043033号<img
+                    src="/resources/web/images/home/icon_beiab.png"
+                    alt="京公网安备 11010502043033号"
+                /></a>
+              </li>
+              <li>网站保留所有权, 未经允许不得复制, 镜像</li>
+            </ul>
+          </div>
+          <ul class="third-app">
+            <li>
+              <img
+                src="/nyupload/image/202212/b82d3d6d-5398-42e8-a70d-16fb23414579.png"
+                alt="中国农药查询(安卓版)"
+              />
+              <span>中国农药查询(安卓版)</span>
+            </li>
+            <li>
+              <img
+                src="/nyupload/image/202212/0828b460-066d-4348-808b-53859ccf02b8.jpg"
+                alt="微语农药(公众号)"
+              />
+              <span>微语农药(公众号)</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div id="back-top">
+      <img src="/resources/web/images/home/top.png" alt="回到顶部" />
+      <span>回到顶部</span>
+    </div>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?b456eb9b63a76ba3e9c265b32c4cbf4a";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+    <script src="/resources/web/lib/jquery-2.2.4.min.js"></script>
+    <script src="/resources/web/lib/layui/layui.js"></script>
+    <script src="/resources/web/lib/solarlunar.min.js"></script>
+    <script src="/resources/web/js/index.js?version=3.5"></script>
+    <script src="/resources/share/js/jquery.share.min.js"></script>
+    <script>
+    with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?cdnversion='+~(-new Date()/36e5)];
+      $(function () {
+        var $like_num = $(".like-num");
+        $(".like-icon").on("click", function () {
+          var liked = $(this).hasClass("liked");
+          $(this).addClass("liked");
+          var num = $like_num.text();
+          if (!liked) {
+            $like_num.text(parseInt(Number(num) + 1));
+            $.ajax({
+				url: "/zwb/support",
+				type: "POST",
+				data: {id:32278},
+				dataType: "json",
+				cache: false,
+				success: function(message) {
+					console.log(message);
+				}
+			});
+          }
+        });
+      });
+    </script>
+    <script>
+	window._bd_share_config = {
+		share : [{
+			"tag" : "share_1",
+			"bdSize" : 32
+		}]
+	}
+</script>
+  </body>
+</html>

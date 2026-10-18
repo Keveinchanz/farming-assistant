@@ -13,20 +13,22 @@
     "onnx_size_mb": 91.9
   },
   "pest_yolov8n": {
-    "arch": "yolov8n",
+    "arch": "yolov8s",
     "task": "detect",
     "num_classes": 102,
     "input_size": 640,
     "checkpoint": "models/checkpoints/pest_best.pt",
-    "run_dir": "D:\\code file\\insert\\outputs\\runs\\pest_ip102",
-    "best_mAP50": 0.50619,
+    "run_dir": "D:\\code file\\insert\\outputs\\runs\\pest_exp\\pseudo_s640_e30",
+    "best_mAP50": 0.63327,
     "epochs_run": 30,
-    "elapsed_seconds": 2969.2,
+    "elapsed_seconds": 36848.6,
     "onnx": "models/onnx/pest_yolo.onnx",
     "onnx_opset": 17,
-    "onnx_size_mb": 13.0,
+    "onnx_size_mb": 42.8,
     "onnx_input_size": 640,
     "onnx_dynamic": false,
-    "onnx_nms_baked": false
+    "onnx_nms_baked": false,
+    "pretrained_from": "models/pest_staging/p1s_640_e100/best.pt",
+    "train_data": "data/pest_pseudo/data_pseudo.yaml"
   }
 }

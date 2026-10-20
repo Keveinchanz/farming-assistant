@@ -4773,6 +4773,66 @@ def _():
     assert "farm_today" in js, "farm/today 首次要联网拉历史气温，得给慢接口超时"
 
 
+# ============================================ AI 助手（宠物）
+
+
+@case("AI 助手：关键词路由命中五个页面，拿不准时回退 chat")
+def _():
+    from src.assistant.intent import classify_by_rules
+
+    cases = {
+        "帮我看看叶子上的虫": "diagnose",
+        "查一下玉米大斑病": "library",
+        "有什么惠农补贴": "policy",
+        "今天该干啥农活": "farm",
+        "打开首页地图": "home",
+        "你好呀": "chat",
+    }
+    for text, expect in cases.items():
+        got = classify_by_rules(text)["intent"]
+        assert got == expect, f"「{text}」应为 {expect}，实际 {got}"
+
+    lib = classify_by_rules("查一下玉米大斑病")
+    assert lib["route"].startswith("/library.html?q="), lib["route"]
+    assert "%" in lib["route"], "中文查询词必须 URL 编码"
+
+
+@case("AI 助手：规则拿不准时交给大模型，闭集外的标签一律丢弃")
+def _():
+    from src.assistant.intent import route
+
+    class _Fake:
+        def __init__(self, value):
+            self.value = value
+
+        def classify_intent(self, text, labels):
+            return self.value
+
+    ok = route("随便聊点什么", llm=_Fake({"intent": "policy", "confidence": 0.9}))
+    assert ok["intent"] == "policy" and ok["source"] == "llm"
+
+    bad = route("随便聊点什么", llm=_Fake({"intent": "delete_everything"}))
+    assert bad["intent"] == "chat", "闭集外的标签必须被丢弃"
+
+
+@case("AI 助手：响应模型把前端要用的字段全部显式声明")
+def _():
+    from backend.app.schemas.models import AssistantChatData
+
+    data = AssistantChatData.model_validate({
+        "answer": "去知识图书库看看",
+        "intent": {"name": "library", "confidence": 0.8, "source": "rule",
+                   "route": "/library.html?q=x", "slots": {}},
+        "provider": "mock",
+        "degraded": {"llm": True, "intent": False},
+    })
+    dumped = data.model_dump()
+    for key in ("answer", "intent", "provider", "degraded"):
+        assert key in dumped, f"响应模型缺少 {key}"
+    for key in ("name", "confidence", "source", "route", "slots"):
+        assert key in dumped["intent"], f"intent 缺少 {key}"
+
+
 # ==================================================================== 主流程
 
 def main() -> int:

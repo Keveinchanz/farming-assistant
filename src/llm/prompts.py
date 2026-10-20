@@ -142,3 +142,28 @@ def build_qa_prompt(question: str, context: str = "") -> str:
 def dumps_context(context: dict) -> str:
     """调试用：把上下文序列化成可读字符串。"""
     return json.dumps(context, ensure_ascii=False, indent=2, default=str)
+
+
+# ---------------------------------------------------------------- AI 助手（宠物）
+
+# 与诊断用的 SYSTEM_PROMPT 完全分开：那个要求「必须输出严格 JSON」，
+# 拿来聊天会被带偏，所以助手单独一套系统提示。
+ASSISTANT_SYSTEM_PROMPT = """你是「田语智农」平台的农技助手，名字叫小禾，是一只中华田园犬。
+用简洁、口语化的中文回答基层农户，一次不超过三句话，不要用 Markdown、不要用编号列表。
+你只回答农业相关的问题：病虫害、农事操作、惠农政策、平台怎么用。
+不要编造农药名称、剂量或政策条款；涉及用药时提醒以当地植保部门指导和农药登记标签为准。
+如果最适合的答案是「去某个页面看」，就直接说去哪个页面，不要假装已经替用户打开了。"""
+
+PAGE_NAMES: dict[str, str] = {
+    "": "站点",
+    "index": "首页 · 病虫害地图",
+    "diagnose": "智能诊断",
+    "library": "知识图书库",
+    "policy": "惠农政策",
+    "farm": "我的农田",
+}
+
+
+def build_assistant_user_prompt(message: str, *, page: str = "") -> str:
+    return f"【当前页面】{PAGE_NAMES.get(page, '站点')}\n【用户】{message}"
+

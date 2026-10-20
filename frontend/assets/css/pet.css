@@ -1,0 +1,301 @@
+/* ==========================================================================
+   AI 助手（页面内常驻宠物「小禾」）
+   --------------------------------------------------------------------------
+   只在五个主功能页加载。层级 1200：高于顶栏（1000）与用户下拉（1001），
+   低于 toast（2000）—— 提示弹出时不会被宠物盖住。
+   ========================================================================== */
+
+.pet {
+  position: fixed;
+  right: 20px;
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  font-size: var(--text-sm);
+  color: var(--color-fg-body);
+}
+
+/* ---------------------------------------------------------------- 形象 */
+
+.pet__avatar {
+  width: 92px;
+  height: 92px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: transform var(--transition), filter var(--transition);
+  filter: drop-shadow(0 6px 14px rgba(23, 38, 59, 0.18));
+}
+.pet__avatar:hover { transform: translateY(-2px) scale(1.02); }
+.pet__avatar:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 4px; }
+.pet__avatar svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+/* SVG 分组动画。transform-box: fill-box 让 rotate/scale 以元素自身为原点，
+   否则缩放会以画布左上角为中心，狗会跳走。 */
+.dog__body { transform-box: fill-box; transform-origin: 50% 95%; animation: pet-breathe 3.4s ease-in-out infinite; }
+.dog__tail { transform-box: fill-box; transform-origin: 10% 90%; animation: pet-wag 1.8s ease-in-out infinite; }
+.dog__eyes { transform-box: fill-box; transform-origin: 50% 50%; animation: pet-blink 5.4s infinite; }
+.dog__head { transform-box: fill-box; transform-origin: 50% 90%; }
+.dog__ears { transform-box: fill-box; transform-origin: 50% 100%; }
+.dog__mouth { transform-box: fill-box; transform-origin: 50% 0%; }
+
+.pet[data-state="speaking"] .dog__mouth { animation: pet-talk 0.22s steps(2, end) infinite; }
+.pet[data-state="speaking"] .dog__tail { animation-duration: 0.9s; }
+.pet[data-state="listening"] .dog__ears { animation: pet-perk 0.7s ease-in-out infinite; }
+.pet[data-state="thinking"] .dog__head { animation: pet-tilt 1.1s ease-in-out infinite; }
+.pet[data-state="happy"] .dog__body { animation: pet-hop 0.45s ease-in-out 2; }
+
+@keyframes pet-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025); } }
+@keyframes pet-wag { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(11deg); } }
+@keyframes pet-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.12); } }
+@keyframes pet-talk { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.35); } }
+@keyframes pet-tilt { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-8deg); } }
+@keyframes pet-perk { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes pet-hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pet__avatar svg * { animation: none !important; }
+}
+
+/* ---------------------------------------------------------------- 招呼气泡 */
+
+.pet__bubble {
+  position: relative;
+  max-width: 248px;
+  padding: 10px 14px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px 14px 4px 14px;
+  box-shadow: var(--shadow-sm);
+  line-height: 1.5;
+  cursor: pointer;
+  animation: pet-bubble-in 0.25s ease-out;
+}
+.pet__bubble::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  background: var(--color-card);
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  transform: rotate(45deg);
+}
+@keyframes pet-bubble-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ---------------------------------------------------------------- 面板 */
+
+.pet__panel {
+  width: 348px;
+  max-width: calc(100vw - 32px);
+  max-height: min(560px, calc(100vh - 170px));
+  max-height: min(560px, calc(100dvh - 170px));
+  display: flex;
+  flex-direction: column;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 18px);
+  box-shadow: 0 18px 44px rgba(23, 38, 59, 0.22);
+  overflow: hidden;
+  animation: pet-panel-in 0.22s ease-out;
+}
+@keyframes pet-panel-in { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+.pet__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-primary-soft);
+}
+.pet__head strong { font-size: var(--text-sm); }
+.pet__head .pet__status { color: var(--color-muted-fg); font-size: var(--text-xs); flex: 1; }
+.pet__icon-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-fg-body);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+.pet__icon-btn:hover { background: var(--color-card); border-color: var(--color-border); }
+.pet__icon-btn[aria-pressed="true"] { background: var(--color-card); border-color: var(--color-border); }
+
+/* 模式选择 */
+.pet__chooser { padding: 16px 14px; }
+.pet__chooser p { margin: 0 0 12px; font-weight: 600; }
+.pet__choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pet__choice {
+  padding: 14px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg-elevated, var(--color-card));
+  color: var(--color-fg-body);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+.pet__choice:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
+.pet__choice strong { display: block; font-size: var(--text-base); margin-bottom: 2px; }
+.pet__choice span { color: var(--color-muted-fg); font-size: var(--text-xs); }
+
+/* 对话记录 */
+.pet__log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--color-bg, var(--color-card));
+}
+.pet__msg {
+  max-width: 84%;
+  padding: 8px 11px;
+  border-radius: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.pet__msg--user {
+  align-self: flex-end;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-bottom-right-radius: 4px;
+}
+.pet__msg--bot {
+  align-self: flex-start;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-bottom-left-radius: 4px;
+}
+.pet__route {
+  align-self: flex-start;
+  margin-top: -4px;
+  padding: 7px 12px;
+  border: 1px solid var(--color-primary);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.pet__route:hover { background: var(--color-primary); color: var(--color-on-primary); }
+
+/* 快捷胶囊 */
+.pet__chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 10px; }
+.pet__chip {
+  padding: 6px 10px;
+  border: 1px dashed var(--color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-muted-fg);
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+.pet__chip:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+/* 输入区 */
+.pet__composer {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--color-border);
+}
+.pet__composer .input { flex: 1; min-height: 40px; }
+.pet__send {
+  padding: 0 14px;
+  min-height: 40px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.pet__send:disabled { opacity: 0.55; cursor: default; }
+
+/* 语音模式 */
+.pet__voice { padding: 12px; border-top: 1px solid var(--color-border); text-align: center; }
+.pet__mic {
+  width: 72px;
+  height: 72px;
+  margin: 4px auto 6px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--color-primary);
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 26px;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.pet__mic[data-recording="true"] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: 0 0 0 8px var(--color-primary-soft);
+  animation: pet-pulse 1.2s ease-in-out infinite;
+}
+@keyframes pet-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+.pet__voice small { color: var(--color-muted-fg); font-size: var(--text-xs); }
+
+/* 底部工具条 */
+.pet__foot {
+  display: flex;
+  gap: 6px;
+  padding: 6px 12px 8px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-card);
+}
+.pet__foot .pet__icon-btn { width: auto; padding: 0 10px; height: 30px; font-size: var(--text-xs); }
+
+/* 全屏弹窗（图书库详情、摄像头取景）打开时先让开：
+   弹窗层级只有 60，宠物的 1200 会盖在它上面，挡正文。 */
+body.modal-open .pet { display: none; }
+
+/* ---------------------------------------------------------------- 窄屏 */
+
+@media (max-width: 900px) {
+  .pet {
+    right: 12px;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+  .pet__avatar { width: 72px; height: 72px; }
+
+  /* 抽屉：从底部升起，不遮挡正文上方 */
+  .pet__panel {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-width: none;
+    max-height: 68vh;
+    max-height: 68dvh;
+    border-radius: 18px 18px 10px 10px;
+  }
+  .pet__bubble { max-width: 210px; }
+
+  /* 抽屉是 fixed 的，会盖住头像；打开时把头像收起来，避免两个叠在一起 */
+  .pet[data-open="true"] .pet__avatar { display: none; }
+}
+
+@media (max-width: 420px) {
+  .pet__panel { left: 6px; right: 6px; }
+  .pet__msg { max-width: 90%; }
+}

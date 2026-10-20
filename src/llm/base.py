@@ -44,5 +44,18 @@ class BaseLLM(ABC):
     def answer(self, question: str, *, context: str = "") -> str:
         """问答交互（任务 3.3 的"问答交互"能力）。"""
 
+    # ---- 以下两个是给「AI 助手」用的可选能力，不是抽象方法 ----
+    # 不做成 abstractmethod 的原因：Mock 与未来的 provider 不必为了通过类型检查
+    # 硬写一堆空实现；调用方本来就要处理「返回空 -> 回退规则」的情况。
+
+    def reply(self, message: str, *, context: str = "",
+              history: list[dict[str, str]] | None = None) -> str:
+        """自由对话。默认返回空串，表示「本 provider 不支持」，由调用方回退模板话术。"""
+        return ""
+
+    def classify_intent(self, text: str, labels: list[str]) -> dict:
+        """把一句话分类到 labels 里的某个意图。默认返回空 dict（交给规则路由兜底）。"""
+        return {}
+
     def describe(self) -> dict[str, Any]:
         return {"provider": self.provider}

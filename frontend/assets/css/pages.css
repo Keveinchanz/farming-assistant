@@ -1256,3 +1256,59 @@ body.modal-open { overflow: hidden; }   /* 挡住背景滚动穿透 */
   padding: var(--space-4) var(--space-5) var(--space-5);
   border-top: 1px solid var(--color-border);
 }
+
+/* ==========================================================================
+   移动端补充（2026-10-20）
+   - viewport-fit=cover 之后的安全区
+   - 账号页、个人中心、管理员页此前没有页面级断点
+   - 触摸设备（pointer: coarse）的可点尺寸
+   ========================================================================== */
+
+/* iPhone 底部 Home Indicator：页脚与底部固定元素不能被吃掉 */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .site-footer {
+    padding-bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
+  }
+}
+
+/* 账号类页面：360~480px 下去掉外层留白，卡片内边距收紧 */
+@media (max-width: 480px) {
+  .auth-wrap {
+    max-width: none;
+    margin-top: var(--space-4);
+    padding: 0;
+  }
+  .auth-card { padding: var(--space-5) var(--space-4); }
+  .auth-card__title { font-size: var(--text-lg); }
+
+  /* 个人中心的「标签 + 值」两列在窄屏改成上下 */
+  .profile-meta { grid-template-columns: 1fr; gap: 2px; }
+  .profile-meta dt { margin-top: var(--space-2); }
+}
+
+/* 管理员能力表：窄屏允许横向滚动，不把整页撑破 */
+#admin-health { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 640px) {
+  .admin-table { min-width: 520px; }
+
+  /* 分类标签 4 个加起来比手机宽，改成容器内横向滑动，
+     而不是把整个页面的布局视口撑到 635px */
+  .library-tabs {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .library-tabs::-webkit-scrollbar { display: none; }
+}
+
+/* 触摸设备：可点元素不小于 44px，去掉只对鼠标成立的悬停依赖 */
+@media (pointer: coarse) {
+  .btn,
+  .site-nav__link,
+  .dialect-picker select,
+  .season-switch button,
+  .plot-card {
+    min-height: 44px;
+  }
+}

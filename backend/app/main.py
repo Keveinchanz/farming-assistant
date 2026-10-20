@@ -24,7 +24,7 @@ from backend.app import deps
 from backend.app.core.auth_deps import require_admin
 from backend.app.core.config import get_settings
 from backend.app.core.errors import install_error_handlers
-from backend.app.routers import auth, diagnose, farm, library, map as map_router, policy, voice
+from backend.app.routers import assistant, auth, diagnose, farm, library, map as map_router, policy, voice
 from backend.app.schemas.models import ApiResponse
 from src.common.io_utils import ensure_dir
 from src.common.logging_utils import setup_logger
@@ -111,6 +111,8 @@ def create_app() -> FastAPI:
     app.include_router(map_router.router)
     app.include_router(policy.router)
     app.include_router(voice.router)
+    # AI 助手：页面内常驻宠物，公开可用（未登录也能聊，只是读不到私有农田数据）
+    app.include_router(assistant.router)
     # 阶段 7：账号与我的农田。公开接口（诊断/知识库/地图/政策）不受影响，
     # /api/farm/* 由路由自己的依赖强制登录（7.0.6）。
     app.include_router(auth.router)

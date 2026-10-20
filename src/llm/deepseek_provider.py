@@ -19,7 +19,13 @@ from typing import Any
 from src.common.config import env
 from src.common.logging_utils import setup_logger
 from src.llm.base import BaseLLM
-from src.llm.prompts import SYSTEM_PROMPT, build_qa_prompt, build_user_prompt
+from src.llm.prompts import (
+    ASSISTANT_SYSTEM_PROMPT,
+    SYSTEM_PROMPT,
+    build_assistant_user_prompt,
+    build_qa_prompt,
+    build_user_prompt,
+)
 
 logger = setup_logger("agri.llm.deepseek")
 
@@ -43,7 +49,8 @@ class DeepSeekProvider(BaseLLM):
     # ------------------------------------------------------------ 底层调用
 
     def _chat(self, messages: list[dict], *, json_mode: bool = True,
-              temperature: float = 0.3, max_tokens: int = 1600) -> str:
+              temperature: float = 0.3, max_tokens: int = 1600,
+              timeout: float | None = None) -> str:
         import requests
 
         payload: dict[str, Any] = {
@@ -63,7 +70,7 @@ class DeepSeekProvider(BaseLLM):
                 "Content-Type": "application/json",
             },
             json=payload,
-            timeout=self.timeout,
+            timeout=timeout or self.timeout,
         )
         if r.status_code >= 400:
             raise RuntimeError(f"DeepSeek 调用失败 HTTP {r.status_code}：{r.text[:300]}")
@@ -111,6 +118,45 @@ class DeepSeekProvider(BaseLLM):
             {"role": "user", "content": build_qa_prompt(question, context)},
         ]
         return self._chat(messages, json_mode=False, temperature=0.5, max_tokens=800).strip()
+
+    # ------------------------------------------------------------ AI 助手（宠物）
+
+    def reply(self, message: str, *, context: str = "",
+              history: list[dict[str, str]] | None = None) -> str:
+        """自由对话。超时压到 10 秒：宠物是交互入口，宁可回退模板也不让用户干等。"""
+        messages: list[dict] = [{"role": "system", "content": ASSISTANT_SYSTEM_PROMPT}]
+        for turn in (history or [])[-8:]:
+            role = str(turn.get("role") or "")
+            content = str(turn.get("content") or "")[:400]
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+        messages.append({"role": "user",
+                         "content": build_assistant_user_prompt(message, page=context)})
+        return self._chat(messages, json_mode=False, temperature=0.6,
+                          max_tokens=300, timeout=10).strip()
+
+    def classify_intent(self, text: str, labels: list[str]) -> dict:
+        prompt = (
+            "你是农业平台的意图分类器。只输出 JSON，不要解释。\n"
+            '格式：{"intent": "<标签>", "confidence": 0.0}\n'
+            f"可选标签：{', '.join(labels)}\n"
+            "拿不准就输出 chat，并把 confidence 给低一点。\n"
+            f"用户原话：{text}"
+        )
+        raw = self._chat(
+            [{"role": "system", "content": "你是严格的 JSON 分类器，只输出 JSON。"},
+             {"role": "user", "content": prompt}],
+            json_mode=True, temperature=0, max_tokens=100, timeout=8,
+        )
+        data = self._parse_json(raw)
+        name = str(data.get("intent") or "")
+        if name not in labels:
+            return {}
+        try:
+            confidence = float(data.get("confidence") or 0.7)
+        except (TypeError, ValueError):
+            confidence = 0.7
+        return {"intent": name, "confidence": confidence}
 
     # ------------------------------------------------------------ 结果规整
 

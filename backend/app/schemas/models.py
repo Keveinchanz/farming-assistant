@@ -393,3 +393,33 @@ class HealthData(BaseModel):
     llm: dict[str, Any] = Field(default_factory=dict)
     rag: dict[str, Any] = Field(default_factory=dict)
     data: dict[str, Any] = Field(default_factory=dict)
+
+
+# ---------------------------------------------------------------- AI 助手（宠物）
+
+
+class AssistantChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=500)
+    page: str = Field("", max_length=32, description="当前页面标识：index/diagnose/library/policy/farm")
+    dialect: str = Field("", max_length=32, description="播报方言 key，留空用默认")
+    history: list[dict[str, str]] = Field(default_factory=list, max_length=10)
+
+
+class AssistantIntent(BaseModel):
+    name: str = Field("chat", description="diagnose/library/policy/farm/home/chat")
+    confidence: float = 0.0
+    source: str = Field("default", description="rule / llm / default")
+    route: str = Field("", description="命中时可直接跳转的站内路径")
+    slots: dict[str, str] = Field(default_factory=dict)
+
+
+class AssistantDegraded(BaseModel):
+    llm: bool = False
+    intent: bool = False
+
+
+class AssistantChatData(BaseModel):
+    answer: str
+    intent: AssistantIntent
+    provider: str = ""
+    degraded: AssistantDegraded

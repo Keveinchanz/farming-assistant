@@ -22,7 +22,31 @@
 
 ---
 
-## 二、核心功能详解
+## 二、界面预览
+
+**首页 · 病虫害地图**
+
+![首页](docs/screenshots/home.jpg)
+
+**智能诊断**
+
+![智能诊断](docs/screenshots/diagnose.png)
+
+**知识图书库**
+
+![知识图书库](docs/screenshots/library.jpg)
+
+**惠农政策**
+
+![惠农政策](docs/screenshots/policy.png)
+
+**我的农田**
+
+![我的农田](docs/screenshots/farm.png)
+
+---
+
+## 三、核心功能详解
 
 ### 1. 首页 · 病虫害地图
 
@@ -92,7 +116,7 @@
 
 ---
 
-## 三、快速开始
+## 四、快速开始
 
 环境要求：Python 3.11（本项目验证版本），Windows、macOS、Linux 均可。
 仓库已包含推理模型、知识库与前端资源，无需另外下载模型。
@@ -169,7 +193,7 @@ python scripts\20_run_backend.py
 
 ---
 
-## 四、使用指南
+## 五、使用指南
 
 ### 诊断一次病虫害
 
@@ -201,7 +225,7 @@ python scripts\20_run_backend.py
 
 ---
 
-## 五、接口一览
+## 六、接口一览
 
 统一响应包为 `{"code": 0, "msg": "ok", "data": {...}}`，`code != 0` 时 `msg` 为中文错误说明。
 
@@ -248,7 +272,7 @@ python scripts\20_run_backend.py
 
 ---
 
-## 六、模型效果
+## 七、模型效果
 
 ### 病害分类
 
@@ -281,7 +305,7 @@ python scripts\20_run_backend.py
 
 ---
 
-## 七、部署
+## 八、部署
 
 ### GitHub Codespaces
 
@@ -300,7 +324,7 @@ docker run --rm -p 8000:8000 --env-file .env tianyu-zhinong
 
 ---
 
-## 八、目录结构与技术栈
+## 九、目录结构与技术栈
 
 ```
 insert\
@@ -323,7 +347,7 @@ insert\
 
 ---
 
-## 九、关键脚本
+## 十、关键脚本
 
 | 脚本 | 用途 |
 |---|---|
@@ -340,7 +364,7 @@ insert\
 
 ---
 
-## 十、常见问题
+## 十一、常见问题
 
 **问：注册后为什么自动有三块田？**
 这是注册时创建的示例田，覆盖水稻分蘖期、玉米抽穗期与油菜成熟期，用于直接体验三维长势与积温功能。
@@ -365,7 +389,7 @@ insert\
 
 ---
 
-## 十一、数据与许可
+## 十二、数据与许可
 
 - 病害分类数据集：PDD271，https://github.com/liuxindazz/PDD271
 - 虫害检测数据集：IP102，https://github.com/xpwu95/IP102

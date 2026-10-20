@@ -3,7 +3,7 @@
 面向基层农户的农技服务平台。农户拍摄作物照片或用方言描述症状，平台输出病虫害诊断、防治方案与用药提醒，
 并提供各省当季病虫害地图、知识图书库与惠农政策查询。
 
-在线演示：<https://charity-brake-surgical-increases.trycloudflare.com>
+在线演示：<https://walker-roy-analyst-pathology.trycloudflare.com>
 （由 Cloudflare 临时隧道提供，仅在演示实例运行期间有效。）
 
 ---

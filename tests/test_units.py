@@ -3529,10 +3529,37 @@ def _():
     advice = advisor.harvest_advice(late, params, harvest, _fake_weather("forecast"))
     assert advice and advice["type"] == "harvest"
 
-    # 完熟（≥0.95）时优先级最高，而且不依赖天气
+    # 完熟（matured=True）时优先级最高，而且不依赖天气
     done = _fake_growth(progress=0.98, matured=True)
     top = advisor.harvest_advice(done, params, harvest, {"source": "none", "days": []})
     assert top and top["priority"] == "高" and "完熟" in top["action"]
+
+
+@case("收获建议：完熟判定与 growth.matured 同口径，不许自己写 progress 阈值")
+def _():
+    from src.farm import advisor
+
+    params = {"dryLeafRatio": 0.0, "earDroop": 0.0}
+    harvest = {"earliest": None, "most_likely": None, "latest": None, "matured": False}
+
+    # 进度 0.956（积温 2008/2100）而 growth 未标完熟 —— 这是 09-02 示例田的真实数字。
+    # 旧实现按 progress ≥ 0.95 判完熟，页面就会在同一屏里同时出现
+    # 「matured: false」和「已完熟，准备收割」。
+    near = _fake_growth(progress=0.956, gdd_cum=2008.0, maturity_gdd=2100.0,
+                        gdd_remain=92.0, stage="成熟期", matured=False)
+    advice = advisor.harvest_advice(near, params, harvest, {"source": "none", "days": []})
+    assert advice is not None, "接近成熟时仍应给出准备收割的建议"
+    assert "完熟" not in advice["action"], (
+        f"growth.matured=False 却给出了完熟建议，两处口径又分叉了：{advice['action']}"
+    )
+    assert advice["priority"] == "低", f"未完熟的优先级应低于完熟：{advice['priority']}"
+
+    # 真过阈值（积温 ≥ maturity_gdd）才说完熟，理由报积温实值
+    done = _fake_growth(progress=1.0, gdd_cum=2110.0, maturity_gdd=2100.0,
+                        gdd_remain=0.0, stage="成熟期", matured=True)
+    top = advisor.harvest_advice(done, params, harvest, {"source": "none", "days": []})
+    assert top and top["priority"] == "高" and "完熟" in top["action"]
+    assert "2110" in top["reason"], f"完熟的理由应给出积温实值：{top['reason']}"
 
 
 @case("语音解析：认不出就返回空字段 + 明确原因，绝不猜")

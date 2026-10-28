@@ -173,6 +173,15 @@ def reminders(
 
 # ---------------------------------------------------------------- 7.4.2 收获建议
 
+def _mature_reason(growth: dict) -> str:
+    """完熟的理由：优先报积温实值，缺值时才退到进度百分比。"""
+    maturity = float(growth.get("maturity_gdd", 0.0))
+    gdd = float(growth.get("gdd_cum", 0.0))
+    if maturity > 0 and gdd >= maturity:
+        return f"积温 {gdd:.0f}℃·d，已达成熟阈值 {maturity:.0f}℃·d"
+    return f"积温进度 {float(growth.get('progress', 0.0)):.0%}，生育期已走完"
+
+
 def harvest_advice(
     growth: dict,
     model_params: dict,
@@ -191,11 +200,14 @@ def harvest_advice(
     days = today_weather.get("days") or []
     has_forecast = today_weather.get("source") == "forecast" and bool(days)
 
-    # 高：积温进度 ≥ 0.95
-    if progress >= 0.95:
+    # 高：已完熟。判定口径必须与 growth 一致 —— 用 matured（积温达到 maturity_gdd），
+    # 不自己再写一条 progress 阈值：progress 封顶在 1.0，曾经的 0.95 只相当于成熟阈值的
+    # 95%，于是同一份数据 growth 说「还没完熟」、这里写「已完熟，准备收割」，
+    # 页面上两句话互相打架（09-02 进度 0.956 时就是这样）。
+    if growth.get("matured"):
         return _advice(
             "harvest", "已完熟，准备收割",
-            reason=f"积温进度 {progress:.0%}，已达成熟阈值",
+            reason=_mature_reason(growth),
             severity="danger", priority="高",
         )
 
@@ -229,8 +241,8 @@ def harvest_advice(
                 severity="warn", priority="中",
             )
 
-    # 低：0.8 ≤ 进度 < 0.95
-    if 0.8 <= progress < 0.95:
+    # 低：0.8 ≤ 进度（未完熟，上面已排除）
+    if progress >= NEAR_HARVEST:
         return _advice(
             "harvest", "7~10 天后准备收割",
             reason=f"积温进度 {progress:.0%}，接近成熟",

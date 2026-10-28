@@ -374,6 +374,15 @@ python -m skills show crop-diagnosis
 python -m skills run farm-growth --input payload.json --pretty
 ```
 
+两个技能各有独立仓库，内含 `SKILL.md`、处理函数与输入契约，可单独取用：
+
+| 技能 | 仓库 | 职责 |
+|---|---|---|
+| `crop-diagnosis` | [crop-diagnosis-skill](https://github.com/Keveinchanz/crop-diagnosis-skill) | 照片、语音、文字 → 病害候选、虫害检测框、诊断报告与防治方案 |
+| `farm-growth` | [farm-growth-skill](https://github.com/Keveinchanz/farm-growth-skill) | 田块与逐日气温 → 积温、生育阶段、收获区间与三维植株参数 |
+
+两份仓库只带技能说明与编排层，推理链路仍由本项目提供。
+
 `/api/library?category=` 取 `pest`（病害 250 张）、`insect`（虫害 102 张）、`care`（养护 47 张），
 留空返回全部 399 条。`pest` 键存放病害，沿用旧名以保持首页深链。
 

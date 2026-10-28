@@ -148,3 +148,6 @@ tools/
 # 技术方案配图（14 张），已嵌入交付的 docx，代码仓库不重复存
 docs/screenshots/v2/
 
+# 两个技能的独立发布目录（各自是一个 git 仓库，推送到独立 remote）
+_publish/
+

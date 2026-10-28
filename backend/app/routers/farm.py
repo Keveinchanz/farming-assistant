@@ -222,10 +222,13 @@ async def today(
     logs = repo.list_logs(conn, user_id, field_id=field["id"], limit=50)
     talk = narrator.narrative(field, g, weather, h, rem["reminders"], logs)
 
-    # 安全间隔期：单独查一次全量（不截断的）记录来判 —— 上面那 50 条是给历史卡片看的，
+    # 采收限制：单独查一次全量（不截断的）记录来判 —— 上面那 50 条是给历史卡片看的，
     # 一块田真要打了几十次药，用截断的列表算「最晚解禁」会算错。
-    spray_state = spray_mod.constraint(
+    # 判定与台账同一处（harvest_state）：最新一次留空了间隔期时报 unknown，
+    # 不能因为旧药早就期满就报「可采收」。
+    _hs = spray_mod.harvest_state(
         repo.list_logs(conn, user_id, field_id=field["id"], limit=500), today_str())
+    spray_state = None if _hs["status"] == "none" else _hs
 
     # 记一条当日生长快照：仓库里那张表就是为这个存在的，
     # 「同一天重复请求」由主键幂等兜住，不会堆出多行。
@@ -254,7 +257,7 @@ async def today(
             # 收割窗口挂在收获建议上一起给前端（7.4.3 的产物就是这个字符串）
             "reminders": rem["reminders"],
             "reminders_notes": rem["notes"],
-            # null = 这块田没有任何一条记了间隔期的施药（不知道），不是「没有约束」
+            # null = 这块田一条打药记录都没有，不是「没有约束」；unknown 单列一档
             "spray": spray_state,
             "logs": logs,
             "narrative": talk["text"],
@@ -316,7 +319,16 @@ async def harvest_mark(
         raise _bad("收获日不能早于播种日")
 
     _status, g, series, _m, h = _compute(conn, user_id, field)
-    features = harvest_model.build_features(field, g, series)
+    # 特征只对模型覆盖的 3 种作物可算（CROP_CODES）。小麦、大豆、棉花、马铃薯
+    # 点「我收了」时，以前这里直接抛 ValueError，整次记录失败 —— 田里有收成却记不上。
+    # 现在的做法是：特征算不出就留空，收获事实照记，并在返回里说清这一条按积温法算。
+    features = None
+    feature_skip = ""
+    try:
+        features = harvest_model.build_features(field, g, series)
+    except ValueError as e:
+        feature_skip = f"{field['crop']}还不在收获模型的训练范围内，这条记录不带特征，按积温法估算"
+        logger.info("收获记录跳过特征：%s", e)
     record = repo.create_harvest(
         conn, user_id, field_id=field["id"], crop=field["crop"],
         sow_date=field["sow_date"], harvest_date=date,
@@ -334,9 +346,11 @@ async def harvest_mark(
             "harvest_id": record["id"], "actual_days": record["actual_days"],
             "gdd_at_harvest": record["gdd_at_harvest"],
             "sample_count": total, "sample_needed": harvest_model.TRAIN_MIN_SAMPLES,
-            "note": ("全平台样本已够，可以运行 scripts/24_train_harvest_model.py 训练模型"
-                     if total >= harvest_model.TRAIN_MIN_SAMPLES
-                     else f"全平台已积累 {total}/{harvest_model.TRAIN_MIN_SAMPLES} 条收获记录"),
+            "note": (feature_skip or
+                     ("全平台样本已够，可以运行 scripts/24_train_harvest_model.py 训练模型"
+                      if total >= harvest_model.TRAIN_MIN_SAMPLES
+                      else f"全平台已积累 {total}/{harvest_model.TRAIN_MIN_SAMPLES} 条收获记录")),
+            "feature_saved": bool(features),
             "prediction_method": h["method"],
         },
     }
@@ -552,7 +566,8 @@ async def get_ledger(
 
 @router.get("/ledger/export", summary="导出台账（xlsx 明细 / pdf 一页纸）",
             description="Excel 给对账（可排序、可求和）；PDF 给签字存档（一页装下）。"
-                        "两者都与页面同口径：没记录间隔期的行写「未记录间隔期」，不写「可采收」。")
+                        "两者都与页面同口径：留空间隔期的行写「间隔期未记录，需核对」，"
+                        "不写「可采收」；旧药已期满、新药留空时同样如此。")
 async def export_ledger(
     fmt: str = Query("xlsx", pattern="^(xlsx|pdf)$"),
     field_id: str = Query(""),
@@ -595,12 +610,15 @@ async def export_ledger(
 
 
 @router.get("/spray/{field_id}", response_model=ApiResponse[SprayLockData],
-            summary="这块田当前的安全间隔期状态",
-            description="给问诊单的「本地产收提醒」用。返回 null 表示这块田没有任何一条"
-                        "记了间隔期的施药 —— 是「不知道」，不是「没有约束」。")
+            summary="这块田当前的采收限制状态",
+            description="给问诊单的「本地产收提醒」用，判定与台账同一处"
+                        "（spray.harvest_state）。status 为 locked / unknown / ok；"
+                        "返回 null 表示这块田一条打药记录都没有，不是「没有约束」。")
 async def get_spray(field_id: str, conn=Depends(db_conn),
                     user_id: int = Depends(current_user_id)):
     _field_or_404(conn, user_id, field_id)
     logs = repo.list_logs(conn, user_id, field_id=field_id, limit=500)
-    state = spray_mod.constraint(logs, today_str())
-    return {"code": 0, "msg": "ok", "data": state}
+    state = spray_mod.harvest_state(logs, today_str())
+    # none（一条打药记录都没有）继续返回 null：旧前端与分享页都靠这个判「不显示」
+    return {"code": 0, "msg": "ok",
+            "data": None if state["status"] == "none" else state}

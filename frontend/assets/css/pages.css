@@ -267,14 +267,10 @@
 .input-section { padding: var(--space-5); }
 .input-section + .input-section { margin-top: var(--space-4); }
 .input-section__head { display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-4); }
-/* 编号在这里是「真的有序」：三个输入小节确实有先后，不是拿 01/02/03 充设计 */
-.input-section__num {
-  display: grid; place-items: center;
-  width: 32px; height: 32px; flex: 0 0 auto;
-  border-radius: var(--radius-sm);
-  background: var(--color-primary); color: var(--color-on-primary);
-  font-weight: 600; font-size: var(--text-sm);
-}
+/* 编号已从页面上移除（2026-10-28)：照片 / 语音 / 文字是**任选**，不是必须先拍照
+   再录音、最后打字。原先 1/2/3 的方块加上「批量巡检 4」，会让人以为这是一份
+   必做清单。样式保留为空占位，防止别处仍引用该 class 时塌掉。 */
+.input-section__num { display: none; }
 .input-section__title { margin: 0; font-size: var(--text-md); }
 .input-section__desc { margin: 0; font-size: var(--text-sm); color: var(--color-muted-fg); }
 .input-section__actions { display: flex; gap: var(--space-3); flex-wrap: wrap; }
@@ -1094,13 +1090,38 @@ body.modal-open { overflow: hidden; }   /* 挡住背景滚动穿透 */
 
 /* 新建田块表单 */
 .farm-newform { margin-bottom: var(--space-4); }
+/* 分组之后字段不再挤在一张 auto-fit 网格里：auto-fit + 180px 在宽屏会排成六列，
+   第二行只剩两个，看上去像「填漏了」。固定四列，够放四个必填项，也不会散。 */
+.farm-newform__group + .farm-newform__group { margin-top: var(--space-4); }
+.farm-newform__group-title {
+  display: flex; align-items: baseline; gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm); font-weight: 600; color: var(--color-fg);
+}
+.farm-newform__req {
+  margin-left: var(--space-1);
+  font-weight: 400; font-size: var(--text-xs);
+  color: var(--color-warning);
+}
+.farm-newform__auto {
+  font-weight: 400; font-size: var(--text-xs); color: var(--color-muted-fg);
+}
 .farm-newform__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-3);
   margin-bottom: var(--space-3);
 }
+/* 自动填的两格弱化：它们是算出来的结果，不是要人填的必填项 */
+.farm-newform__group--auto .input { background: var(--color-bg); }
 .farm-newform__ops { display: flex; gap: var(--space-2); }
+
+@media (max-width: 900px) {
+  .farm-newform__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .farm-newform__grid { grid-template-columns: 1fr; }
+}
 
 /* 语音记账弹窗 */
 .modal__panel--narrow { width: min(560px, 100%); }
@@ -2354,4 +2375,31 @@ body.modal-open { overflow: hidden; }   /* 挡住背景滚动穿透 */
   .ledger-table td:first-child::before { content: none; }
   .ledger-table .reg { display: inline; margin-left: var(--space-1); }
   .ledger-tl__field { margin-left: 0; }
+}
+
+/* --------------------------------------------------------------------------
+   诊断页：提交按钮在手机上始终看得见（U05）
+   三块输入叠起来之后，页面在 390px 宽的手机上要滚两屏多才见到底部的「开始诊断」。
+   上传一张图之后按钮仍然在屏幕外，用户会以为没提交成功。
+   做法是把提交行钉在视口底部（sticky），而不是加浮动的悬浮球 ——
+   前者只在本表单范围内生效，滚到结果区就自然让位。
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .submit-row {
+    position: sticky;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    z-index: 30;
+    margin-top: var(--space-4);
+    padding: var(--space-3) 0;
+    /* 实色底 + 一条发丝线，不用渐变（全站禁用装饰性渐变，见样式回归锁）。
+       正文从按钮上方滚过时不会和按钮文字叠在一起。 */
+    background: var(--color-bg);
+    border-top: 1px solid var(--color-border);
+  }
+  .submit-row .btn { width: 100%; }
+
+  /* 未上传时拖拽区高度收一档：原来 24px 上下内边距 + 两行说明，
+     单这一块就占掉小半屏，把语音和文字都推到折线以下。 */
+  .dropzone { padding: var(--space-4) var(--space-4); }
+  .input-section__head { margin-bottom: var(--space-3); }
 }

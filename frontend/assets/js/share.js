@@ -96,6 +96,31 @@
         (region.demo ? `　<b>［演示数据，非实时测报］</b>` : "") + `</p>`
       : `<p class="sheet__note">未设置所在省份，无法给出本省预警。</p>`;
 
+    // 本地产收提醒：只在快照带 harvest 时出现。unknown 一律不写日期 ——
+    // 那张纸上唯一能写日期的地方就是这里，写错等于替农户做了采收决定。
+    const hv = p.harvest;
+    let harvestSection = "";
+    if (hv && hv.status && hv.status !== "none") {
+      if (hv.status === "unknown") {
+        harvestSection = section("采收提醒",
+          `<p>这块田 ${esc(hv.date || "—")} 施过 ${esc(hv.item || "药剂")}，` +
+          `但这次记录没有填安全间隔期，<b>无法判断哪天可以采收</b>。</p>` +
+          `<p>请按瓶身标签补填间隔期后再看这张单。</p>`);
+      } else if (hv.status === "locked") {
+        harvestSection = section("采收提醒",
+          `<p>这块田 ${esc(hv.date || "—")} 施过 ${esc(hv.item || "药剂")}，` +
+          `标签安全间隔期 ${esc(String(hv.interval_days ?? "—"))} 天，` +
+          `<b>最早可收 ${esc(hv.earliest_date || "—")}</b>` +
+          `${typeof hv.days_left === "number" ? `（距今 ${hv.days_left} 天）` : ""}。` +
+          `在这之前不要采收。</p>`);
+      } else {
+        harvestSection = section("采收提醒",
+          `<p>这块田 ${esc(hv.date || "—")} 施过 ${esc(hv.item || "药剂")}，` +
+          `间隔期 ${esc(String(hv.interval_days ?? "—"))} 天，` +
+          `已于 ${esc(hv.earliest_date || "—")} 期满，可以采收。</p>`);
+      }
+    }
+
     $("share-root").innerHTML =
       `<div class="sheet" id="sheet-paper">` +
       head + meta +
@@ -107,6 +132,7 @@
         : "") +
       section("五、回访安排", visit) +
       section("六、本省当前高发（供参考）", regionBody) +
+      harvestSection +
       `<div class="sheet__sign">` +
       `<span>农技员签字：____________</span>` +
       `<span>联系方式：____________</span>` +

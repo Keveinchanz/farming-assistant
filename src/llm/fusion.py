@@ -150,12 +150,14 @@ class DiagnosisFusion:
 
     def _rule_payload(self, *, kind: str, recognition: dict, asr: dict | None,
                       pest_result: dict | None, degraded: dict, dialect_key: str,
-                      dialect_name: str, input_summary: dict) -> dict:
+                      dialect_name: str, input_summary: dict,
+                      text_hint: str = "") -> dict:
         """健康 / 没把握这两种结论一律走规则，不交给大模型。
 
         kind:
           · healthy          —— 图像置信度够，判健康；
           · unsure_healthy   —— 最像健康，但没到 HEALTHY_CONF；
+          · conflict         —— 图说健康、文字说了具体病害，两者对不上；
           · unsure_weak      —— 图像 Top-1 连 LOW_CONF_GATE 都不到，等于没识别出来。
 
         为什么不让模型写：实测模型会一边在 summary 里写「未见明显病斑」，一边把
@@ -175,13 +177,17 @@ class DiagnosisFusion:
                 "summary": f"这张照片未见明显病斑，暂时按健康处理{crop_txt}。",
                 "symptom_match": (
                     f"图像识别结果落在健康类（{top1.get('label_cn', '健康')}，置信度 {conf:.0%}），"
-                    "本次也未检出虫体。需要注意：一张照片只代表这一片叶，不能代表整块田，"
+                    # pest_result 为 None 表示虫害检测器没配或挂了，不是「查了没有」——
+                    # 这两句话在农户那里差别很大：一句是结论，一句是没做。
+                    + ("本次未完成虫害检测。" if pest_result is None
+                       else "本次也未检出虫体。")
+                    + "需要注意：一张照片只代表这一片叶，不能代表整块田，"
                     "更不等于往后不会发病。"
                 ),
                 "treatment_sections": [
                     {"title": "复查建议", "content":
                         "3 天后在同一片叶、同一角度再拍一张对比。若出现新斑点、卷曲、发黄或虫体，"
-                        "再拍近景复诊 —— 早发现三天的病，用药量通常能少一半。"},
+                        "再拍近景复诊 —— 发病初期处理，可选药剂更少、用量也更轻。"},
                     {"title": "现在不建议打药", "content":
                         "没看到症状就打预防药，既多花钱，也会让病原菌和害虫更快产生抗药性。"
                         "要防的话优先做农业措施：通风降湿、清除病残体、平衡氮肥。"},
@@ -213,7 +219,35 @@ class DiagnosisFusion:
                 "source": "rule",
                 "notice": "图像置信度不足，按「没把握」处理，未经大模型改写。",
             }
-        else:   # unsure_weak
+        elif kind == "conflict":
+            # 图与话对不上：照片判健康，描述里却点了具体病害。
+            # 这时候不能顺着照片说「没事」，也不能顺着描述给一套药 ——
+            # 前者让病错过防治窗口，后者让农户凭一句话打一遍药。
+            report = {
+                "disease_name": "",
+                "needs_review": True,
+                "confidence": 0,
+                "summary": "照片看不出病斑，但你描述的病害和照片对不上，这次不下结论。",
+                "symptom_match": (
+                    f"图像识别落在健康类（{top1.get('label_cn', '健康')}，置信度 {conf:.0%}），"
+                    f"文字描述里却出现了「{text_hint}」这类具体病害。两者矛盾时，"
+                    "最常见的原因是照片没拍到出问题的部位（只拍了一片叶、或逆光把病斑拍没了），"
+                    "也可能是描述说的是同一块田里另一株。"
+                ),
+                "treatment_sections": [
+                    {"title": "补一张对得上的照片", "content":
+                        "拍描述里出问题的那一株、那个部位：病斑在叶背就翻过来拍，"
+                        "在茎秆或穗上就蹲下来平视拍；手机离目标 15~20 厘米，别开美颜和滤镜。"},
+                    {"title": "核实清楚再打药", "content":
+                        "拿到能看清的证据之前先不要打药。同一块田若已有多株出现同样症状，"
+                        "带上植株样本请当地植保站确认 —— 打错药既花钱，也会错过防治窗口。"},
+                ],
+                "medication_reminder": "",
+                "safety_note": "本次未形成诊断结论，未给出用药建议。",
+                "source": "rule",
+                "notice": "照片与文字描述不一致，按「需复核」处理，未经大模型改写。",
+            }
+        elif kind == "unsure_weak":
             report = {
                 "disease_name": "",
                 "confidence": round(conf, 4),
@@ -260,6 +294,64 @@ class DiagnosisFusion:
         }
 
     # ---------------------------------------------------------------- 主流程
+
+    def _fallback_report(self, context: dict, candidates: list[dict],
+                         pest_result: dict | None) -> dict:
+        """大模型这一层挂掉时的兜底报告。
+
+        写什么、不写什么是有意的：
+          · 候选名与置信度照抄上游（那来自分类器，不是模型编的）；
+          · 不给具体药名和剂量 —— 兜底模板没有知识库支撑，凭空写一条用药建议
+            比不写危险得多；
+          · `source` 写 "mock"，让 `degraded.llm` 一定为真，前端会显示降级角标，
+            用户知道这一段是规则拼的，不是解读出来的。
+        """
+        cands = [c for c in (candidates or []) if c.get("label_cn")]
+        top = cands[0] if cands else {}
+        name = top.get("label_cn") or ""
+        crop = top.get("crop") or ""
+        conf = float(top.get("confidence") or 0.0)
+        pest_hit = [d for d in ((pest_result or {}).get("detections") or [])]
+
+        if name:
+            summary = (f"最接近「{name}」（{crop}）"
+                       + (f"，置信度 {conf:.0%}" if conf else "") +
+                       "。大模型解读暂时不可用，本页只给候选与现场处置建议。")
+        elif pest_hit:
+            summary = ("检出虫体，但大模型解读暂时不可用；"
+                       "请按下方虫害结论先行处理，病害结论待服务恢复后再看。")
+        else:
+            summary = "本次没有可用的模型解读，也没有足够证据下结论，建议补拍或线下送检。"
+
+        sections = [
+            {"title": "先别全田施药", "content":
+                "在没有确认之前先只处理发见病株周围：标记、摘除病叶带出田外销毁，"
+                "不要按名字随手打一遍药 —— 打错药既花钱，也会让后续判断更难。"},
+            {"title": "取样送检", "content":
+                "取有症状与无症状交界的叶片 3~5 片，装纸袋（不要用塑料袋捂），"
+                "带到当地植保站或农技站确认；带上这张单子上写的作物、部位和发病天数。"},
+        ]
+        if pest_hit:
+            sections.insert(0, {"title": "先治虫", "content":
+                "检测已框出虫体，按虫害处理优先于病害判断；选药参照农药登记标签，"
+                "注意安全间隔期，喷药后记下日期。"})
+
+        return {
+            "disease_name": name,
+            "confidence": round(conf, 4),
+            "summary": summary,
+            "symptom_match": "。".join(filter(None, [
+                f"图像候选：{'、'.join('%s %d%%' % (c['label_cn'], round(float(c.get('confidence') or 0) * 100)) for c in cands[:3])}" if cands else "",
+                f"现场描述：{context.get('user_text') or context.get('asr_text') or '（无）'}",
+            ])),
+            "treatment_sections": sections,
+            "treatment_plan": "",
+            "medication_reminder": "",
+            "safety_note": "本次报告由规则模板生成（大模型不可用），未给出用药建议。",
+            "differential": [],
+            "source": "mock",
+            "notice": "大模型解读失败，已退回规则模板；候选来自图像与文字匹配，未经改写。",
+        }
 
     def diagnose(
         self,
@@ -331,11 +423,20 @@ class DiagnosisFusion:
         # 让"只说了一句话"的纯语音输入也能匹配到病害候选
         asr_terms = " ".join((asr or {}).get("matched_terms") or [])
 
-        # ---- 3. 健康 / 没把握 两个出口，先于候选组装 ----
-        health = self._health_state(recognition, pest_result)
+        # ---- 3. 健康 / 没把握 / 图文冲突 三个出口，先于候选组装 ----
+        # 文字候选必须在这里就算出来：以前它算完只用于组装候选，健康出口压根不看它，
+        # 于是「照片判健康 + 农户说这是大斑病」会被答成「暂时按健康处理」。
         text_candidates = self._text_candidates(f"{user_text} {asr_text} {asr_terms}")
+        health = self._health_state(recognition, pest_result)
+        # 图说健康、文字点了具体病害 —— 两边对不上就都不采信，转人工复核。
+        # 检出虫体时不算冲突：虫是现场证据，虫害会由 _apply_pest_primary 升为主结论。
+        strong_text = [c for c in text_candidates if float(c.get("confidence") or 0) >= 0.5]
         rule_kind = ""
-        if health == "healthy":
+        if health and strong_text and not (pest_result or {}).get("count"):
+            rule_kind = "conflict"
+            logger.info("图文冲突：图像判健康，文字命中「%s」，转复核",
+                        strong_text[0].get("label_cn"))
+        elif health == "healthy":
             rule_kind = "healthy"
         elif health == "unsure":
             rule_kind = "unsure_healthy"
@@ -350,7 +451,7 @@ class DiagnosisFusion:
                             img_conf * 100, LOW_CONF_GATE * 100)
 
         if rule_kind:
-            # 这三种结论都不交给大模型：让模型「改写」健康，它多半会顺手补一段防治方案；
+            # 这几种结论都不交给大模型：让模型「改写」健康，它多半会顺手补一段防治方案；
             # 让模型改写「没把握」，它多半会挑一个候选填上去 —— 两种都等于把猜测写成结论。
             return self._rule_payload(
                 kind=rule_kind, recognition=recognition, asr=asr, pest_result=pest_result,
@@ -360,6 +461,7 @@ class DiagnosisFusion:
                     "has_audio": bool(audio_bytes),
                     "has_text": bool(user_text.strip()),
                 },
+                text_hint=(strong_text[0].get("label_cn") or "") if strong_text else "",
             )
 
         # ---- 3b. 组装候选病害（图像 top-k + 文字匹配，去重后按置信度排序）----
@@ -413,7 +515,14 @@ class DiagnosisFusion:
         if pest_result is not None:
             context["pest_detections"] = pest_result.get("detections") or []
 
-        report = self.llm.generate_report(context)
+        # 大模型这一层出错不该把整次诊断带走：上游已经有关键词候选和虫害证据，
+        # 一条「服务异常」比一张「候选 + 处置建议（规则版）」更没有用。
+        # 失败时退回规则模板并标 llm=True，前端会显示降级角标。
+        try:
+            report = self.llm.generate_report(context)
+        except Exception as e:                            # noqa: BLE001
+            logger.warning("大模型生成报告失败，退回规则模板：%s", e)
+            report = self._fallback_report(context, candidates, pest_result)
         degraded["llm"] = bool(report.get("source") == "mock")
         # 来源标注由服务端判定，不信任模型返回的字段（模型可能凭空生成来源）。
         # 只有确实用了农药登记数据的地方，_apply_pest_primary 才会重新写入。

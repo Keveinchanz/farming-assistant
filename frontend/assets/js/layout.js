@@ -15,7 +15,7 @@
     { key: "library", label: "知识图书库", href: "/library.html" },
     { key: "policy", label: "惠农政策", href: "/policy.html" },
     { key: "farm", label: "我的农田", href: "/farm.html" },
-    { key: "skills", label: "技能", href: "/skills.html" },
+    { key: "skills", label: "技能接口", href: "/skills.html" },
   ];
 
   function activeKey() {

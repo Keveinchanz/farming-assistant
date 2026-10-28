@@ -85,6 +85,9 @@
 <script src="/assets/js/dialect.js"></script>
 <script src="/assets/js/layout.js"></script>
 <script src="/assets/js/ledger.js"></script>
+<!-- 小禾（pet.js）的录音按钮直接调用 Recorder.isSecureContext()/start()，
+     本页漏引 recorder.js 时点麦克风会抛 ReferenceError，整块面板卡死。 -->
+<script src="/assets/js/recorder.js"></script>
 <script src="/assets/js/pet.js"></script>
 </body>
 </html>

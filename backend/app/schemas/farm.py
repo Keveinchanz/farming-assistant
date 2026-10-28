@@ -198,7 +198,8 @@ class HarvestData(BaseModel):
     sample_count: int = Field(0, description="全平台已有的收获记录条数")
     sample_needed: int = 30
     maturity_shift: float = Field(
-        0.0, description="施肥记录对成熟日的影响天数（正=推迟，负=提前），零点为「未施肥」")
+        0.0, description="施肥记录对成熟日的影响天数（正=推迟，负=提前）；零点为「未施肥」，"
+                    "但一条施肥记录都没有时恒为 0（未记录 ≠ 未施肥）")
     management_note: str = Field(
         "", description="这条影响是怎么来的：档位、氮磷充足度、计入的记录数、未计入的部分")
     management_sources: list[str] = Field(
@@ -222,7 +223,7 @@ class TodayData(BaseModel):
                     "不显示的话，用户会把「没有天气提醒」误读成「天气没问题」")
     logs: list[LogData] = Field(default_factory=list)
     spray: "SprayLockData | None" = Field(
-        None, description="这块田当前受哪次施药约束（安全间隔期）；null 表示没记录过间隔期")
+        None, description="这块田当前的采收限制状态；null 表示这条田没有打药记录")
     narrative: str = Field("", description="大模型叙述层（无 Key 时为模板拼装）")
     narrative_why: str = Field("", description="「为什么是这个收获日期」的解释（7.5 的第二个职责）")
     narrative_source: str = Field("template", description="llm | template")
@@ -407,19 +408,28 @@ class PesticidesData(BaseModel):
 
 
 class SprayLockData(BaseModel):
-    """一块田当前受哪次施药约束。
+    """一块田当前的采收限制状态（`spray.harvest_state()` 的对外形状）。
 
-    `locked=False` 表示已经过了间隔期；整个字段为 null 表示**没有任何一条记了
-    间隔期的施药**（不知道），这两件事前端必须分开显示。
+    `status` 四档，顺序 fixed：locked → unknown → ok → none；
+    接口在 status=none 时直接返回 null，前端据此认为「这条田没有任何打药记录」。
+
+    **unknown 会压过 ok**：最新一次施药留空了间隔期时，即使旧药的解禁日早已过，
+    也必须报 unknown —— 把「不知道」说成「可采收」，代价是一次提前采收。
     """
 
+    status: str = Field("ok", description="locked / unknown / ok / none")
     locked: bool = False
-    earliest_date: str = Field("", description="最早可采收日 YYYY-MM-DD")
+    earliest_date: str = Field("", description="最早可采收日 YYYY-MM-DD；unknown 时为空")
     days_left: int | None = Field(None, description="距最早可采收还有几天，负数表示已过")
     item: str = ""
     reg_no: str = ""
     date: str = Field("", description="约束它的那次施药日期")
     interval_days: int | None = None
+    last_date: str = Field("", description="这块田最近一次施药日期（不管有没有填间隔期）")
+    last_item: str = ""
+    pending_date: str = Field("", description="留空了间隔期的那次施药日期")
+    pending_item: str = ""
+    last_known: dict | None = Field(None, description="已期满的旧约束，供说明引用")
 
 
 class LedgerPeriodData(BaseModel):

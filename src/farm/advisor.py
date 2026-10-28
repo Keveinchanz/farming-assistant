@@ -105,13 +105,18 @@ def reminders(
         rain = _rain_days(forecast_days)
         actions_text = "".join(growth.get("actions") or [])
 
-        # ② 未来 2 天有雨且该施肥 → 雨前施完
+        # ② 未来 2 天有雨且该施肥 → 等雨过去再施
+        # 原来的文案是「趁雨前把肥施完」，理由却写「施肥后遇雨容易流失」——
+        # 理由和行动互相否定。雨前施氮，一场中雨就能把表层氮冲走；
+        # 雨后 1~2 天土壤墒情正好，肥效更稳，所以窗口给在雨日之后。
         soon_rain = [d for d in rain if d <= (today_local() + timedelta(days=2)).isoformat()]
         if soon_rain and "肥" in actions_text:
+            after = (date.fromisoformat(max(soon_rain)) + timedelta(days=1)).isoformat()
             out.append(_advice(
-                "fertilize", "趁雨前把肥施完",
-                reason=f"{'、'.join(soon_rain)} 有雨，施肥后遇雨容易流失",
-                window=soon_rain[0], severity="warn", priority="高",
+                "fertilize", "等这场雨过去再施肥",
+                reason=f"{'、'.join(soon_rain)} 有雨，雨前施肥氮素容易被冲走；"
+                       f"雨停后 1~2 天土壤湿润时施，肥效更稳",
+                window=after, severity="info", priority="中",
             ))
 
         # ③ 未来 3 天有雨且该打药 → 等雨停

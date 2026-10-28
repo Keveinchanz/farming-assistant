@@ -30,7 +30,9 @@
 【零点：未施肥】
 
 所有偏移都以「未施肥」为 0 的参照系 —— 不是「推荐量」。
-因为用户看到的第一句话是「你什么都没记，那就按没施肥算」，这一点必须前后一致。
+但这个零点只在**有施肥记录**时才成立：一条记录都没有的田，系统不知道施没施，
+既不按缺素算、也不按适量算，直接返回 0 天并把档位记为「未记录」。
+把「没记账」当成「没施肥」，等于给一块可能施足了的田凭空加上 4 天。
 
 【钾不参与偏移】
 
@@ -314,6 +316,15 @@ def maturity_shift_days(nutrition: dict, crop_cfg: dict) -> dict:
         base["note"] = "这个作物没有配置推荐施肥量，施肥影响未计入"
         return base
 
+    # 一条施肥记录都没有 —— 这不是「未施肥」，是「不知道施没施」。
+    # 以前这里按「未施肥」处理，于是没记过账的田一律被判成缺素、收获日推后 4 天：
+    # 用户看到的是一条凭空造出来的推迟理由，而它会让收获窗口整体错位。
+    if not nutrition.get("has_records"):
+        base["level"] = "未记录"
+        base["note"] = ("没有播种后的施肥记录，收获日未作调整；"
+                        "缺素与否需要有记录才能判断，补记施肥后再看这一项")
+        return base
+
     n_act = float(nutrition.get("n") or 0.0)
     p_act = float(nutrition.get("p2o5") or 0.0)
     r_n = n_act / n_ref
@@ -323,9 +334,7 @@ def maturity_shift_days(nutrition: dict, crop_cfg: dict) -> dict:
     p_penalty = P_PENALTY_MAX * max(0.0, 1.0 - min(r_p, 1.0))
     days = max(SHIFT_MIN, min(SHIFT_MAX, n_shift + p_penalty))
 
-    if not nutrition.get("has_records"):
-        level = "未施肥"
-    elif r_n < DEFICIT_RATIO or r_p < DEFICIT_RATIO:
+    if r_n < DEFICIT_RATIO or r_p < DEFICIT_RATIO:
         level = "缺肥"
     elif r_n > EXCESS_RATIO:
         level = "过量"
@@ -354,7 +363,7 @@ def _note_for(level: str, days: float, nutrition: dict, r_n: float, r_p: float) 
         head = f"按记录的施肥情况，收获日提前约 {abs(days):.1f} 天"
 
     why = {
-        "未施肥": "没有查到播种后的施肥记录，按缺素处理（缺氮、缺磷都会推迟成熟）",
+        "未记录": "没有播种后的施肥记录，不作调整",
         "缺肥": f"氮、磷都没到推荐量（氮 {r_n:.0%}、磷 {r_p:.0%}），缺素推迟成熟",
         "适量": f"氮、磷接近推荐量（氮 {r_n:.0%}、磷 {r_p:.0%}），养分适量时成熟略早",
         "过量": f"氮肥已超过推荐量（{r_n:.0%}），过量施氮会贪青晚熟",

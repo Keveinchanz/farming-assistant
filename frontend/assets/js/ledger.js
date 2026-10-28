@@ -19,7 +19,8 @@
   const STATUS = {
     locked: { text: "间隔期内", cls: "is-locked" },
     ok: { text: "已过 · 可采收", cls: "is-ok" },
-    unknown: { text: "未记录间隔期", cls: "is-unknown" },
+    // 「未记录」不等于「可采收」：旧药期满、新药留空时也给这个状态
+    unknown: { text: "间隔期未记录，需核对", cls: "is-unknown" },
     none: { text: "无打药记录", cls: "is-none" },
   };
 
@@ -214,7 +215,12 @@
     const st = STATUS[row.status] || STATUS.none;
     let text = st.text;
     if (row.locked && row.days_left != null) text = `${text} · 还剩 ${row.days_left} 天`;
-    return `<span class="ledger-pill ${st.cls}">${esc(text)}</span>`;
+    // 留空那次施药是哪一天，放在 title 里：表格里塞不下，但核对时必须有据可查
+    const hint = row.has_unknown_interval && row.pending_date
+      ? `${row.pending_date} 那次施药没有填安全间隔期。${
+        row.last_known ? `上次（${row.last_known.date}）${row.last_known.interval_days} 天，已于 ${row.last_known.earliest_date} 期满，不能代表这次。` : ""}`
+      : "";
+    return `<span class="ledger-pill ${st.cls}"${hint ? ` title="${esc(hint)}"` : ""}>${esc(text)}</span>`;
   }
 
   function tableField(d) {

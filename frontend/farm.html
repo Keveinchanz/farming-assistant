@@ -60,44 +60,63 @@
 
   <!-- 新建田块（默认收起） -->
   <form class="card farm-newform" id="new-field-form" hidden>
-    <div class="farm-newform__grid">
-      <div class="form-field">
-        <label class="form-label" for="new-field-name">田块名称</label>
-        <input class="input" id="new-field-name" required maxlength="24" placeholder="如：东头那块">
-      </div>
-      <div class="form-field">
-        <label class="form-label" for="new-field-crop">作物</label>
-        <select class="select" id="new-field-crop"></select>
-      </div>
-      <div class="form-field">
-        <label class="form-label" for="new-field-area">面积（亩）</label>
-        <input class="input" id="new-field-area" type="number" min="0" step="0.1" value="1">
-      </div>
-      <div class="form-field">
-        <label class="form-label" for="new-field-sow">播种日</label>
-        <input class="input" id="new-field-sow" type="date" required>
-      </div>
-      <div class="form-field">
-        <label class="form-label" for="new-field-province">省</label>
-        <select class="select" id="new-field-province"></select>
-      </div>
-      <div class="form-field">
-        <label class="form-label" for="new-field-city">市</label>
-        <select class="select" id="new-field-city"></select>
-      </div>
-      <div class="form-field">
-        <label class="form-label" for="new-field-county">县 / 区</label>
-        <select class="select" id="new-field-county"></select>
-      </div>
-      <div class="form-field">
-        <label class="form-label" for="new-field-lng">经度</label>
-        <input class="input" id="new-field-lng" type="number" step="0.0001" placeholder="114.30">
-      </div>
-      <div class="form-field">
-        <label class="form-label" for="new-field-lat">纬度</label>
-        <input class="input" id="new-field-lat" type="number" step="0.0001" placeholder="30.58">
+    <!-- 三组：先把「这块地是谁」填清，再选地区，最后才是自动算出来的坐标。
+         原来九个字段挤在一张 auto-fit 网格里，宽屏一行排六个、第二行只落两个，
+         视觉上分不出哪些是必填、哪些可以不动。 -->
+    <div class="farm-newform__group">
+      <h3 class="farm-newform__group-title">田块基本信息</h3>
+      <div class="farm-newform__grid">
+        <div class="form-field">
+          <label class="form-label" for="new-field-name">田块名称<span class="farm-newform__req">必填</span></label>
+          <input class="input" id="new-field-name" required maxlength="24" placeholder="如：东头那块">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="new-field-crop">作物<span class="farm-newform__req">必填</span></label>
+          <select class="select" id="new-field-crop"></select>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="new-field-sow">播种日<span class="farm-newform__req">必填</span></label>
+          <input class="input" id="new-field-sow" type="date" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="new-field-area">面积（亩）</label>
+          <input class="input" id="new-field-area" type="number" min="0" step="0.1" value="1">
+        </div>
       </div>
     </div>
+
+    <div class="farm-newform__group">
+      <h3 class="farm-newform__group-title">所在地区</h3>
+      <div class="farm-newform__grid">
+        <div class="form-field">
+          <label class="form-label" for="new-field-province">省</label>
+          <select class="select" id="new-field-province"></select>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="new-field-city">市</label>
+          <select class="select" id="new-field-city"></select>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="new-field-county">县 / 区</label>
+          <select class="select" id="new-field-county"></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="farm-newform__group farm-newform__group--auto">
+      <h3 class="farm-newform__group-title">定位信息<span class="farm-newform__auto">自动填写，可微调</span></h3>
+      <div class="farm-newform__grid">
+        <div class="form-field">
+          <label class="form-label" for="new-field-lng">经度</label>
+          <input class="input" id="new-field-lng" type="number" step="0.0001" placeholder="114.30">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="new-field-lat">纬度</label>
+          <input class="input" id="new-field-lat" type="number" step="0.0001" placeholder="30.58">
+        </div>
+      </div>
+    </div>
+
     <p class="form-hint">
       选到县就行：经纬度按省、市、县三级中心点自动取平均算出，也可手动微调。
       坐标用来取当地气温推算积温（留空则该田块算不出生长阶段）。
@@ -217,10 +236,10 @@
           </div>
 
           <div class="voice-ops voice-ops--confirm">
-            <button type="button" class="btn btn--primary" id="voice-confirm">确认落库</button>
+            <button type="button" class="btn btn--primary" id="voice-confirm">保存记录</button>
             <button type="button" class="btn btn--outline" id="voice-cancel">取消</button>
           </div>
-          <p class="form-hint">不点「确认落库」，这条记录不会写进数据库。</p>
+          <p class="form-hint">点「保存记录」后才会写进台账；保存前可以先核对上面的识别结果。</p>
         </div>
 
         <div id="voice-result" hidden></div>

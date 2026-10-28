@@ -151,3 +151,6 @@ docs/screenshots/v2/
 # 两个技能的独立发布目录（各自是一个 git 仓库，推送到独立 remote）
 _publish/
 
+
+# 本地运行日志（后端/脚本输出，不入库）
+logs/

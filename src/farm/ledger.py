@@ -9,8 +9,16 @@
     · 施药次数：区间内 type=spray 的记录条数（一次记录 = 一次施药）；
     · 涉及药剂：按登记证号分组（手填没有证号的按药名分组）；
     · 仍在间隔期：该田「所有记了间隔期的施药」里解禁日最晚那次还没到（见 spray.py）；
-    · 未记录间隔期：区间内有打药记录、但一条间隔期都没填的田 —— 这是「不知道」，
-      单独计数，绝不并进「已过」。
+    · 未记录间隔期：有打药记录留空了间隔期 —— 这是「不知道」，单独计数，绝不并进「已过」。
+
+**「不知道」必须压过「已过」**（2026-10-28 修）：一次留空了间隔期的新施药，会盖住
+同一块田里那次早已期满的旧施药 —— 旧记录仍然算出一个解禁日，如果状态按「有约束
+就算 ok」判，页面和导出都会写「可采收」，而实际上最新那次用的什么药、要隔几天，系统
+根本不知道。判定顺序固定为 locked → unknown → ok → none，实现收在
+`spray.harvest_state()` 一处：台账、问诊单、Excel、PDF 都调它，不各算一遍。
+
+两条口径细节也写在那里面：留空记录按**全量**算（区间一收窄就把「不知道」筛没了）；
+只有比已知那次更晚、或压根没有已知记录时才算数，超过 45 天的留空不再否掉结论。
 """
 
 from __future__ import annotations
@@ -143,43 +151,46 @@ def build(conn, user_id: int, *, field_id: str = "", period: str = "season",
     for f in fields:
         mine = [lg for lg in all_logs if lg.get("field_id") == f["id"]]
         mine_in_range = [lg for lg in sprays if lg.get("field_id") == f["id"]]
-        cons = spray.constraint(mine, ref)
-        last = None
-        for lg in sorted(mine_in_range, key=lambda x: (x["date"], x.get("created_at") or ""), reverse=True):
-            last = lg
-            break
-        has_unknown = any(
-            lg.get("type") == "spray" and lg.get("interval_days") in (None, "")
-            for lg in mine_in_range
-        )
-        if cons and cons["locked"]:
+        # 判定只有一处（spray.harvest_state）：台账、问诊单、导出必须同口径，
+        # 否则「汇总说 2 块不可采、明细行说可采收」这种自相矛盾迟早出现。
+        hs = spray.harvest_state(mine, ref)
+        status = hs["status"]
+
+        if status == "locked":
             locked_count += 1
-        if has_unknown and not (cons and cons["locked"]):
+        elif status == "unknown":
             unknown_count += 1
+
         row = {
             "field_id": f["id"],
             "name": f.get("name", ""),
             "crop": f.get("crop", ""),
             "area_mu": f.get("area_mu", 0),
             "spray_count": len(mine_in_range),
-            "last_date": (last or {}).get("date", ""),
-            "last_item": (last or {}).get("item", ""),
-            "last_reg_no": (last or {}).get("reg_no", ""),
-            "interval_days": cons["interval_days"] if cons else None,
-            "earliest_date": cons["earliest_date"] if cons else "",
-            "days_left": cons["days_left"] if cons else None,
-            "locked": bool(cons and cons["locked"]),
-            "has_unknown_interval": has_unknown and not cons,
-            "status": ("locked" if (cons and cons["locked"])
-                       else "ok" if cons else "unknown" if has_unknown else "none"),
+            # 「最近一次施药」取全量记录：区间筛的是次数与用药史，
+            # 不是这块田最近打过没有。按区间取会拿一次更早的药当「最近」。
+            "last_date": hs["last_date"],
+            "last_item": hs["last_item"],
+            "last_reg_no": hs["last_reg_no"],
+            # 间隔期与最早可采收日只在 locked / ok 时输出；unknown 时留空，
+            # 把旧药的天数印在新药旁边等于替系统担保。
+            "interval_days": hs["interval_days"],
+            "earliest_date": hs["earliest_date"],
+            "days_left": hs["days_left"],
+            "locked": hs["locked"],
+            "has_unknown_interval": status == "unknown",
+            "pending_date": hs["pending_date"],
+            "pending_item": hs["pending_item"],
+            "last_known": hs["last_known"],
+            "status": status,
         }
         rows.append(row)
-        if cons and cons["locked"]:
+        if status == "locked":
             alerts.append({
                 "field_id": f["id"], "name": f.get("name", ""), "crop": f.get("crop", ""),
-                "earliest_date": cons["earliest_date"], "days_left": cons["days_left"],
-                "item": cons["item"], "reg_no": cons["reg_no"],
-                "date": cons["date"], "interval_days": cons["interval_days"],
+                "earliest_date": hs["earliest_date"], "days_left": hs["days_left"],
+                "item": hs["item"], "reg_no": hs["reg_no"],
+                "date": hs["date"], "interval_days": hs["interval_days"],
             })
 
     rows.sort(key=lambda r: (0 if r["locked"] else 1 if r["status"] == "unknown" else 2,

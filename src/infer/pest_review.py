@@ -58,7 +58,7 @@ REVIEW_KEYS = (
 )
 REWRITE_KEYS = (
     "index", "from_index", "from_label", "to_index", "to_label",
-    "to_label_en", "det_confidence", "cls_prob", "fused",
+    "to_label_en", "to_crop", "to_pest_type", "det_confidence", "cls_prob", "fused",
 )
 
 
@@ -161,6 +161,11 @@ class PestReviewer:
             "to_index": int(cls["index"]),
             "to_label": cls.get("label_cn", ""),
             "to_label_en": cls.get("label_en", ""),
+            # 作物与虫害类别必须跟着改判一起写回：只改名字不改这两个，
+            # 框上会出现「稻纵卷叶螟（水稻）」挂在一张玉米图上 —— 复核把名字改对了，
+            # 归属却还留在原判那一类，前端与问诊单引用的正是这两个字段。
+            "to_crop": cls.get("crop", ""),
+            "to_pest_type": cls.get("pest_type", ""),
             "det_confidence": round(float(det.get("confidence", 0.0)), 4),
             "cls_prob": float(cls["prob"]),
             "fused": round(best["fused"], 4),
@@ -211,4 +216,10 @@ def apply_rewrites(detections: list[dict], review: dict | None) -> list[dict]:
         d["index"] = rw["to_index"]
         d["label_cn"] = rw["to_label"]
         d["label_en"] = rw.get("to_label_en", "")
+        # 作物与虫害类别一起改：这两个字段决定前端角标、台账归属和用药范围，
+        # 只改病名等于把新名字挂在旧的作物上。
+        if rw.get("to_crop"):
+            d["crop"] = rw["to_crop"]
+        if rw.get("to_pest_type"):
+            d["pest_type"] = rw["to_pest_type"]
     return detections

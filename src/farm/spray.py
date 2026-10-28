@@ -20,6 +20,11 @@ from typing import Any, Iterable
 # 而用户只会觉得「系统坏了」），不是业务上限。
 MAX_INTERVAL_DAYS = 365
 
+# 留空间隔期的施药，在这个窗口内视为「仍可能约束当前采收」。
+# 常见标签间隔期在 7~30 天，取 45 天留余量；更早的留空记录不再否掉「可采收」，
+# 但仍计入「未记录间隔期」。
+UNKNOWN_HOLD_DAYS = 45
+
 
 def today_str() -> str:
     return date.today().isoformat()
@@ -82,6 +87,98 @@ def constraint(logs: Iterable[dict], today: str | None = None) -> dict | None:
     best["days_left"] = days_between(ref, best["earliest_date"])
     best["locked"] = best["days_left"] > 0
     return best
+
+
+def harvest_state(logs: Iterable[dict], today: str | None = None) -> dict:
+    """这块田现在能不能采、依据是哪次施药 —— 台账、问诊单、导出共用的唯一判定。
+
+    返回的 `status` 只有四档，顺序固定 **locked → unknown → ok → none**：
+
+        locked   有记了间隔期的施药，解禁日还没到；
+        unknown  最新一次施药没填间隔期，系统不知道它要隔几天 —— 这一档压过 ok；
+        ok       记了间隔期的施药都已期满；
+        none     一条施药记录都没有。
+
+    **为什么 unknown 要压过 ok**：10-01 那次打了 7 天的药（10-08 已期满）、10-27 又打
+    一次但没填间隔期 —— 旧记录仍算得出一个解禁日，若按「有约束就算 ok」判，页面和导出
+    都会写「可采收」，而最新那次用的什么药、要隔几天，系统根本不知道。这不是文案打架，
+    是一句会让人提前采收的错误结论。
+
+    两条口径细节：
+      · 留空记录只有在比已知那次更晚（或压根没有已知记录）时才算数；
+      · 留空记录超过 UNKNOWN_HOLD_DAYS 仍是历史欠账，不再否掉结论，但仍计入 unknown。
+    """
+    ref = today or today_str()
+    try:
+        ref_date = date.fromisoformat(str(ref)[:10])
+    except ValueError:
+        ref_date = date.today()
+        ref = ref_date.isoformat()
+
+    logs = list(logs or [])
+    sprays = [lg for lg in logs if lg.get("type") == "spray"]
+    cons = constraint(sprays, ref)
+
+    unknown = [lg for lg in sprays if lg.get("interval_days") in (None, "")]
+    pending = None
+    if unknown:
+        newest = max(unknown, key=lambda x: (str(x.get("date") or ""),
+                                             x.get("created_at") or ""))
+        try:
+            when = date.fromisoformat(str(newest.get("date") or "")[:10])
+        except ValueError:
+            when = None
+        if when is not None and (ref_date - when).days <= UNKNOWN_HOLD_DAYS:
+            pending = newest
+    if pending and cons and str(pending.get("date") or "") <= str(cons.get("date") or ""):
+        pending = None
+
+    if cons and cons["locked"]:
+        status = "locked"
+    elif pending or (cons is None and unknown):
+        status = "unknown"
+    elif cons:
+        status = "ok"
+    else:
+        status = "none"
+
+    known = cons if status in ("locked", "ok") else None
+    # 最近一次施药（按全量记录），用于「哪天打过什么」的说明
+    last = None
+    for lg in sorted(sprays, key=lambda x: (str(x.get("date") or ""),
+                                            x.get("created_at") or ""), reverse=True):
+        last = lg
+        break
+
+    return {
+        "status": status,
+        "locked": status == "locked",
+        # 以下四项只在 locked / ok 时有值：unknown 时不填确定日期，
+        # 否则旧药的解禁日会被当成这次新药的限制日期。
+        "date": known["date"] if known else "",
+        "item": known["item"] if known else "",
+        "reg_no": known["reg_no"] if known else "",
+        "interval_days": known["interval_days"] if known else None,
+        "earliest_date": known["earliest_date"] if known else "",
+        "days_left": known["days_left"] if known else None,
+        "last_date": (last or {}).get("date", ""),
+        "last_item": (last or {}).get("item", ""),
+        "last_reg_no": (last or {}).get("reg_no", ""),
+        # 留空那次本身：说明「哪一天那次没填」。
+        # status=unknown 但没有 pending（留空记录已超过 UNKNOWN_HOLD_DAYS）时，
+        # 退回最近一次施药 —— 页面上「未记录间隔期，需核对」后面总得跟一个日期，
+        # 否则用户不知道该去翻哪一条。
+        "pending_date": ((pending or (last if status == "unknown" else None)
+                          or {}).get("date", "")),
+        "pending_item": ((pending or (last if status == "unknown" else None)
+                          or {}).get("item", "")),
+        # 已期满的旧约束：仍可引用「上次 X 天已于 Y 期满」，但不能代表这次
+        "last_known": ({
+            "date": cons["date"], "item": cons["item"],
+            "interval_days": cons["interval_days"],
+            "earliest_date": cons["earliest_date"],
+        } if cons else None),
+    }
 
 
 def annotate(logs: list[dict], today: str | None = None) -> list[dict]:

@@ -296,7 +296,9 @@ body.modal-open .pet { display: none; }
     max-height: 68dvh;
     border-radius: 18px 18px 10px 10px;
   }
-  .pet__bubble { max-width: 210px; }
+  /* 手机端不显示招口气泡：它贴在头像上方，正好压住上传 / 提交那一带按钮。
+     需要对话时点头像即可，气泡不是唯一入口。 */
+  .pet__bubble { display: none; }
 
   /* 抽屉是 fixed 的，会盖住头像；打开时把头像收起来，避免两个叠在一起 */
   .pet[data-open="true"] .pet__avatar { display: none; }

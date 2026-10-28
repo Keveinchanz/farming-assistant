@@ -35,6 +35,29 @@ class SheetRegion(BaseModel):
     demo: bool = Field(False, description="是否为演示/推导数据（分享页必须原样标注）")
 
 
+class SheetHarvest(BaseModel):
+    """本地产收提醒：这块田受哪次施药的安全间隔期约束。
+
+    为什么单独一段而不是塞进 `medication`：`medication` 是模型给的通用用药提醒，
+    这一段是**这块地**的具体日期。两者混在一段里，农户会拿通用提醒当自己的解禁日。
+
+    `status` 三档，与 `spray.harvest_state()` 同口径：
+        locked   还在间隔期，`earliest_date` 之后才能采；
+        ok       间隔期已满；
+        unknown  最新一次施药没填间隔期 —— 这时 `earliest_date` 必须为空，
+                 纸面上只能写「无法判断」，不能写日期。
+
+    旧链接没有这个字段，因此默认 None；分享页遇到 None 就不渲染这一段。
+    """
+
+    status: str = Field("ok", max_length=10, description="locked / ok / unknown")
+    date: str = Field("", max_length=20, description="受约束的那次施药日期；unknown 时是留空那次")
+    item: str = Field("", max_length=80)
+    interval_days: int | None = Field(None, ge=0, le=365)
+    earliest_date: str = Field("", max_length=20, description="最早可采收日；unknown 时为空")
+    days_left: int | None = Field(None, description="距最早可采收还有几天，负数表示已过")
+
+
 class SheetSnapshot(BaseModel):
     """一张问诊单。字段名与 diagnose.js 的 `_sheetPayload()` 一一对应。"""
 
@@ -53,6 +76,8 @@ class SheetSnapshot(BaseModel):
     medication: str = Field("", max_length=1500, description="用药提醒（不含剂量，见 diagnose.js）")
     recheck: str = Field("", max_length=20, description="回访日期 YYYY-MM-DD，未排为空")
     region: SheetRegion = Field(default_factory=SheetRegion)
+    harvest: SheetHarvest | None = Field(
+        None, description="这块田的采收限制；null 表示没挂田块或没有打药记录")
 
 
 class SheetShareRequest(BaseModel):

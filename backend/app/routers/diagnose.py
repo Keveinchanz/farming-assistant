@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, File, Form, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 from backend.app import deps
@@ -54,7 +55,9 @@ async def diagnose_image(file: UploadFile = File(..., description="作物叶片�
     data = await _read_upload(file, kind="图片")
 
     try:
-        result = deps.get_predictor().predict_bytes(data)
+        # ONNX 推理是同步阻塞的 CPU 活，直接在 async 函数里跑会把整个事件循环卡住 ——
+        # 单张 300~800ms，批量巡检时十张就把其他用户的请求全部排队。
+        result = await run_in_threadpool(deps.get_predictor().predict_bytes, data)
     except ApiError:
         raise
     except Exception as e:  # noqa: BLE001
@@ -93,7 +96,10 @@ async def diagnose_multimodal(
 
     settings = get_settings()
     try:
-        result = deps.get_fusion().diagnose(
+        # 融合里含识别 + 语音转写 + 大模型调用，全是同步阻塞调用；
+        # 丢进线程池，避免一次诊断把所有并发请求堵在事件循环上。
+        result = await run_in_threadpool(
+            deps.get_fusion().diagnose,
             image_bytes=image_bytes,
             audio_bytes=audio_bytes,
             user_text=(text or "").strip(),
@@ -143,8 +149,9 @@ async def ask(req: AskRequest):
     try:
         # 用问答专用系统提示：诊断那套要求「必须输出严格 JSON」，
         # 拿它做追问会让模型把答案包成 JSON，前端按纯文本渲染就是一坨花括号
-        answer = llm.answer(question, context=(req.context or "").strip(),
-                            system=QA_SYSTEM_PROMPT)
+        answer = await run_in_threadpool(
+            llm.answer, question,
+            context=(req.context or "").strip(), system=QA_SYSTEM_PROMPT)
     except Exception as e:  # noqa: BLE001
         logger.exception("问答失败")
         raise ApiError(f"问答失败：{e}", CODE_UPSTREAM_ERROR, http_status=502) from e

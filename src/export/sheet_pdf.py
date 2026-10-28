@@ -225,6 +225,32 @@ def build_sheet_pdf(snapshot: dict[str, Any]) -> bytes:
         region_body = [_p("未设置所在省份，无法给出本省预警。", st["note"])]
     story += _section("六、本省当前高发（供参考）", region_body, st)
 
+    # ---- 本地产收提醒：只在快照带 harvest 时出现（旧链接没有这一段）。
+    # unknown 一律不印日期：这张纸上唯一写「哪天能吃」的地方就是这里。
+    hv = snap.get("harvest") or None
+    if hv and hv.get("status") not in (None, "", "none"):
+        status = hv.get("status")
+        if status == "unknown":
+            harvest_body = [
+                _p(f"这块田 {hv.get('date') or '—'} 施过 {hv.get('item') or '药剂'}，"
+                   f"但这次记录没有填安全间隔期，无法判断哪天可以采收。", st["body"]),
+                _p("请按瓶身标签补填间隔期后再看这张单。", st["note"]),
+            ]
+        elif status == "locked":
+            tail = (f"（距今 {hv['days_left']} 天）"
+                    if isinstance(hv.get("days_left"), int) else "")
+            harvest_body = [_p(
+                f"这块田 {hv.get('date') or '—'} 施过 {hv.get('item') or '药剂'}，"
+                f"标签安全间隔期 {hv.get('interval_days') if hv.get('interval_days') is not None else '—'} 天，"
+                f"最早可收 {hv.get('earliest_date') or '—'}{tail}。在这之前不要采收。",
+                st["body"])]
+        else:
+            harvest_body = [_p(
+                f"这块田 {hv.get('date') or '—'} 施过 {hv.get('item') or '药剂'}，"
+                f"间隔期 {hv.get('interval_days') if hv.get('interval_days') is not None else '—'} 天，"
+                f"已于 {hv.get('earliest_date') or '—'} 期满，可以采收。", st["body"])]
+        story += _section("采收提醒", harvest_body, st)
+
     # ---- 签字与免责
     story += [
         Spacer(1, 2 * mm),

@@ -229,6 +229,11 @@ class DiagnosisReport(BaseModel):
         description="判为健康类（未见明显病斑）时为 true。有它就说明本次没有病名，"
                     "前端不该渲染防治方案区块，也不该把它当成「没能确定病害」")
     confidence: float = 0
+    needs_review: bool = Field(
+        False,
+        description="照片与文字描述互相矛盾，本次不下结论、需人工复核。"
+                    "与 healthy 的区别：healthy 是「已判健康」，它只是「两边对不上」——"
+                    "前端因此不能把照片的健康类当成结论渲染")
     summary: str = ""
     symptom_match: str = ""
     treatment_sections: list[TreatmentSection] = Field(default_factory=list)

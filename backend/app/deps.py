@@ -137,10 +137,14 @@ def refresh_caches() -> None:
         fn.cache_clear()
     # src/ 层的共享单例也要清：否则 deps 重建后，fusion 仍拿到旧的 predictor/detector，
     # reload 对模型实例不生效。
+    from src.farm import harvest_model
     from src.infer.pest_detector import get_shared_pest_detector
     from src.infer.predictor import get_shared_predictor
     from src.llm.fusion import get_fusion as get_shared_fusion
 
     for fn in (get_shared_predictor, get_shared_pest_detector, get_shared_fusion):
         fn.cache_clear()
+    # 收获期模型与跨省校准量也是 lru_cache 的：训练脚本跑完后如果不点这里，
+    # 进程里一直是旧权重，页面上给出的还是训练前的日期，看起来像「训练没生效」。
+    harvest_model.clear_model_cache()
     logger.info("已清空后端缓存，下次请求将重新加载模型与数据")

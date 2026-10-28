@@ -3964,10 +3964,18 @@ def _():
             {"has_records": records, "records": 1 if records else 0,
              "n": n, "p2o5": p, "k2o": 0}, cfg)
 
-    # ---- 三个锚点：零点 = 未施肥 ----
+    # ---- 没记过施肥：既不是「未施肥」也不是「缺肥」，是「不知道」→ 不动收获日 ----
+    # 这条锁的是 2026-10-28 的修正：以前 has_records=False 走「未施肥」档，
+    # 一块可能施足了的田会被凭空推后 4 天，收获窗口整体错位。
     none_ = shift(0, 0, records=False)
-    assert none_["level"] == "未施肥", none_
-    assert abs(none_["days"] - 4.0) < 0.01, f"未施肥应当推迟 4 天（缺氮 +2.5、缺磷 +1.5），实际 {none_['days']}"
+    assert none_["level"] == "未记录", none_
+    assert none_["days"] == 0.0, f"没有施肥记录时不该动收获日，实际 {none_['days']}"
+    assert "未作调整" in none_["note"], none_["note"]
+
+    # 记了但氮磷都是 0（比如只记了钾肥）：这时才是真的缺素
+    zero = shift(0, 0, records=True)
+    assert zero["level"] == "缺肥", zero
+    assert abs(zero["days"] - 4.0) < 0.01, f"缺氮 +2.5、缺磷 +1.5，实际 {zero['days']}"
 
     ok = shift(10, 4)                    # 氮磷都到推荐量
     assert ok["level"] == "适量", ok
@@ -5970,6 +5978,153 @@ def _():
         "多了 %s、少了 %s" % (sorted(set(out) - set(REVIEW_KEYS)),
                             sorted(set(REVIEW_KEYS) - set(out)))
     )
+
+
+# ============================================ 2026-10-28 小修补的回归锁（F01/F03/F06/F07/F15）
+
+@case("安全间隔期：旧药期满 + 新药留空，台账必须报 unknown 而不是可采收")
+def _():
+    """F01 的回归锁。
+
+    10-01 打过 7 天的药（10-08 已期满），10-27 又打一次但间隔期留空。
+    旧记录仍然算得出一个解禁日，如果状态按「有约束就算 ok」判，页面和导出都会写
+    「可采收」，而最新那次用的什么药、要隔几天，系统根本不知道。
+    """
+    from src.farm import ledger, repo, spray
+
+    logs = [
+        {"id": "a", "type": "spray", "date": "2026-10-01", "interval_days": 7,
+         "item": "稻瘟灵", "reg_no": ""},
+        {"id": "b", "type": "spray", "date": "2026-10-27", "interval_days": None,
+         "item": "三环唑", "reg_no": ""},
+    ]
+    st = spray.harvest_state(logs, today="2026-10-28")
+    assert st["status"] == "unknown", st["status"]
+    assert st["earliest_date"] == "", "unknown 时不能给出解禁日，否则等于替系统担保"
+    assert st["days_left"] is None
+    assert st["pending_date"] == "2026-10-27"
+    # 旧约束仍保留，供「上次 7 天已于 X 日期满」这类说明引用
+    assert st["last_known"] and st["last_known"]["earliest_date"] == "2026-10-08"
+
+    with _farm_db() as conn:
+        user = _new_user(conn)
+        f = _spray_field(conn, user["id"], name="两轮打药的田")
+        for lg in logs:
+            repo.create_log(conn, user["id"], field_id=f["id"], type="spray",
+                            date=lg["date"], item=lg["item"],
+                            interval_days=lg["interval_days"], source="manual")
+        rows = ledger.build(conn, user["id"], period="all", today="2026-10-28")
+        row = [r for r in rows["fields"] if r["field_id"] == f["id"]][0]
+        assert row["status"] == "unknown", row["status"]
+        assert row["earliest_date"] == "", "unknown 行不能带解禁日"
+        assert row["has_unknown_interval"] is True
+        assert row["pending_date"] == "2026-10-27"
+        assert rows["summary"]["unknown_fields"] >= 1
+
+
+@case("安全间隔期：留空那条补填之后立刻回到 ok，不会一直卡在 unknown")
+def _():
+    from src.farm import spray
+
+    logs = [
+        {"id": "a", "type": "spray", "date": "2026-10-01", "interval_days": 7, "item": "稻瘟灵"},
+        {"id": "b", "type": "spray", "date": "2026-10-27", "interval_days": 10, "item": "三环唑"},
+    ]
+    st = spray.harvest_state(logs, today="2026-11-10")
+    assert st["status"] == "ok", st["status"]
+    assert st["earliest_date"] == "2026-11-06", st["earliest_date"]
+
+
+@case("图文冲突：照片判健康但描述点了病害，转复核而不是判健康")
+def _():
+    """F03 的回归锁：健康出口以前完全不看文字候选。"""
+    from src.llm.fusion import DiagnosisFusion
+
+    fusion = DiagnosisFusion.__new__(DiagnosisFusion)     # 只测规则分支，不建 provider
+    fusion.llm = None
+    rec = {"top1": {"label_cn": "玉米健康", "crop": "玉米", "confidence": 0.93,
+                    "is_healthy": True},
+           "topk": []}
+    out = fusion._rule_payload(
+        kind="conflict", recognition=rec, asr=None, pest_result=None, degraded={},
+        dialect_key="default", dialect_name="普通话", input_summary={},
+        text_hint="玉米大斑病",
+    )
+    report = out["report"]
+    assert report.get("needs_review") is True
+    assert report.get("healthy") is None, "冲突不是「已判健康」，healthy 不能为真"
+    assert report["disease_name"] == "", "冲突时不给病名，否则农户只会记住那个名字"
+    assert report["medication_reminder"] == "", "没有结论就不能带用药提醒"
+    assert "玉米大斑病" in report["symptom_match"]
+    assert out["candidates"] == []
+
+
+@case("施肥影响：没有施肥记录时不改收获日，记了才按盈亏算")
+def _():
+    """F06 的回归锁：以前「没记录」被当成「没施肥」，凭空 +4 天。"""
+    from src.farm import management as mgmt
+    from src.farm.stages import crop_config
+
+    cfg = crop_config("水稻")
+    blank = mgmt.maturity_shift_days({"has_records": False}, cfg)
+    assert blank["level"] == "未记录", blank
+    assert blank["days"] == 0.0, blank
+    assert "未作调整" in blank["note"]
+
+    scarce = mgmt.maturity_shift_days(
+        {"has_records": True, "records": 1, "n": 0, "p2o5": 0, "k2o": 0}, cfg)
+    assert scarce["level"] == "缺肥", scarce
+    assert scarce["days"] > 0, "缺氮缺磷应当推迟成熟"
+
+
+@case("天气提醒：施肥那条的理由不能和行动相反")
+def _():
+    """F07 的回归锁：原来是「趁雨前把肥施完」，理由却写「施肥后遇雨容易流失」。"""
+    from src.farm import advisor
+
+    growth = {"stage": "分蘖期", "actions": ["追施分蘖肥"], "progress": 0.4,
+              "gdd_cum": 900, "maturity_gdd": 2100, "days_since_sow": 40,
+              "matured": False, "stage_gdd": 800}
+    weather = {"source": "forecast", "days": [
+        {"date": "2026-10-29", "precip": 12.0, "tmax": 22, "tmin": 15,
+         "tmean": 18, "humidity": 80},
+        {"date": "2026-10-30", "precip": 0.0, "tmax": 23, "tmin": 16,
+         "tmean": 19, "humidity": 70},
+    ]}
+    with _farm_db() as conn:
+        user = _new_user(conn)
+        f = _spray_field(conn, user["id"], name="雨天施肥的田")
+        got = advisor.reminders(conn, user["id"], f, growth, [], weather,
+                                today="2026-10-28")
+    out = got["reminders"]
+    fert = [a for a in out if a["type"] == "fertilize"]
+    assert fert, "该施肥 + 未来两天有雨，应该给出施肥提醒"
+    a = fert[0]
+    assert "雨前" not in a["action"], "行动不能是「雨前施完」——理由说的是雨会冲走肥"
+    assert "等" in a["action"] and "雨" in a["action"], a["action"]
+    assert a["window"] > "2026-10-29", "窗口应落在雨日之后，实际 %s" % a["window"]
+
+
+@case("健康结论：虫害检测没跑时不能写「未检出虫体」")
+def _():
+    """F15 的回归锁：pest_result 为 None 是「没做」，不是「查过没有」。"""
+    from src.llm.fusion import DiagnosisFusion
+
+    fusion = DiagnosisFusion.__new__(DiagnosisFusion)
+    fusion.llm = None
+    rec = {"top1": {"label_cn": "水稻健康", "crop": "水稻", "confidence": 0.9,
+                    "is_healthy": True}, "topk": []}
+    out = fusion._rule_payload(
+        kind="healthy", recognition=rec, asr=None, pest_result=None, degraded={},
+        dialect_key="default", dialect_name="普通话", input_summary={})
+    assert "未完成虫害检测" in out["report"]["symptom_match"]
+    assert "未检出虫体" not in out["report"]["symptom_match"]
+
+    out2 = fusion._rule_payload(
+        kind="healthy", recognition=rec, asr=None,
+        pest_result={"count": 0, "detections": []}, degraded={},
+        dialect_key="default", dialect_name="普通话", input_summary={})
+    assert "未检出虫体" in out2["report"]["symptom_match"]
 
 
 # ==================================================================== 主流程

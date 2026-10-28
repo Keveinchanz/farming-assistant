@@ -42,6 +42,10 @@
     // 本省当季高发（问诊单第六段）。分享快照与 PDF 都要它，
     // 所以存起来而不是只写进 DOM —— 从 innerHTML 里反解析回来是不可接受的。
     regionAlert: null,
+    // 本地产收提醒（问诊单最后一段）。同样是「DOM 只是渲染结果」：
+    // 分享页、服务端 PDF、复制文本都要同一份数据，不能各自算一遍，
+    // 更不能从 innerHTML 反解析。null 表示没拉到、或这块田没有可靠结论。
+    sprayNote: null,
     // 已生成的分享（token/url）。同一张纸反复点「分享」不该每次都换一条链接 ——
     // 换一条，先前发给农户的那条就再也对不上了。
     sheetShare: null,
@@ -209,7 +213,7 @@
         return;
       }
       state.audioDuration = hit.durationMs / 1000;
-      setAudio(hit.blob, `录音_${new Date().toISOString().slice(11, 19).replace(/:/g, "")}.wav`);
+      setAudio(hit.blob, `录音_${new Date().toTimeString().slice(0, 8).replace(/:/g, "")}.wav`);
       return;
     }
 
@@ -396,7 +400,9 @@
           _textBlock("症状匹配说明", report.symptom_match, "info") +
           _sourcesBlock(data.sources || []) +
           _fusedSummary(data) +
-          _confidenceBlock(confidencePct, lowConf)
+          // 需复核时不显示置信度：那是「照片像健康」的把握，不是这条结论的把握，
+          // 挂在「照片与描述不一致」下面会被读成「结论有 90% 的把握」。
+          (report.needs_review ? "" : _confidenceBlock(confidencePct, lowConf))
       ) +
       _askBlock(report) +
       // 归档排在追问之后：追问答完了，这条结论才算定稿，落档的才是最终版
@@ -565,9 +571,15 @@
     const pestPrimary = !!(primary && primary.kind === "pest");
     // 健康是一个**结论**，不是「没判断出来」。不加这一条，标题会写「未能确定病害」，
     // 角标却写「健康样本」—— 两个自相矛盾的东西并排放在结果页最显眼的位置。
-    const healthy = !pestPrimary && !!(report.healthy || (top1 && top1.is_healthy));
-    const name = (primary && primary.name) || report.disease_name
-      || (healthy ? "未见明显病斑" : "未能确定病害");
+    // 需复核（图文冲突）时反倒必须先压掉 top1 的健康判定：照片是健康类，但用户说了
+    // 具体病害，这时挂一个「健康样本」角标，等于替照片把用户的话否掉了。
+    const review = !pestPrimary && !!report.needs_review;
+    const healthy = !pestPrimary && !review
+      && !!(report.healthy || (top1 && top1.is_healthy));
+    const name = review
+      ? "照片与描述不一致"
+      : ((primary && primary.name) || report.disease_name
+        || (healthy ? "未见明显病斑" : "未能确定病害"));
     const crop = pestPrimary
       ? (primary.crop || "")
       : (top1 && top1.crop ? top1.crop : "");
@@ -578,7 +590,7 @@
     return (
       `<div class="result-hero">` +
       `<div class="result-hero__main">` +
-      `<div class="result-hero__label">${pestPrimary ? "诊断结果（虫害）" : (healthy ? "巡检结果" : "诊断结果")}</div>` +
+      `<div class="result-hero__label">${pestPrimary ? "诊断结果（虫害）" : (review ? "需人工复核" : (healthy ? "巡检结果" : "诊断结果"))}</div>` +
       `<h2 class="result-hero__name">${UI.escapeHtml(name || "—")}</h2>` +
       `<div class="result-hero__tags">` +
       (crop ? `<span class="badge badge--primary">${UI.escapeHtml(crop)}</span>` : "") +
@@ -877,9 +889,8 @@
   }
 
   function _isoPlusDays(days) {
-    const d = new Date();
-    d.setDate(d.getDate() + days);
-    return d.toISOString().slice(0, 10);
+    // 本地日期，不用 toISOString（那是 UTC，东八区早上会差一天）
+    return UI.localDatePlus(days);
   }
 
   /** 回访间隔按结论性质给默认值：健康 3 天、看不清 2 天补拍、确诊 7 天看药效。 */
@@ -934,7 +945,7 @@
       `<div class="result-block__title">${Icon.render("sprout", 18)}归档与回访</div>` +
       `<p class="result-record__desc">` +
       `这条结论该落在哪块地上？归档后会进那块田的档案，同时在回访队列里排一条待办 —— ` +
-      `「三天后再看一眼」不用自己记在纸上。` +
+      `到回访日提醒你再看一次，不用自己记在纸上。` +
       `</p>` +
       `<div class="result-record__grid">` +
       `<div class="form-field">` +
@@ -1026,10 +1037,13 @@
         return;
       }
 
-      select.innerHTML = f.list
-        .map((x) => `<option value="${UI.escapeHtml(x.id)}">` +
-          `${UI.escapeHtml(x.name)}（${UI.escapeHtml(x.crop)}）</option>`)
-        .join("");
+      // 第一项永远是空：列表里没选中任何一项时，浏览器默认选第一个，
+      // 于是一次没匹配上的归档会静静地记到「示例田 · 油菜」上。
+      select.innerHTML = `<option value="">请选择田块</option>` +
+        f.list
+          .map((x) => `<option value="${UI.escapeHtml(x.id)}">` +
+            `${UI.escapeHtml(x.name)}（${UI.escapeHtml(x.crop)}）</option>`)
+          .join("");
 
       // 默认选中作物能对上的那块 —— 农技员一天看十几块地，
       // 让他每次手动挑一遍，这个功能就等于没有。
@@ -1056,7 +1070,7 @@
         const conf = primary.confidence != null ? primary.confidence : report.confidence;
         const payload = {
           field_id: fieldId,
-          date: new Date().toISOString().slice(0, 10),
+          date: UI.localDate(),
           label: _primaryName(report),
           confidence: typeof conf === "number" ? conf : null,
           subject: ($("archive-subject") && $("archive-subject").value.trim()) || "",
@@ -1338,7 +1352,7 @@
     return {
       v: 1,
       no: f.meta.id || "",
-      date: f.meta.date || new Date().toISOString().slice(0, 10),
+      date: f.meta.date || UI.localDate(),
       subject: f.meta.subject || "",
       field: f.meta.fieldName || "",
       crop: f.crop || "",
@@ -1364,6 +1378,32 @@
         items: alert.items || [],
         demo: !!alert.demo,
       },
+      // 本地产收提醒。以前只写进页面 DOM，分享出去的那张纸和 PDF 就没有这一段，
+      // 而农户拿到的往往正是那一张 —— 「打完几天能吃」在纸上缺席，等于没提醒。
+      harvest: _harvestPayload(state.sprayNote),
+    };
+  }
+
+  /** 采收状态 → 快照字段。只挑纸上要印的几项，接口的其余字段不带进公开链接。 */
+  function _harvestPayload(s) {
+    if (!s || s.status === "none") return null;
+    if (s.status === "unknown") {
+      return {
+        status: "unknown",
+        date: s.pending_date || s.last_date || "",
+        item: s.pending_item || s.last_item || "",
+        interval_days: null,
+        earliest_date: "",
+        days_left: null,
+      };
+    }
+    return {
+      status: s.locked ? "locked" : "ok",
+      date: s.date || "",
+      item: s.item || "",
+      interval_days: typeof s.interval_days === "number" ? s.interval_days : null,
+      earliest_date: s.earliest_date || "",
+      days_left: typeof s.days_left === "number" ? s.days_left : null,
     };
   }
 
@@ -1449,7 +1489,7 @@
       // 本地产收提醒：只有这张诊断落在某块田上、且那块田记过带间隔期的打药时才出现。
       // 它把「该打什么药」和「打完几天能吃」接在一起 —— 农技员在地头被追问的正是后半句。
       `<div class="sheet__sec" id="sheet-spray" hidden>` +
-      `<h3>本地产收提醒</h3>` +
+      `<h3>采收提醒</h3>` +
       `<div id="sheet-spray-body"></div>` +
       `</div>` +
 
@@ -1526,22 +1566,57 @@
       return;
     }
     Api.farmSpray(meta.fieldId).then((s) => {
-      if (!s) {
+      if (!s || s.status === "none") {
         box.hidden = true;
+        state.sprayNote = null;
         return;
       }
-      const reg = s.reg_no ? `（${UI.escapeHtml(s.reg_no)}）` : "";
-      const what = `${UI.escapeHtml(s.date)} 施过 ${UI.escapeHtml(s.item || "药剂")}${reg}`;
+      // 存一份原始状态：分享快照、服务端 PDF、复制文本都从这里取，
+      // 保证四处说的是同一句话，而不是各算各的。
+      state.sprayNote = s;
+      const what = `${UI.escapeHtml(s.date || s.last_date)} 施过 ` +
+        `${UI.escapeHtml(s.item || s.last_item || "药剂")}` +
+        (s.reg_no ? `（${UI.escapeHtml(s.reg_no)}）` : "");
       box.hidden = false;
-      body.innerHTML = s.locked
-        ? `<p>这块田 ${what}，标签安全间隔期 ${s.interval_days} 天，` +
+      if (s.status === "unknown") {
+        // 「不知道」不能印成「可以采收」，也不能印成「还在间隔期」——
+        // 前者会让人提前采摘，后者是凭空造一条限制。
+        body.innerHTML =
+          `<p>这块田 ${UI.escapeHtml(s.pending_date || s.last_date)} 施过 ` +
+          `${UI.escapeHtml(s.pending_item || s.last_item || "药剂")}，` +
+          `但这次记录没有填安全间隔期，<b>无法判断哪天可以采收</b>。</p>` +
+          `<p>请按瓶身标签补填间隔期后再看这张单。</p>`;
+      } else if (s.locked) {
+        body.innerHTML =
+          `<p>这块田 ${what}，标签安全间隔期 ${s.interval_days} 天，` +
           `<b>最早可收 ${UI.escapeHtml(s.earliest_date)}</b>（距今 ${s.days_left} 天）。` +
-          `在这之前不要采收。</p>`
-        : `<p>这块田 ${what}，间隔期 ${s.interval_days} 天，` +
+          `在这之前不要采收。</p>`;
+      } else {
+        body.innerHTML =
+          `<p>这块田 ${what}，间隔期 ${s.interval_days} 天，` +
           `已于 ${UI.escapeHtml(s.earliest_date)} 期满，可以采收。</p>`;
+      }
     }).catch(() => {
       box.hidden = true;
+      state.sprayNote = null;
     });
+  }
+
+  /** 本地产收提醒的一句话版本（复制文本用）。
+   *  与 DOM、分享页、PDF 同源，措辞不另写一套。 */
+  function _sprayNoteLine(s) {
+    if (!s || s.status === "none") return "";
+    if (s.status === "unknown") {
+      return `采收：${s.pending_date || s.last_date} 施过 ` +
+        `${s.pending_item || s.last_item || "药剂"}，未填安全间隔期，` +
+        `无法判断可收日期，请核对标签后补填。`;
+    }
+    if (s.locked) {
+      return `采收：${s.date} 施过 ${s.item || "药剂"}，间隔期 ${s.interval_days} 天，` +
+        `最早可收 ${s.earliest_date}（距今 ${s.days_left} 天），之前不要采收。`;
+    }
+    return `采收：${s.date} 施过 ${s.item || "药剂"}，间隔期 ${s.interval_days} 天，` +
+      `已于 ${s.earliest_date} 期满。`;
   }
 
   /** 复制成微信消息。微信里没有排版，所以只用纯文本 + 序号，
@@ -1559,7 +1634,7 @@
     const recheck = meta.recheck;
 
     const lines = [];
-    lines.push(`【田间问诊单】${meta.date || new Date().toISOString().slice(0, 10)}`);
+    lines.push(`【田间问诊单】${meta.date || UI.localDate()}`);
     if (meta.subject) lines.push(`服务对象：${meta.subject}`);
     if (meta.fieldName) lines.push(`地块：${meta.fieldName}`);
     lines.push("");
@@ -1574,6 +1649,12 @@
     if (report.medication_reminder) {
       lines.push("");
       lines.push(`用药提醒：${report.medication_reminder}`);
+    }
+    // 采收提醒紧跟用药提醒：这两条是农户最常追问的「打完几天能吃」。
+    const sprayLine = _sprayNoteLine(state.sprayNote);
+    if (sprayLine) {
+      lines.push("");
+      lines.push(sprayLine);
     }
     if (recheck) {
       lines.push("");
@@ -1700,7 +1781,8 @@
        踩过），而且顺序跑才能把进度按张数如实显示出来。
      ================================================================== */
 
-  const batch = { files: [], rows: [], running: false };
+  // token 是批次号：每次开始 +1，旧循环发现自己不是当前批次就退出（见 runBatch）。
+  const batch = { files: [], rows: [], running: false, token: 0 };
 
   /* 一次最多 30 张：单张 3~5 秒，30 张已经是两分多钟。再多用户会以为卡死，
      而且他上传的时候本来也不会一次挑五十张。 */
@@ -1758,6 +1840,10 @@
     if (batch.running || !batch.files.length) return;
     batch.running = true;
     batch.rows = [];
+    // 批次号：用户在巡检过程中点「重新开始」，旧循环必须自己退出 ——
+    // 否则它会把剩下几张继续跑完，再往已经清空的表格里追加行。
+    const token = batch.token + 1;
+    batch.token = token;
 
     $("diagnose-form").hidden = true;
     $("batch-card").hidden = true;
@@ -1768,6 +1854,7 @@
 
     const started = Date.now();
     for (let i = 0; i < batch.files.length; i += 1) {
+      if (batch.token !== token) return;     // 已被「重新开始」作废
       const file = batch.files[i];
       setBatchProgress(i, batch.files.length, file.name);
 
@@ -1784,6 +1871,8 @@
         // 而不是整批重来。
         row = { file, error: err.message };
       }
+      // await 期间用户可能已经重新开始：这时这一行属于上一批，不能写进新表。
+      if (batch.token !== token) return;
       batch.rows.push(row);
       appendBatchRow(row, batch.rows.length - 1);
     }
@@ -1925,7 +2014,7 @@
     const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `巡检结果_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `巡检结果_${UI.localDate()}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -1938,6 +2027,13 @@
   }
 
   function resetBatch() {
+    // 巡检跑着的时候不许清空：清空只改前端状态，网络请求停不下来，
+    // 结果就是「点了重新开始，几秒后又冒出一批结果」。
+    if (batch.running) {
+      UI.toast("巡检还在进行，等这一批跑完再重新开始", "warning");
+      return;
+    }
+    batch.token += 1;          // 让可能残留的旧循环立刻作废
     batch.files = [];
     batch.rows = [];
     batch.running = false;

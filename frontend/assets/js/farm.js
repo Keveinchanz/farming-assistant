@@ -772,22 +772,55 @@
     bindPanelEvents();
   }
 
-  /* 安全间隔期黄条。
+  /* 采收限制提示。
    *
-   * 两种「没有黄条」必须分开，但都不显示：
-   *   · spray 为 null —— 这块田没有任何一条记了间隔期的施药，是「不知道」。
-   *     不显示是对的：农技员一进田就看到一块「不知道什么时候能摘」的黄条，
-   *     用两次就会学会无视所有黄条。真正的提醒放在记打药那一步（表单里那两格）。
-   *   · locked 为 false —— 已经过了间隔期，没什么要提醒的。
+   * 三种「没有黄条」必须分开：
+   *   · spray 为 null —— 这块田一条打药记录都没有，无从判断。不显示：
+   *     农技员一进田就看到「不知道什么时候能摘」，用两次就学会无视所有黄条；
+   *   · status 为 ok —— 已过间隔期，没什么要提醒的；
+   *   · status 为 unknown —— **最新一次施药没填间隔期**。这一档要显示，
+   *     但用提示色而不是警告色：它不是「还在间隔期」，而是「这次说不了算」，
+   *     而且补一下就能修好 —— 不显示的话，页面上「没有黄条」会被读成「可以收」。
    */
   function renderSprayLock(spray) {
     const host = $("spray-lock");
     if (!host) return;
-    if (!spray || !spray.locked) {
+    const status = (spray && spray.status) || (spray && spray.locked ? "locked" : "ok");
+    if (!spray || status === "ok") {
       host.hidden = true;
       host.innerHTML = "";
       return;
     }
+    const goLedger = () => {
+      location.href = "/ledger.html?field=" + encodeURIComponent(state.field ? state.field.id : "");
+    };
+
+    if (status === "unknown") {
+      const when = spray.pending_date || spray.last_date || "";
+      const prev = spray.last_known;
+      host.hidden = false;
+      host.innerHTML =
+        `<div class="farm-reminder farm-reminder--info">` +
+        `<div class="farm-reminder__head">` +
+        `<span class="badge badge--info">待补填</span>` +
+        `<strong>这次施药没填间隔期，暂不能判断何时可收</strong></div>` +
+        `<p class="farm-reminder__why">` +
+        (when ? `${UI.escapeHtml(when)} 那次施药` : "最近一次施药") +
+        `没有填安全间隔期。` +
+        (prev
+          ? `上次（${UI.escapeHtml(prev.date)}）${prev.interval_days} 天已于 ` +
+            `${UI.escapeHtml(prev.earliest_date)} 期满，但那只说明那次。`
+          : "") +
+        `补上标签上的天数，系统才能算出最早可收日。</p>` +
+        `<div class="farm-reminder__ops">` +
+        `<button type="button" class="btn btn--sm btn--outline" id="btn-spray-ledger">` +
+        `去补填间隔期</button>` +
+        `</div></div>`;
+      const btn = $("btn-spray-ledger");
+      if (btn) btn.addEventListener("click", goLedger);
+      return;
+    }
+
     const days = spray.days_left == null ? 0 : spray.days_left;
     const reg = spray.reg_no ? `（登记证 ${UI.escapeHtml(spray.reg_no)}）` : "";
     host.hidden = false;
@@ -807,11 +840,7 @@
       `</div></div>`;
 
     const btn = $("btn-spray-ledger");
-    if (btn) {
-      btn.addEventListener("click", () => {
-        location.href = "/ledger.html?field=" + encodeURIComponent(state.field ? state.field.id : "");
-      });
-    }
+    if (btn) btn.addEventListener("click", goLedger);
   }
 
   function renderWeatherBadge(w) {    const d = (w.days || [])[0];
@@ -879,7 +908,7 @@
       `<strong>${UI.escapeHtml(r.action)}</strong></div>` +
       `<p class="farm-reminder__why">${UI.escapeHtml(r.reason || "")}</p>` +
       `<div class="farm-reminder__ops">` +
-      `<button type="button" class="btn btn--sm btn--primary" data-done="${i}">干完了</button>` +
+      `<button type="button" class="btn btn--sm btn--primary" data-done="${i}">已处理</button>` +
       `<button type="button" class="btn btn--sm btn--outline" data-snooze="${i}">改天</button>` +
       `</div></div>`
     )).join("");
@@ -913,8 +942,8 @@
 
     const method = h.method === "xgboost" ? "XGBoost 三分位" : "积温法";
 
-    // 施肥影响：有记录才说，没有就明确说「未记录施肥，按缺素算」——
-    // 沉默会让人以为「施不施肥都一样」，而这正是这一轮要修掉的问题。
+    // 施肥影响：有记录才给天数；没记录时明确写「未记录、未作调整」——
+    // 沉默会让人以为「施不施肥都一样」，而按缺素硬算又会把窗口整体推后。
     const shift = Number(h.maturity_shift || 0);
     const mgmtNote = h.management_note || "";
     const mgmtLine = mgmtNote
@@ -940,7 +969,9 @@
       `<p class="text-sm">${UI.escapeHtml(h.basis || "")}</p>` +
       `<p class="text-sm text-muted">方法：${method} · 全平台收获样本 ` +
       `${h.sample_count}/${h.sample_needed} 条` +
-      (h.method === "gdd_fallback" ? "（样本够了会自动改用 XGBoost）" : "") +
+      // 不再写「样本够了会自动改用 XGBoost」：训练是离线脚本，进程里不会自己跑，
+      // 有没有模型只取决于 models/ 下有没有权重文件。
+      (h.method === "gdd_fallback" ? "（当前没有可用的模型权重，按积温法估算）" : "") +
       `</p>` +
       sourcesHtml +
       `</details>` +

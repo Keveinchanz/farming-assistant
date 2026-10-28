@@ -176,11 +176,16 @@ ASSISTANT_SYSTEM_PROMPT = """你是「田头农技台」平台的农技助手，
 
 PAGE_NAMES: dict[str, str] = {
     "": "站点",
-    "index": "首页 · 病虫害地图",
+    # 名称必须和左侧导航逐字一致（layout.js 的 NAV）—— 助手说「去病虫害识别」，
+    # 而导航上写的是「智能诊断」，用户就会以为这是两个功能。
+    "index": "首页（平台总入口，含三维沙盘）",
     "diagnose": "智能诊断",
     "library": "知识图书库",
     "policy": "惠农政策",
     "farm": "我的农田",
+    "ledger": "用药台账",
+    "skills": "技能",
+    "chat": "农技问答",
 }
 
 

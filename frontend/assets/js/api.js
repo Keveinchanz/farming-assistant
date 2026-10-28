@@ -412,6 +412,26 @@
     return `<p class="source-note">${escapeHtml(label || "来源")}：${escapeHtml(text)}</p>`;
   }
 
+  /** 本地日期 YYYY-MM-DD。
+   *
+   *  **不要再用 new Date().toISOString().slice(0, 10)**：toISOString 是 UTC，
+   *  东八区 08:00 之前取到的是昨天 —— 早上七点打的问诊单会写成前一天，
+   *  归档、回访、巡检 CSV 全都跟着错一天。
+   */
+  function localDate(d) {
+    const t = d instanceof Date ? d : new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+  }
+
+  /** 今天往后 days 天的本地日期（用于回访、默认 harvest date）。 */
+  function localDatePlus(days) {
+    const t = new Date();
+    t.setDate(t.getDate() + Number(days || 0));
+    return localDate(t);
+  }
+
   window.Api = api;
-  window.UI = { toast, busy, escapeHtml, percent, setText, query, sourceNote };
+  window.UI = { toast, busy, escapeHtml, percent, setText, query, sourceNote,
+    localDate, localDatePlus };
 })();

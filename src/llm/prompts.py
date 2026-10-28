@@ -119,10 +119,18 @@ def build_user_prompt(context: dict) -> str:
     retrieved = context.get("retrieved") or []
     if retrieved:
         parts.append("【知识库检索到的相关资料（可引用，但不要照抄）】")
+        cross = 0
         for i, r in enumerate(retrieved, start=1):
-            parts.append(f"{i}. {r.get('title', '资料')}：{r.get('text', '')[:300]}")
+            tag = ""
+            if r.get("same_crop") is False and r.get("crop"):
+                cross += 1
+                tag = f"（该资料针对{r['crop']}，与本条问诊的作物不同）"
+            parts.append(f"{i}. {r.get('title', '资料')}{tag}：{r.get('text', '')[:300]}")
         parts.append("")
         parts.append("（若引用了上述资料，请在 symptom_match 中体现其要点）")
+        if cross:
+            parts.append("（标了作物不同的资料只能作参照，不得把其中的防治方案、药剂与用量"
+                         "当作本条问诊的处置建议）")
 
     parts.append(REPORT_SCHEMA_HINT)
     if pest:

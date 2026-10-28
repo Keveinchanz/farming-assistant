@@ -488,9 +488,12 @@ class DiagnosisFusion:
                 user_text, asr_text,
                 " ".join(c["label_cn"] for c in candidates[:3]),
             ])).strip()
+            # 作物取自候选（图像 top-k 或文字命中的作物名）。知识库是按作物分册的，
+            # 不带这个约束就会把别的作物的同名病害方案一起召回。
+            asked_crop = next((str(c.get("crop") or "") for c in candidates if c.get("crop")), "")
             if query:
                 try:
-                    retrieved = self.rag.retrieve(query)
+                    retrieved = self.rag.retrieve(query, crop=asked_crop)
                     rag_used = bool(retrieved)
                 except Exception as e:  # noqa: BLE001
                     logger.warning("RAG 检索失败，跳过：%s", e)
@@ -540,7 +543,8 @@ class DiagnosisFusion:
             "candidates": candidates,
             "sources": [
                 {"title": r.get("title", ""), "source": r.get("source", ""),
-                 "score": r.get("score")}
+                 "score": r.get("score"), "crop": r.get("crop", ""),
+                 "same_crop": r.get("same_crop")}
                 for r in retrieved
             ],
             "degraded": degraded,

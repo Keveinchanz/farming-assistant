@@ -6127,6 +6127,142 @@ def _():
     assert "未检出虫体" in out2["report"]["symptom_match"]
 
 
+# ==================================================================== 知识库作物约束（U09）
+
+class _FakeCollection:
+    """只实现检索用到的那几个方法，用来把「按作物过滤 + 补齐」的逻辑单独测出来。"""
+
+    def __init__(self, rows: list[dict]) -> None:
+        self.rows = rows
+        self.calls: list[dict | None] = []
+
+    def count(self) -> int:
+        return len(self.rows)
+
+    def query(self, query_embeddings=None, n_results=4, include=None, where=None):  # noqa: ARG002
+        self.calls.append(where)
+        crops = (where or {}).get("crop", {}).get("$in") if where else None
+        rows = [r for r in self.rows if crops is None or r["meta"].get("crop") in crops]
+        rows = rows[:n_results]
+        return {
+            "documents": [[r["text"] for r in rows]],
+            "metadatas": [[r["meta"] for r in rows]],
+            "distances": [[r["dist"] for r in rows]],
+        }
+
+
+def _fake_rag(col, *, top_k: int):
+    from src.rag.retriever import ChromaRAG
+
+    rag = ChromaRAG.__new__(ChromaRAG)
+    rag.top_k = top_k
+    rag.collection = col
+    rag.crop_ready = True
+    return rag
+
+
+def _patch_encoder(mod) -> None:
+    """向量模型是 400MB 的依赖，这里只关心检索逻辑，用固定向量替身。"""
+    mod.get_encoder = lambda *a, **k: (lambda texts: [[0.0, 0.0, 0.0] for _ in texts])
+
+
+@case("知识库：卡片表头能取出作物与作物分类")
+def _():
+    from src.rag.builder import parse_crop_header
+
+    assert parse_crop_header("标题：南瓜白粉病防治\n分类：病害防治知识\n作物：南瓜（蔬菜）\n") == ("南瓜", "蔬菜")
+    # 虫害/病害两类条目在原始数据里没有分类字段，渲染出来是空括号
+    assert parse_crop_header("标题：稻纵卷叶螟防治\n分类：虫害防治知识\n作物：水稻（）\n") == ("水稻", "")
+    # 自行放入的官方文档没有这一行
+    assert parse_crop_header("标题：某地植保站技术意见\n正文\n") == ("", "")
+
+
+@case("知识库：作物为空时不往 metadata 里写空键")
+def _():
+    from src.rag.builder import _chunk_meta
+
+    meta = _chunk_meta({"title": "t", "source": "s", "crop": "", "crop_category": ""})
+    assert meta == {"title": "t", "source": "s"}, meta
+    meta2 = _chunk_meta({"title": "t", "source": "s", "crop": "水稻", "crop_category": ""})
+    assert meta2.get("crop") == "水稻" and "crop_category" not in meta2, meta2
+
+
+@case("RAG 检索：作物内够用时只给该作物，不再混入别的作物")
+def _():
+    import src.rag.embeddings as emb
+    from src.rag.retriever import ChromaRAG
+
+    col = _FakeCollection([
+        {"text": "水稻稻瘟病 ……", "meta": {"title": "水稻稻瘟病防治", "source": "a", "crop": "水稻"}, "dist": 0.2},
+        {"text": "南瓜白粉病 ……", "meta": {"title": "南瓜白粉病防治", "source": "b", "crop": "南瓜"}, "dist": 0.1},
+        {"text": "多寄主白粉病 ……", "meta": {"title": "白粉病（多寄主）", "source": "c", "crop": "多寄主"}, "dist": 0.3},
+    ])
+    rag = _fake_rag(col, top_k=1)
+    _patch_encoder(emb)
+    out = rag.retrieve("水稻叶子有褐斑", crop="水稻")
+
+    assert len(out) == 1, out
+    assert out[0]["crop"] == "水稻" and out[0]["same_crop"] is True, out
+    assert all(where is not None for where in col.calls), f"应当只在作物内检索：{col.calls}"
+
+
+@case("RAG 检索：该作物资料不足时补齐其他作物，并标 same_crop=False")
+def _():
+    import src.rag.embeddings as emb
+    from src.rag.retriever import ChromaRAG
+
+    col = _FakeCollection([
+        {"text": "南瓜白粉病 ……", "meta": {"title": "南瓜白粉病防治", "source": "b", "crop": "南瓜"}, "dist": 0.1},
+        {"text": "多寄主白粉病 ……", "meta": {"title": "白粉病（多寄主）", "source": "c", "crop": "多寄主"}, "dist": 0.3},
+        {"text": "某地小麦条锈病意见 ……", "meta": {"title": "小麦条锈病", "source": "d"}, "dist": 0.4},
+    ])
+    rag = _fake_rag(col, top_k=4)
+    _patch_encoder(emb)
+    out = rag.retrieve("小麦叶子发黄", crop="小麦")
+
+    by_title = {r["title"]: r for r in out}
+    # 库里没有小麦资料：补齐来的南瓜要标成「其他作物」，多寄主对所有作物成立
+    assert by_title["南瓜白粉病防治"]["same_crop"] is False, by_title
+    assert by_title["白粉病（多寄主）"]["same_crop"] is True, by_title
+    # 没有作物信息的片段不下判断，不能冤枉成「不同作物」
+    assert by_title["小麦条锈病"]["same_crop"] is None, by_title
+    assert col.calls[0] is not None and col.calls[-1] is None, f"应先过滤再补齐：{col.calls}"
+
+
+@case("RAG 检索：索引没有作物元数据时不做过滤（老索引行为不变）")
+def _():
+    import src.rag.embeddings as emb
+
+    col = _FakeCollection([
+        {"text": "南瓜白粉病 ……", "meta": {"title": "南瓜白粉病防治", "source": "b"}, "dist": 0.1},
+    ])
+    rag = _fake_rag(col, top_k=2)
+    rag.crop_ready = False
+    _patch_encoder(emb)
+    out = rag.retrieve("水稻叶子有褐斑", crop="水稻")
+
+    assert [r["title"] for r in out] == ["南瓜白粉病防治"], out
+    assert out[0]["same_crop"] is None, out
+    assert col.calls == [None], f"不该带 where 条件：{col.calls}"
+
+
+@case("提示词：其他作物的资料要标出作物，并要求不得照搬方案")
+def _():
+    from src.llm.prompts import build_user_prompt
+
+    text = build_user_prompt({
+        "candidates": [{"label_cn": "小麦条锈病", "crop": "小麦", "condition": "条锈病",
+                        "pathogen_type": "真菌", "confidence": 0.7}],
+        "retrieved": [
+            {"title": "南瓜白粉病防治", "text": "……", "crop": "南瓜", "same_crop": False},
+            {"title": "小麦条锈病防治", "text": "……", "crop": "小麦", "same_crop": True},
+        ],
+    })
+    assert "南瓜白粉病防治（该资料针对南瓜，与本条问诊的作物不同）" in text, text
+    assert "小麦条锈病防治（该资料针对" not in text, text
+    assert "不得把其中的防治方案、药剂与用量" in text, text
+
+
 # ==================================================================== 主流程
 
 def main() -> int:

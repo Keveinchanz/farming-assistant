@@ -261,6 +261,9 @@ class SourceItem(BaseModel):
     title: str = ""
     source: str = ""
     score: float | None = None
+    crop: str = Field("", description="这条资料针对的作物；知识库里没有作物信息时为空")
+    same_crop: bool | None = Field(
+        None, description="是否与本条问诊的作物相同。空 = 索引里没有作物信息、无从判断")
 
 
 class DegradedFlags(BaseModel):

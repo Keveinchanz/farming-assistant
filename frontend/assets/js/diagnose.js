@@ -748,12 +748,19 @@
   function _sourcesBlock(sources) {
     if (!sources.length) return "";
     const rows = sources
-      .map(
-        (s) =>
+      .map((s) => {
+        // 知识库按作物分册，作物内资料不够时会补别的作物进来，必须标出来
+        const cross =
+          s.same_crop === false && s.crop
+            ? ` <span class="source-list__score">其他作物：${UI.escapeHtml(s.crop)}</span>`
+            : "";
+        return (
           `<li>${Icon.render("book", 14)}<span>${UI.escapeHtml(s.title)}` +
           (s.score != null ? ` <span class="source-list__score">相似度 ${(s.score * 100).toFixed(0)}%</span>` : "") +
+          cross +
           `</span></li>`
-      )
+        );
+      })
       .join("");
     return (
       `<div class="result-block">` +

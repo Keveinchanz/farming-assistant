@@ -20,7 +20,7 @@ class MockRAG(BaseRAG):
         self.reason = reason
         logger.info("RAG：Mock（%s），检索结果将为空", reason)
 
-    def retrieve(self, query: str, top_k: int | None = None) -> list[dict]:
+    def retrieve(self, query: str, top_k: int | None = None, crop: str = "") -> list[dict]:
         return []
 
     def stats(self) -> dict:

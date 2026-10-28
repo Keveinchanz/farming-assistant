@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>快速诊断 · 田头农技台</title>
+<meta name="description" content="像聊天一样问病情：拍张照片或说一句话，马上给出简化诊断与处理要点，详细知识一键跳到知识图书库对应卡片。">
+<meta name="theme-color" content="#166534">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/chat.css">
+</head>
+<body class="chat-page">
+
+<a class="visually-hidden" data-skip-link href="#chat-log">跳到对话区</a>
+
+<header class="chat-top">
+  <a class="chat-top__brand" href="/index.html" aria-label="返回首页">
+    <span class="chat-top__mark" id="brand-mark" aria-hidden="true"></span>
+    <span class="chat-top__name">田头农技台</span>
+  </a>
+  <a class="btn btn--outline btn--sm chat-top__back" id="btn-standard" href="/index.html"
+     aria-label="切换回标准版">
+    <span class="chat-top__backFull">切换回标准版</span>
+    <span class="chat-top__backShort">标准版</span>
+  </a>
+  <select class="select chat-top__dialect" id="dialect-select" data-dialect-picker
+          aria-label="切换方言" title="切换方言（影响语音识别与朗读）"></select>
+</header>
+
+<main class="chat-log" id="chat-log" aria-live="polite" aria-label="对话记录"></main>
+
+<footer class="composer">
+  <div class="composer__row">
+    <button type="button" class="icon-btn" id="btn-mode" aria-label="切换语音输入"
+            aria-pressed="false" title="切换语音输入（按住说话）"></button>
+    <div class="composer__field">
+      <textarea id="chat-input" class="chat-input" rows="1" maxlength="500"
+                placeholder="说说作物哪里不对劲…" enterkeyhint="send"
+                aria-label="输入消息"></textarea>
+      <button type="button" class="hold-btn" id="btn-hold" hidden>按住说话</button>
+    </div>
+    <button type="button" class="icon-btn" id="btn-image" aria-label="上传图片" title="上传图片"></button>
+    <button type="button" class="btn btn--primary chat-send" id="btn-send">发送</button>
+  </div>
+
+  <div class="attach" id="attach" hidden>
+    <div class="attach__thumb">
+      <img id="attach-img" alt="待发送的图片预览">
+      <button type="button" class="attach__remove" id="attach-remove" aria-label="移除图片">×</button>
+    </div>
+    <span class="attach__hint">图片已选好，再补一句症状会更准</span>
+  </div>
+
+  <p class="composer__hint">
+    <span id="composer-status">照片 + 一句话，判得更准 · AI 判断仅供参考，用药按标签说明</span>
+    <span class="recording-tip" id="recording-tip" hidden>正在录音，松开发送</span>
+  </p>
+
+  <input type="file" id="file-input" accept="image/*" hidden>
+</footer>
+
+<button type="button" class="chat-zoom" id="chat-zoom" hidden aria-label="关闭大图">
+  <img id="chat-zoom-img" alt="">
+</button>
+
+<script src="/assets/js/icons.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/dialect.js"></script>
+<script src="/assets/js/recorder.js"></script>
+<script src="/assets/js/chat.js"></script>
+</body>
+</html>

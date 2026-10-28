@@ -13,6 +13,8 @@
     收窄：按「距收获还有多少天」限制半宽 —— 离得远允许宽，离得近必须窄。
         一条「3 天后收获，误差 ±15 天」的预测是废话，收窄这一步就是防这个。
 
+**点预测取 q50，不取并集中点**（改动见下方 `_combination_note`）。
+
 隐私（7.14）：训练只吃 features_json 里的**数值**，那条在 repo.list_harvest_features()
 的 SQL 里就已经切掉了 user_id / 田块名 / 位置。
 """
@@ -54,6 +56,13 @@ COLD_TMIN = 0.0
 # 区间宽度控制表（7.3.4）的四个档：距收获天数 → 允许的最大半宽（天）
 WIDTH_BUCKETS = (60, 30, 7)          # >60 / 30~60 / 7~30 / <7
 WIDTH_LIMITS = (15, 10, 5, 2)
+
+# 跨省保形校准的落盘文件名，与三个分位模型同目录。
+# 三个分位模型是各自独立训练的，它们给的区间在**换一个没见过的省**时会偏窄
+# （实测留出湖北：名义 80% 的区间只盖住 55%）。校准量 w 由「留一省」的残差定出，
+# 用的时候把区间两边各放宽 w 天 —— 这是保形预测的标准做法，不是事后调参：
+# w 只用训练省之间互相留出来算，留出省一次都没参与。
+CALIBRATION_NAME = "harvest_calibration.json"
 
 
 def _half_width_limit(days_away: int) -> int:
@@ -163,6 +172,24 @@ def fit_quantile_models(X, y, out_dir):
     return paths
 
 
+def predict_quantiles_at(X, y, X_new) -> dict[int, list[float]]:
+    """在 (X, y) 上训三个分位模型，返回它们在 X_new 上的预测。
+
+    只为「留一省校准」提供：那条路要按省反复重训，但**不落盘**、不参与上线。
+    超参仍然只取 XGB_PARAMS —— 超参若在两处各写一套，模型不会报错，
+    只会悄悄变成另一个模型，这正是本函数存在的理由（不要在图省事时直接 new 一个
+    XGBRegressor 盖上自己的参数）。
+    """
+    from xgboost import XGBRegressor
+
+    out: dict[int, list[float]] = {}
+    for q in QUANTILES:
+        model = XGBRegressor(quantile_alpha=q / 100.0, **XGB_PARAMS)
+        model.fit(X, y)
+        out[q] = [float(v) for v in model.predict(X_new)]
+    return out
+
+
 def models_available() -> bool:
     """三个分位模型是否都在盘上（缺一个就当没有 —— 半个模型给不出区间）。"""
     return all(model_path(q).exists() for q in QUANTILES)
@@ -197,6 +224,26 @@ def _load_models():
 
 def clear_model_cache() -> None:
     _load_models.cache_clear()
+    _load_calibration.cache_clear()
+
+
+@lru_cache(maxsize=1)
+def _load_calibration() -> float:
+    """读跨省校准量 w（天）。没有文件就是 0.0 —— 区间按原始 q10/q90，不擅自加宽。
+
+    读不到就当 0 而不是报错：校准文件是**附加物**，它坏了不该让收获预测整个不可用，
+    只是退回「区间偏窄」这个已知的旧行为。
+    """
+    path = models_dir() / CALIBRATION_NAME
+    if not path.exists():
+        return 0.0
+    try:
+        blob = json.loads(path.read_text(encoding="utf-8"))
+        w = float(blob.get("w_days") or 0.0)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("跨省校准文件读取失败，按不校准处理：%s", e)
+        return 0.0
+    return max(w, 0.0)
 
 
 def train_from_records(conn, *, min_samples: int = TRAIN_MIN_SAMPLES) -> dict:
@@ -287,6 +334,7 @@ def _gdd_interval(gdd_cum: float, maturity: float, temps: list[dict]) -> tuple[i
 def predict_harvest(
     field: dict, growth: dict, temps: list[dict], *,
     today: str | None = None, management: dict | None = None,
+    sample_count: int | None = None,
 ) -> dict:
     """给出 HarvestData 的形状（不含 field_id/crop 之外的东西由调用方补）。
 
@@ -295,6 +343,9 @@ def predict_harvest(
 
     `management` 是 src/farm/management.py 算出来的施肥影响（{days, level, note, ...}），
     缺省 None 表示调用方没算 —— 那就当没有影响，与"未记录施肥"同义。
+
+    `sample_count` 传了就不查数据库：技能层是无状态纯函数路径，不应因为一次
+    计算去打开 SQLite。现有 HTTP 调用方不传，行为保持不变。
     """
     today = today or today_str()
     today_d = date.fromisoformat(today)
@@ -307,16 +358,17 @@ def predict_harvest(
     shift = int(round(float((management or {}).get("days") or 0.0)))
     mgmt_note = str((management or {}).get("note") or "")
 
-    sample_count = 0
-    try:
-        # 只为了在前端显示「XGBoost 已积累 12/30 条记录」，取不到也不影响预测
-        from src.farm.db import connect
-
-        with connect() as conn:
-            from src.farm import repo
-            sample_count = repo.count_harvests(conn)
-    except Exception:  # noqa: BLE001
+    if sample_count is None:
         sample_count = 0
+        try:
+            # 只为了在前端显示「XGBoost 已积累 12/30 条记录」，取不到也不影响预测
+            from src.farm.db import connect
+
+            with connect() as conn:
+                from src.farm import repo
+                sample_count = repo.count_harvests(conn)
+        except Exception:  # noqa: BLE001
+            sample_count = 0
 
     base = {
         "field_id": field["id"], "crop": crop,
@@ -343,7 +395,6 @@ def predict_harvest(
         }
 
     remaining = max(maturity - gdd_cum, 0.0)
-    candidates: list[int] = []
 
     gdd_iv = _gdd_interval(gdd_cum, maturity, temps)
     if gdd_iv is None:
@@ -355,28 +406,53 @@ def predict_harvest(
         }
 
     g_earliest, g_latest = gdd_iv
-    candidates += [g_earliest, g_latest]
 
     models = _load_models()
     method = "gdd_fallback"
     basis = ("积温法（XGBoost 已积累 %d/%d 条记录）"
              % (sample_count, TRAIN_MIN_SAMPLES))
 
+    # 点预测取 **q50**，区间取 **[q10, q90]**；只有没有模型时才退回积温法的两端点取中点。
+    #
+    # 以前这里是「积温两端点 ∪ 三个分位」取 min/max，再用中点当 most_likely。
+    # 那样做的问题在外部数据集的留出省上量得很清楚（scripts/32 的报告里一直有这条诊断）：
+    # 积温法在跨省时偏差 +21.7 天，模型 q50 的偏差是 −8.7 天，两者一取并集，
+    # 一个 5.8 天量级的准模型被一个又宽又偏的区间稀释成 21.1 天。
+    # 并集口径不是数据或特征的问题，是组合方式的问题。
+    #
+    # 改成 q50 之后，积温法并没有被丢掉：它仍是**没有模型时的唯一来源**，
+    # 也是 `gdd_remain` 这类特征的计算基础。丢掉的是一个已被证伪的合成方式。
+    likely_days: int | None = None
+    calib_w = 0          # 跨省校准量；没有模型时为 0，区间完全由分位/积温决定
+
     if models:
         try:
             features = build_features(field, growth, temps, today=today)
             vec = [feature_vector(features)]
-            q_days = {q: max(int(round(models[q].predict(vec)[0])), 0) for q in QUANTILES}
-            candidates += [q_days[10], q_days[50], q_days[90]]
+            raw = [max(int(round(models[q].predict(vec)[0])), 0) for q in QUANTILES]
+            # 三个分位是**三个独立训练**的模型，各自最小化自己的分位损失，
+            # 没有联合约束，所以「q10 比 q90 大」这种情况是会出现的（分位交叉）。
+            # 排一次序，代价为零；不排就会给出反着的区间。
+            q_lo, q_mid, q_hi = sorted(raw)
+            # 跨省保形校准：两边各放宽 w 天。w 由「留一省」的残差定出（见 CALIBRATION_NAME），
+            # 没有校准文件时 w=0，行为与不校准时逐字一致。
+            calib_w = int(round(_load_calibration()))
+            earliest_days = max(q_lo - calib_w, 0)
+            latest_days = q_hi + calib_w
+            likely_days = q_mid
             method = "xgboost"
             basis = "XGBoost 三分位回归（q10/q50/q90）"
+            if calib_w:
+                basis += "；区间已按跨省校准放宽 %d 天" % calib_w
         except Exception as e:  # noqa: BLE001
             # 推理失败就退回积温法，并把原因说出来 —— 不要让用户以为这是模型给的
             logger.warning("XGBoost 推理失败，改用积温法：%s", e)
             basis = f"积温法（XGBoost 推理失败：{e}）"
 
-    earliest_days, latest_days = min(candidates), max(candidates)
-    likely_days = (earliest_days + latest_days) // 2
+    if likely_days is None:
+        # 没有模型（或推理失败）：积温法两端点取中点当点预测，与改动前逐字一致。
+        earliest_days, latest_days = g_earliest, g_latest
+        likely_days = (earliest_days + latest_days) // 2
 
     # 施肥记录的调整放在这里、也就是**所有候选都取完之后**：三种方法（积温法、
     # XGBoost 三分位）本身都不吃这块信息，与其分别去改它们，不如统一在最后挪一次，
@@ -390,7 +466,12 @@ def predict_harvest(
 
     # 宽度控制：限制半宽上限，同时保证至少 ±1 天 ——
     # 「精确到某一天」是假承诺，区间宽度为 0 等于在说谎。
-    limit = _half_width_limit(likely_days)
+    #
+    # 上限要**加上跨省校准量 w**：宽度表管的是「模型自己那段分位区间能有多宽」，
+    # 而 w 是另外量出来的、有据可依的放宽。若让 15/10/5/2 把 w 也一并裁掉，
+    # 呈现给用户的区间就只有闸门量到的那个覆盖率的一半（实测 0.71 掉到 0.50），
+    # 等于闸门验的和页面显示的不是同一个东西。
+    limit = _half_width_limit(likely_days) + calib_w
     half = min(max(likely_days - earliest_days, latest_days - likely_days, 1), limit)
     earliest_days = max(likely_days - half, 0)
     latest_days = likely_days + half

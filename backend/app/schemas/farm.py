@@ -70,6 +70,10 @@ class LogData(BaseModel):
     amount: str = Field("", description="原样文本（「20 斤」），不做单位换算")
     note: str = ""
     source: str = Field("manual", description="manual|voice|diagnose")
+    reg_no: str = Field("", description="农药登记证号（仅 type=spray 时有值）")
+    interval_days: int | None = Field(
+        None, description="安全间隔期天数（仅 type=spray）。**null 表示没记录**，"
+                          "不等于 0 —— 0 是「标签上写着 0 天」")
     created_at: str | None = None
 
 
@@ -217,6 +221,8 @@ class TodayData(BaseModel):
         description="提醒的降级说明，例如「天气不可用，已跳过天气类提醒」——"
                     "不显示的话，用户会把「没有天气提醒」误读成「天气没问题」")
     logs: list[LogData] = Field(default_factory=list)
+    spray: "SprayLockData | None" = Field(
+        None, description="这块田当前受哪次施药约束（安全间隔期）；null 表示没记录过间隔期")
     narrative: str = Field("", description="大模型叙述层（无 Key 时为模板拼装）")
     narrative_why: str = Field("", description="「为什么是这个收获日期」的解释（7.5 的第二个职责）")
     narrative_source: str = Field("template", description="llm | template")
@@ -233,6 +239,8 @@ class AttachDiagnosisRequest(BaseModel):
     image_name: str = ""
     pest: dict | None = None
     report: dict | None = None
+    subject: str = Field("", description="服务对象：农户 / 合作社名。农技员替谁问的诊", max_length=40)
+    recheck_date: str = Field("", description="回访日期 YYYY-MM-DD；留空表示这次不排回访")
 
 
 class AttachDiagnosisData(BaseModel):
@@ -242,6 +250,38 @@ class AttachDiagnosisData(BaseModel):
     label: str
     image_path: str = ""
     log_id: str = ""
+    subject: str = ""
+    recheck_date: str = Field("", description="回显落库的回访日期，前端据此提示「已排入 X 日回访」")
+
+
+# ---------------------------------------------------------------- 回访队列
+
+class FollowupItem(BaseModel):
+    """一条待回访的诊断。字段刻意只带「现场要用的」几项：
+    农技员翻开队列是准备再下乡的，不需要在这里看到完整报告。"""
+
+    id: str
+    field_id: str
+    field_name: str = ""
+    crop: str = ""
+    date: str = Field("", description="诊断日期")
+    label: str = Field("", description="当时的结论（病名或虫名）")
+    confidence: float | None = None
+    subject: str = Field("", description="服务对象")
+    recheck_date: str
+    days_left: int = Field(0, description="负数=已过期 N 天，0=今天，正数=还有 N 天")
+
+
+class FollowupsData(BaseModel):
+    date: str
+    overdue: list[FollowupItem] = Field(default_factory=list, description="已过期，拖最久的在前")
+    today: list[FollowupItem] = Field(default_factory=list)
+    upcoming: list[FollowupItem] = Field(default_factory=list, description="未来 7 天内")
+    due_count: int = Field(0, description="过期 + 今天，前端用来做角标")
+
+
+class FollowupDoneRequest(BaseModel):
+    diagnosis_id: str
 
 
 # ---------------------------------------------------------------- 语音录入（7.8）
@@ -325,6 +365,11 @@ class CreateLogRequest(BaseModel):
     amount: str = ""
     note: str = ""
     source: str = Field("manual", description="manual|voice|diagnose")
+    # 用药台账：只有 type=spray 会落库，其它类型传了也会被 repo 层清掉
+    reg_no: str = Field("", description="农药登记证号，来自 /api/farm/pesticides", max_length=40)
+    interval_days: int | None = Field(
+        None, ge=0, le=365,
+        description="安全间隔期（天），**按瓶身标签填**。留空表示没记录，不是 0")
 
 
 class SnoozeRequest(BaseModel):
@@ -333,3 +378,138 @@ class SnoozeRequest(BaseModel):
     field_id: str
     reminder_key: str
     days: int = 2
+
+
+# ---------------------------------------------------------------- 用药台账（A + B）
+
+class PesticideData(BaseModel):
+    """一条农药登记记录。字段与 src/farm/pesticides.py 的 FIELDS 一一对应。"""
+
+    reg_no: str
+    product: str = ""
+    holder: str = Field("", description="登记企业")
+    form: str = Field("", description="剂型，如 乳油 / 悬浮剂")
+    toxicity: str = Field("", description="毒性，如 低毒 / 微毒")
+    ingredient: str = Field("", description="有效成分及含量，原文照录")
+    kind: str = Field("", description="杀菌剂 / 杀虫剂 / 除草剂 …")
+    crop: str = Field("", description="登记作物，可能是「大豆、花生、玉米」这样的串")
+    target: str = Field("", description="防治对象，原文照录")
+    source: str = ""
+    targets: list[str] = Field(default_factory=list, description="拆分后的防治对象")
+    crops: list[str] = Field(default_factory=list, description="拆分后的登记作物")
+
+
+class PesticidesData(BaseModel):
+    items: list[PesticideData] = Field(default_factory=list)
+    count: int = 0
+    total: int = Field(0, description="登记库里共有多少条（告诉用户这个下拉不是全部）")
+    notice: str = Field("", description="数据来源与「以标签为准」的声明")
+
+
+class SprayLockData(BaseModel):
+    """一块田当前受哪次施药约束。
+
+    `locked=False` 表示已经过了间隔期；整个字段为 null 表示**没有任何一条记了
+    间隔期的施药**（不知道），这两件事前端必须分开显示。
+    """
+
+    locked: bool = False
+    earliest_date: str = Field("", description="最早可采收日 YYYY-MM-DD")
+    days_left: int | None = Field(None, description="距最早可采收还有几天，负数表示已过")
+    item: str = ""
+    reg_no: str = ""
+    date: str = Field("", description="约束它的那次施药日期")
+    interval_days: int | None = None
+
+
+class LedgerPeriodData(BaseModel):
+    start: str = ""
+    end: str = ""
+    label: str = ""
+    key: str = Field("season", description="season | recent | all | custom")
+
+
+class LedgerNextUnlockData(BaseModel):
+    field_id: str
+    name: str = ""
+    earliest_date: str = ""
+    days_left: int = 0
+    item: str = ""
+
+
+class LedgerSummaryData(BaseModel):
+    spray_count: int = 0
+    product_count: int = 0
+    locked_fields: int = 0
+    unknown_fields: int = Field(0, description="有打药但一条间隔期都没填的田块数")
+    field_count: int = 0
+    next_unlock: LedgerNextUnlockData | None = None
+
+
+class LedgerFieldRowData(BaseModel):
+    field_id: str
+    name: str = ""
+    crop: str = ""
+    area_mu: float = 0
+    spray_count: int = 0
+    last_date: str = ""
+    last_item: str = ""
+    last_reg_no: str = ""
+    interval_days: int | None = None
+    earliest_date: str = ""
+    days_left: int | None = None
+    locked: bool = False
+    has_unknown_interval: bool = False
+    status: str = Field("none", description="locked | ok | unknown | none")
+
+
+class LedgerProductRowData(BaseModel):
+    key: str
+    reg_no: str = ""
+    product: str = ""
+    item: str = ""
+    form: str = ""
+    toxicity: str = ""
+    ingredient: str = ""
+    count: int = 0
+    field_ids: list[str] = Field(default_factory=list)
+    field_names: list[str] = Field(default_factory=list)
+    last_date: str = ""
+    repeat_fields: list[str] = Field(default_factory=list,
+                                     description="连续两次用同一有效成分的田块")
+    registered: bool = Field(False, description="是否能在登记库里查到（手填药名时为 false）")
+    rotate_warning: bool = False
+
+
+class LedgerHistoryRowData(LogData):
+    interval_end: str = Field("", description="这次施药自己的解禁日；空串表示没记录间隔期")
+    days_left: int | None = None
+    locked: bool = False
+
+
+class LedgerAlertData(BaseModel):
+    field_id: str
+    name: str = ""
+    crop: str = ""
+    earliest_date: str = ""
+    days_left: int = 0
+    item: str = ""
+    reg_no: str = ""
+    date: str = ""
+    interval_days: int | None = None
+
+
+class LedgerData(BaseModel):
+    today: str = ""
+    period: LedgerPeriodData
+    summary: LedgerSummaryData
+    fields: list[LedgerFieldRowData] = Field(default_factory=list)
+    products: list[LedgerProductRowData] = Field(default_factory=list)
+    history: list[LedgerHistoryRowData] = Field(default_factory=list)
+    alerts: list[LedgerAlertData] = Field(default_factory=list)
+    note: str = ""
+
+
+# TodayData 里引用了定义在后面的 SprayLockData（前向引用）。
+# 显式 rebuild 一次，免得第一次请求时才懒解析、在并发下报 model not fully defined。
+TodayData.model_rebuild()

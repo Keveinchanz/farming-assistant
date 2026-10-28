@@ -36,8 +36,9 @@ class ApiError(Exception):
 CODE_OK = 0
 CODE_BAD_REQUEST = 400
 CODE_NOT_FOUND = 404
+CODE_PAYLOAD_TOO_LARGE = 413     # 请求体或解码后的文件超过上限
 CODE_MODEL_UNAVAILABLE = 1001      # 模型未训练/未导出
-CODE_UPSTREAM_ERROR = 1002         # 外部服务（百度/DeepSeek）出错
+CODE_UPSTREAM_ERROR = 1002         # 外部服务（语音识别/大模型）出错
 CODE_INTERNAL = 1500
 
 

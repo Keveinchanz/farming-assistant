@@ -38,6 +38,7 @@ from __future__ import annotations
 import io
 import json
 import time
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -52,6 +53,7 @@ from src.common.constants import (
 )
 from src.common.logging_utils import setup_logger
 from src.common.paths import path_of, resolve
+from src.infer.pest_review import apply_rewrites
 
 logger = setup_logger("agri.pest.detector")
 
@@ -71,6 +73,9 @@ logger = setup_logger("agri.pest.detector")
 DETECTION_RESULT_KEYS = (
     "detections", "count", "image_size",
     "confidence_threshold", "iou_threshold", "backend", "elapsed_ms",
+    # 分类复核的结果块。挂分类器时为 dict，没挂或分类权重缺席时为 None。
+    # 键始终存在，前端不必判「有没有这个字段」，只需判它是不是 null。
+    "review",
 )
 DETECTION_BOX_KEYS = (
     "index", "label_cn", "label_en", "crop", "pest_type", "confidence", "bbox",
@@ -365,6 +370,7 @@ class OnnxPestDetector:
         conf_threshold: float = 0.25,
         iou_threshold: float = 0.7,
         max_det: int = PEST_MAX_DETECTIONS,
+        reviewer=None,
     ) -> None:
         import onnxruntime as ort
 
@@ -379,6 +385,8 @@ class OnnxPestDetector:
         self.conf_threshold = float(conf_threshold)
         self.iou_threshold = float(iou_threshold)
         self.max_det = int(max_det)
+        # 分类复核是可选的增强：由 get_pest_detector() 注入，缺席即退化为纯检测。
+        self.reviewer = reviewer
 
         so = ort.SessionOptions()
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
@@ -433,6 +441,18 @@ class OnnxPestDetector:
             })
 
         detections.sort(key=lambda x: -x["confidence"])
+
+        # 分类复核：有框时按门控决定是否改判，无框时整图分类兜底。
+        # 复核本身失败不能让整条检测失败 —— 它只是增强，出错就退回纯检测结果并留痕。
+        review = None
+        if self.reviewer is not None:
+            try:
+                review = self.reviewer.review(image, detections)
+                apply_rewrites(detections, review)
+            except Exception as e:                       # noqa: BLE001
+                logger.warning("分类复核失败，沿用检测结果：%s", e)
+                review = None
+
         elapsed = (time.perf_counter() - t0) * 1000
 
         return _assert_contract({
@@ -444,6 +464,7 @@ class OnnxPestDetector:
             "iou_threshold": self.iou_threshold,
             "backend": self.backend,
             "elapsed_ms": round(elapsed, 2),
+            "review": review,
         })
 
     def detect_bytes(self, data: bytes) -> dict:
@@ -496,6 +517,19 @@ def get_pest_detector(*, conf_threshold: float | None = None,
         candidates.append(resolve(reg["onnx"]))
     candidates.append(path_of("pest_onnx"))
 
+    # 分类复核是可选的：分类权重缺席时 reviewer 为 None，detect() 的 review 字段报 null。
+    # 放在循环外构造，避免多个候选权重重试时把同一份 ONNX 加载多次。
+    reviewer = None
+    try:
+        from src.infer.pest_classifier import get_pest_classifier
+        from src.infer.pest_review import PestReviewer
+
+        cls = get_pest_classifier()
+        if cls is not None:
+            reviewer = PestReviewer(cls)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("分类复核不可用，退化为纯检测：%s", e)
+
     errors: list[str] = []
     for path in candidates:
         if not path.exists():
@@ -506,6 +540,7 @@ def get_pest_detector(*, conf_threshold: float | None = None,
                 path, label_map,
                 input_size=int(reg.get("input_size", PEST_INPUT_SIZE)),
                 conf_threshold=conf_threshold, iou_threshold=iou_threshold,
+                reviewer=reviewer,
             )
         except Exception as e:  # noqa: BLE001
             errors.append(f"{path} 加载失败（{e}）")
@@ -519,8 +554,24 @@ def get_pest_detector(*, conf_threshold: float | None = None,
     )
 
 
+@lru_cache(maxsize=1)
+def get_shared_pest_detector() -> OnnxPestDetector | None:
+    """进程内共享的虫害检测器；模型缺席时返回 None。
+
+    虫害检测是可选证据，没装模型不该让诊断整条链路起不来 —— 这一点与后端
+    `deps.get_pest_detector()` 的约定一致。技能层与 HTTP 层共用同一份实例，
+    避免同一份 ONNX 被加载两次。
+    """
+    try:
+        return get_pest_detector()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("虫害检测模型不可用，诊断将不含虫害证据：%s", e)
+        return None
+
+
 __all__ = [
-    "OnnxPestDetector", "get_pest_detector", "load_pest_label_map",
+    "OnnxPestDetector", "get_pest_detector", "get_shared_pest_detector",
+    "load_pest_label_map",
     # 纯函数（单测直接断言这些）
     "letterbox", "preprocess_image", "xywh_to_xyxy", "box_iou", "nms",
     "clip_boxes", "scale_boxes", "decode_predictions", "postprocess",

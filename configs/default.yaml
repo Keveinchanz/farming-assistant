@@ -3,7 +3,7 @@
 version: 1
 
 project:
-  name: 乡村农技多方言智能服务平台
+  name: 田头农技台
   short_name: rural-agri-platform
 
 paths:
@@ -42,6 +42,10 @@ paths:
   pest_yaml: data/pest/data.yaml           # YOLO 训练入口
   pest_label_map: data/pest_label_map.json # 102 类中英文名（全局单一事实源）
   pest_onnx: models/onnx/pest_yolo.onnx    # 自包含单文件，服务时用
+  # 虫害分类复核（第二阶段）。与 pest_onnx 同一套 102 类标签空间，吃 224 的虫体小图。
+  # 由 scripts/49_export_pest_cls_onnx.py 从 models/pest_cls/resnet50_224.pt 导出。
+  # 用途有两个：检测框置信度低时改判，以及检测不到框时看整图（5 个零框类只走这条路）。
+  pest_cls_onnx: models/onnx/pest_cls.onnx
   # 虫害对比实验（34→39）的暂存与外部数据目录。
   # 与 farm_models_staging 同理：staging 是**线上不会加载**的暂存区 ——
   # get_pest_detector() 只认 registry 里 pest_yolov8n.onnx 记的路径与上面的

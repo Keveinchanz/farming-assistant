@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>智能诊断 · 多方言 AI 农技与农田数字孪生平台</title>
+<title>智能诊断 · 田头农技台</title>
 <meta name="description" content="上传作物照片、录一段方言描述或直接写症状，三路信息融合后给出病虫害诊断与防治方案。">
 <link rel="stylesheet" href="/assets/css/base.css">
 <link rel="stylesheet" href="/assets/css/layout.css">
@@ -94,7 +94,9 @@
           </span>
         </div>
 
-        <input type="file" id="input-audio" accept="audio/*,.wav,.amr,.m4a" class="visually-hidden">
+        <input type="file" id="input-audio"
+               accept="audio/*,.wav,.mp3,.m4a,.m4b,.aac,.ogg,.oga,.opus,.flac,.webm,.aiff,.aif,.amr,.pcm"
+               class="visually-hidden">
 
         <div class="preview-strip" id="audio-preview" hidden></div>
       </section>
@@ -124,9 +126,55 @@
       </div>
     </form>
 
+    <!-- ==================== 批量巡检 ====================
+         下乡一次拍几十张、回来一张一张传，是这个场景里最耗时的动作。
+         这里不并进上面的单张表单：单张是「问诊」，批量是「巡检」，
+         两者对结论的要求不一样（批量只要"哪几张需要细看"，不要整篇方案）。 -->
+    <section class="card input-section" id="batch-card" aria-labelledby="sec-batch">
+      <div class="input-section__head">
+        <span class="input-section__num" aria-hidden="true">4</span>
+        <div>
+          <h2 class="input-section__title" id="sec-batch">批量巡检（可选）</h2>
+          <p class="input-section__desc">
+            一次选多张照片，按顺序逐张诊断，结果排成一张表 —— 只回答「哪几张要细看」，
+            不逐张写整套方案。适合下乡回来一次处理几十张。
+          </p>
+        </div>
+      </div>
+
+      <div class="input-section__actions">
+        <button type="button" class="btn btn--outline" id="btn-batch-choose">
+          <span id="ico-batch"></span><span>选择多张照片</span>
+        </button>
+        <button type="button" class="btn btn--primary" id="btn-batch-start" disabled>
+          开始批量诊断
+        </button>
+        <span class="text-sm text-muted" id="batch-count">未选择照片</span>
+      </div>
+
+      <input type="file" id="input-batch" accept="image/*" multiple class="visually-hidden">
+    </section>
+
+    <!-- 批量结果（独立一屏）：跑完可以导出 CSV，也可以点某一行看完整结论 -->
+    <section id="batch-root" hidden aria-live="polite"></section>
+
     <!-- ==================== 结果态 ==================== -->
     <section id="result-root" hidden aria-live="polite"></section>
 
+  </div>
+
+  <!-- ==================== 问诊单（可打印 / 可复制给农户） ====================
+       放在 .diagnose-layout 外面：打印时要把整个布局隐藏掉、只留这一张纸，
+       所以它必须是 .page 的直接子元素（见 pages.css 的 @media print）。
+       内容由 diagnose.js 填，静态只留骨架。 -->
+  <div class="modal" id="sheet-modal" hidden>
+    <div class="modal__backdrop" data-sheet-close></div>
+    <div class="modal__panel modal__panel--sheet" role="dialog" aria-modal="true"
+         aria-labelledby="sheet-title">
+      <button type="button" class="modal__close" data-sheet-close
+              id="sheet-close" aria-label="关闭问诊单"></button>
+      <div class="modal__body" id="sheet-body"></div>
+    </div>
   </div>
 </main>
 

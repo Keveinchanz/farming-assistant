@@ -75,6 +75,12 @@ class MockLLM(BaseLLM):
         else:
             return self._insufficient(context)
 
+        # 健康类绝不能当成病名往下走：fusion 已经在候选里剔掉了，这里是最后一道闸。
+        # 漏进来的路径只有一条（纯文字描述直接命中「玉米健康」这类词），但代价很大 ——
+        # 报告会写着「综合判断为玉米健康，建议按下列方案尽早防治」。
+        if "健康" in str(top.get("label_cn") or "") or top.get("is_healthy"):
+            return self._healthy(top, context)
+
         name = top["label_cn"]
         crop = top["crop"]
         condition = top["condition"]
@@ -131,6 +137,44 @@ class MockLLM(BaseLLM):
                     len(report.get("pest_findings") or []) if pest is not None else "未检测")
         return report
 
+    def _healthy(self, top: dict, context: dict) -> dict:
+        """健康类的报告：给「复查建议」，不给「防治方案」。
+
+        关键在**不要空着**。只说「没病」的答案，农户会怀疑你是不是没看清；
+        说清「一张照片只能代表这一片叶 + 三天后复查」才是负责任的结论。
+        """
+        crop = str(top.get("crop") or "")
+        conf = float(top.get("confidence") or 0.0)
+        pest = context.get("pest_detections")
+        report = {
+            "disease_name": "",
+            "healthy": True,
+            "confidence": round(conf, 4),
+            "summary": f"这张照片未见明显病斑，暂时按健康处理{'（' + crop + '）' if crop else ''}。",
+            "symptom_match": (
+                f"图像识别结果落在健康类（{top.get('label_cn', '健康')}，置信度 {conf:.0%}），"
+                "本次也未检出虫体。一张照片只代表这一片叶，不代表整块田，也不等于往后不发病。"
+            ),
+            "treatment_sections": [
+                {"title": "复查建议", "content":
+                    "3 天后在同一片叶、同一角度再拍一张对比。若出现新斑点、卷曲、发黄或虫体，"
+                    "再拍近景复诊。"},
+                {"title": "现在不建议打药", "content":
+                    "没看到症状就打预防药，既多花钱，也会让病原菌和害虫更快产生抗药性。"
+                    "要防就做农业措施：通风降湿、清除病残体、平衡氮肥。"},
+            ],
+            "treatment_plan": "",
+            "medication_reminder": "",
+            "safety_note": "本结论仅基于这一张照片，不构成全田诊断。",
+            "differential": [],
+            "source": self.provider,
+            "notice": NOTICE,
+        }
+        if pest is not None:
+            report["pest_findings"] = _pest_findings(pest)
+        logger.info("Mock 报告：判为健康（%s，%.2f%%）", top.get("label_cn"), conf * 100)
+        return report
+
     def _insufficient(self, context: dict) -> dict:
         """连候选都没有（既没图也没能匹配到病害）时的兜底。
 
@@ -141,25 +185,60 @@ class MockLLM(BaseLLM):
         text = (context.get("user_text") or context.get("asr_text") or "").strip()
         pest = context.get("pest_detections")
         findings = _pest_findings(pest) if pest is not None else []
+        # 「看着没病但不敢担保」和「根本没看清」要给不同的话：
+        #   healthy = 图像最像健康类，但没到 0.6 的门槛；
+        #   weak    = 图像 Top-1 连 0.25 都不到，等于没识别出来。
+        unsure = context.get("health_unsure")
 
         if findings:
             summary = (f"本次未匹配到明确的病害，但检出"
                        f"{'、'.join(f['name'] for f in findings)}，"
                        "虫害处置建议见下方「疑似虫害」。建议同时补充拍摄病叶正反面照片以便判断病害。")
+            symptom_match = (
+                "病害分类器没有给出可信的候选，虫害那一路有检出（见下方）。"
+            )
+            sections = [
+                {"title": "补充拍摄", "content":
+                    "病叶正反面各一张（含整株与特写），重点拍病斑边缘与叶背。"},
+                {"title": "先处理虫", "content":
+                    "虫害处置见下方「疑似虫害」区块；病害在确诊前不要盲目施药。"},
+            ]
+        elif unsure == "healthy":
+            summary = "这张照片看着不像有病斑，但我没把握，先别急着打药。"
+            symptom_match = (
+                "图像最像健康类，但置信度不到 0.6，达不到「判健康」的门槛。"
+                "常见原因是逆光、叶片抖动、焦点落在背景上 —— 这三种情况都会把病斑拍没。"
+            )
+            sections = [
+                {"title": "请补拍一张", "content":
+                    "把叶子举到逆光下拍叶背：很多虫和霉层藏在叶背，正面看不出来。"
+                    "手指按住叶柄防抖，手机离叶子 15~20 厘米，对焦点落在叶片上。"},
+                {"title": "如果是整株出问题", "content":
+                    "先看是新叶还是老叶、是局部还是整片；再拍一张整株照，方便判断是缺素还是病害。"},
+            ]
+        elif unsure == "weak":
+            summary = "这张照片我没看清，先别急着打药，补拍一张再来。"
+            symptom_match = (
+                "图像识别给不出可信的结论（置信度不到 25%），文字描述里也没有可对应的症状。"
+                "这种情况下报一个病名，等于拿猜测当诊断 —— 所以宁可让你重拍一次。"
+            )
+            sections = [
+                {"title": "怎么补拍", "content":
+                    "① 逆光拍叶背（虫和霉层最先在叶背露出来）；② 手机离叶 15~20 厘米，"
+                    "手指按住叶柄防抖；③ 对焦点落在叶片上，不要对着天空测光。"},
+                {"title": "顺手补两句话", "content":
+                    "打字或按住说话，说清「什么作物、哪个部位、几天了、有没有蔓延」，"
+                    "这两句有时比照片更有用。"},
+            ]
         else:
             summary = "信息不足，暂时无法给出疾病判断。"
-
-        report = {
-            "disease_name": "",
-            "confidence": 0.0,
-            "summary": summary,
-            "symptom_match": (
+            symptom_match = (
                 "本次没有可用的图像识别结果，文字/语音描述也未能匹配到知识库中的病害。"
                 + (f"已收到的描述：{text}" if text else "")
                 + " 建议补充：① 拍摄清晰的病叶正反面照片；② 说明作物名称与发病部位；"
                   "③ 描述发病时间、天气与近期用药情况。"
-            ),
-            "treatment_sections": [
+            )
+            sections = [
                 {"title": "建议补充的信息", "content":
                     "① 病叶正反面清晰照片（含整株与特写各一张）；② 作物名称与品种；"
                     "③ 发病部位（叶片/茎秆/根部/果实）；④ 发病持续时间与蔓延速度；"
@@ -167,9 +246,16 @@ class MockLLM(BaseLLM):
                 {"title": "临时处置建议", "content":
                     "在确诊前先隔离发病植株，清除并销毁病叶病株，避免大水漫灌造成扩散；"
                     "暂不盲目施药，以免用错药剂延误防治时机。"},
-            ],
+            ]
+
+        report = {
+            "disease_name": "",
+            "confidence": 0.0,
+            "summary": summary,
+            "symptom_match": symptom_match,
+            "treatment_sections": sections,
             "treatment_plan": "",
-            "medication_reminder": SAFETY_NOTE,
+            "medication_reminder": "" if unsure else SAFETY_NOTE,
             "safety_note": SAFETY_NOTE,
             "differential": [],
             "source": self.provider,
@@ -179,7 +265,8 @@ class MockLLM(BaseLLM):
             report["pest_findings"] = findings
         return report
 
-    def answer(self, question: str, *, context: str = "") -> str:
+    def answer(self, question: str, *, context: str = "",
+               system: str | None = None) -> str:
         return (
             f"未配置 DeepSeek 服务，暂时无法对「{question}」生成智能回答。\n"
             "你可以在 .env 中填入 DEEPSEEK_API_KEY 后重启服务，即可启用大模型问答。\n"

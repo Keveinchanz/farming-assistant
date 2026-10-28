@@ -88,5 +88,43 @@ async def get_library_item(item_id: str):
     if item is None:
         raise ApiError(f"未找到知识条目：{item_id}", CODE_NOT_FOUND, http_status=404)
 
+    payload = dict(item)
+    payload["source_notes"] = _content_source_notes(item)
+    payload["image_source_notes"] = _image_source_notes(item)
+
     logger.info("图书库详情：%s（%s，%d 个小节）", item_id, item["title"], len(item["sections"]))
-    return {"code": 0, "msg": "ok", "data": item}
+    return {"code": 0, "msg": "ok", "data": payload}
+
+
+def _content_source_notes(item: dict) -> list[dict]:
+    """用药段的外部来源；没有用药小节或登记未命中时返回空列表。
+
+    卡片数据里的 `content_source` 399 张完全一致（养护卡也带同一句），不能直接
+    拿来展示。这里按「确实有用药小节 + 登记索引确实命中」判两遍，避免把通用
+    安全提示误标成农药登记数据。
+    """
+    if not any(s.get("type") == "medication" for s in (item.get("sections") or [])):
+        return []
+    try:
+        from src.content.library_build import medication_source
+
+        note = medication_source(item.get("condition") or "")
+    except Exception as e:  # noqa: BLE001 —— 来源标注失败不该让详情接口挂掉
+        logger.warning("农药登记来源判定失败：%s", e)
+        return []
+    return [note] if note else []
+
+
+def _image_source_notes(item: dict) -> list[dict]:
+    """卡片配图来源；没有配图就不标。
+
+    病害与养护图来自 PDD271，虫害图来自 IP102。数据里没有可点击的逐图地址，
+    因此只写数据集名称，不生成链接。
+    """
+    has_images = bool(item.get("cover")) or any(
+        s.get("images") for s in (item.get("sections") or [])
+    )
+    if not has_images:
+        return []
+    name = "IP102 数据集" if item.get("category") == "insect" else "PDD271 数据集"
+    return [{"organization": name, "document": "", "kind": "dataset"}]

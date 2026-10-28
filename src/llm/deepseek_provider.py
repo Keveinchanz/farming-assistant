@@ -21,6 +21,7 @@ from src.common.logging_utils import setup_logger
 from src.llm.base import BaseLLM
 from src.llm.prompts import (
     ASSISTANT_SYSTEM_PROMPT,
+    QA_SYSTEM_PROMPT,
     SYSTEM_PROMPT,
     build_assistant_user_prompt,
     build_qa_prompt,
@@ -31,6 +32,12 @@ logger = setup_logger("agri.llm.deepseek")
 
 REQUIRED_FIELDS = ("disease_name", "confidence", "symptom_match",
                    "treatment_sections", "medication_reminder")
+
+# 追问回答若被模型包成 JSON，按这个顺序取正文。未在此列出的键（如 disease_name、
+# confidence）是元信息，不进正文。
+ANSWER_TEXT_KEYS = ("symptom_match", "answer", "conclusion", "summary",
+                    "prevention_advice", "treatment_plan", "treatment_sections",
+                    "medication_reminder", "additional_info", "safety_note")
 
 
 class DeepSeekProvider(BaseLLM):
@@ -91,7 +98,70 @@ class DeepSeekProvider(BaseLLM):
                 raise
             return json.loads(m.group(0))
 
+    @staticmethod
+    def _plain_text(text: str) -> str:
+        """把模型可能返回的 JSON 收敛成可直接显示的正文。
+
+        追问走的是问答提示，正常情况下返回纯文本。但模型仍有概率把答案包成
+        {"disease_name": "", "symptom_match": "...", "prevention_advice": "..."}
+        —— 前端按纯文本渲染，用户看到的就是一坨花括号。这里按 ANSWER_TEXT_KEYS
+        取出正文拼成段落，并把「。2.」这种挤在一行的编号拆到新行。
+
+        不是 JSON 就原样返回，不做任何改写。
+        """
+        raw = (text or "").strip()
+        if raw.startswith("```"):
+            raw = re.sub(r"^```[a-zA-Z]*\s*", "", raw)
+            raw = re.sub(r"\s*```$", "", raw).strip()
+
+        if raw.startswith("{"):
+            data = None
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError:
+                m = re.search(r"\{.*\}", raw, re.S)
+                if m:
+                    try:
+                        data = json.loads(m.group(0))
+                    except json.JSONDecodeError:
+                        data = None
+            if isinstance(data, dict):
+                raw = "\n".join(DeepSeekProvider._answer_parts(data))
+
+        # 编号挤在同一行时拆行：句读（。；！？）之后紧跟「2. 」「3、」才断
+        raw = re.sub(r"(?<=[。；;！!？?])\s*(?=[1-9]\d?[.、)）]\s*\S)", "\n", raw)
+        return raw.strip()
+
+    @staticmethod
+    def _answer_parts(data: dict) -> list[str]:
+        """按 ANSWER_TEXT_KEYS 顺序取出正文，去重后返回。"""
+        parts: list[str] = []
+        for key in ANSWER_TEXT_KEYS:
+            val = data.get(key)
+            if isinstance(val, str) and val.strip():
+                parts.append(val.strip())
+            elif isinstance(val, list):
+                for item in val:
+                    if isinstance(item, dict):
+                        content = str(item.get("content") or "").strip()
+                        title = str(item.get("title") or "").strip()
+                        if content:
+                            parts.append(f"{title}：{content}" if title else content)
+                    elif isinstance(item, str) and item.strip():
+                        parts.append(item.strip())
+
+        # 模型常把同一段话既写进 summary 又写进 symptom_match，去掉重复
+        seen: set[str] = set()
+        unique: list[str] = []
+        for p in parts:
+            if p in seen or p in "".join(unique):
+                continue
+            seen.add(p)
+            unique.append(p)
+        return unique
+
     # ------------------------------------------------------------ 对外
+
 
     def generate_report(self, context: dict[str, Any]) -> dict:
         messages = [
@@ -112,12 +182,20 @@ class DeepSeekProvider(BaseLLM):
 
         return self._normalize(data, context)
 
-    def answer(self, question: str, *, context: str = "") -> str:
+    def answer(self, question: str, *, context: str = "",
+               system: str | None = None) -> str:
+        """问答。
+
+        `system` 为空时沿用诊断的系统提示（调用方要的是可解析 JSON）；
+        传入 QA_SYSTEM_PROMPT 时返回可直接显示的正文。
+        不能无条件换成问答提示：叙述层与语音解析都在解析这条返回值的 JSON。
+        """
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system or SYSTEM_PROMPT},
             {"role": "user", "content": build_qa_prompt(question, context)},
         ]
-        return self._chat(messages, json_mode=False, temperature=0.5, max_tokens=800).strip()
+        text = self._chat(messages, json_mode=False, temperature=0.5, max_tokens=800)
+        return self._plain_text(text) if system else text.strip()
 
     # ------------------------------------------------------------ AI 助手（宠物）
 

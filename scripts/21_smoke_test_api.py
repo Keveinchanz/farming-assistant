@@ -568,9 +568,58 @@ def main() -> int:
     code, body = a.get("/api/farm/fields")
     c.check("登出后 farm → 401", code == 401, f"HTTP {code}")
 
+    # 9b 技能接口
+    code, body = c.get("/api/skills")
+    d = (body or {}).get("data") or {}
+    names = [s.get("name") for s in (d.get("skills") or [])]
+    c.check("GET /api/skills", code == 200 and set(names) == {"crop-diagnosis", "farm-growth"},
+            f"{d.get('count')} 个技能：{names}")
+
+    code, body = c.get("/api/skills/crop-diagnosis")
+    d = (body or {}).get("data") or {}
+    c.check("GET /api/skills/crop-diagnosis",
+            code == 200 and "input_schema" in d and "topk" in (d.get("input_schema") or {}).get("properties", {}),
+            f"version={d.get('version')} available={d.get('available')}")
+
+    code, body = c.post_json("/api/skills/farm-growth", {
+        "field": {"id": "fld_smoke", "crop": "水稻", "sow_date": "2026-05-01"},
+        "today": "2026-05-25",
+        "include": ["growth", "model", "harvest"],
+        "history": [
+            {"date": f"2026-05-{day:02d}", "tmax": 30, "tmin": 20}
+            for day in range(1, 26)
+        ],
+    })
+    d = (body or {}).get("data") or {}
+    r = d.get("result") or {}
+    c.check("POST /api/skills/farm-growth",
+            code == 200 and (r.get("growth") or {}).get("gdd_cum", 0) > 0
+            and (r.get("model") or {}).get("height", 0) > 0,
+            f"stage={(r.get('growth') or {}).get('stage')} "
+            f"height={(r.get('model') or {}).get('height')} "
+            f"method={(r.get('harvest') or {}).get('method')}")
+
+    code, body = c.post_json("/api/skills/not-exist", {})
+    c.check("未知技能 → 404", code == 404, f"HTTP {code}")
+    code, body = c.post_json("/api/skills/crop-diagnosis", {"image_path": "leaf.jpg"})
+    c.check("技能 HTTP 拒绝本地路径 → 400", code == 400, f"HTTP {code}")
+
+    # 9c 来源标注
+    code, body = c.get("/api/library/lib_pest_0")
+    d = (body or {}).get("data") or {}
+    notes = d.get("source_notes") or []
+    c.check("知识卡片详情的登记来源",
+            code == 200 and notes and notes[0].get("organization") == "农业农村部农药管理司",
+            f"source_notes={notes} image_source_notes={d.get('image_source_notes')}")
+    code, body = c.get("/api/library/lib_care_萝卜")
+    d = (body or {}).get("data") or {}
+    c.check("养护卡不误标登记来源", code == 200 and not (d.get("source_notes") or []),
+            f"source_notes={d.get('source_notes')}")
+
     # 10 前端页面
     for page in ("/", "/diagnose.html", "/library.html", "/policy.html",
-                 "/farm.html", "/login.html", "/register.html", "/profile.html", "/admin.html"):
+                 "/farm.html", "/skills.html", "/login.html", "/register.html",
+                 "/profile.html", "/admin.html"):
         try:
             with urllib.request.urlopen(c.base + page, timeout=15) as r:
                 html = r.read().decode("utf-8", "ignore")

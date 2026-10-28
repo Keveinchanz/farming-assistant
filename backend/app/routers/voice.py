@@ -94,13 +94,14 @@ async def text_to_speech(req: TTSRequest):
     summary="语音转文本",
     description=(
         "上传 16kHz 单声道音频，返回识别文本与命中的农业专业术语。\n\n"
-        "格式支持随语音服务而异：百度支持 WAV/PCM/AMR，讯飞方言大模型只接受裸 PCM"
-        "（上传 WAV 时后端会自动剥掉容器头，前端无需转码）。\n\n"
+        "接口本身只收 WAV 与裸 PCM（WAV 的容器头由后端剥掉）；"
+        "网页上的「上传本地音频」会先在浏览器里把 mp3 / m4a / aac / ogg / opus / "
+        "flac / webm / aiff 转成 16kHz 单声道 WAV，界面上不必关心格式。\n\n"
         "诊断页的完整流程请用 /api/diagnose/multimodal，本接口用于独立测试语音链路。"
     ),
 )
 async def speech_to_text(
-    audio: UploadFile = File(..., description="16kHz 单声道 WAV / PCM（百度另支持 AMR）"),
+    audio: UploadFile = File(..., description="16kHz 单声道 WAV / 裸 PCM"),
     dialect: str = Form("", description="方言 key"),
 ):
     data = await audio.read()

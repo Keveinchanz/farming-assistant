@@ -1,0 +1,999 @@
+/* ==========================================================================
+   快速版 · 仿微信聊天框
+   --------------------------------------------------------------------------
+   只引用 base.css 的令牌，不硬编码色值 —— 深色模式靠令牌那套 @media 自动跟上。
+   布局用 dvh 而不是 vh：移动端浏览器地址栏收放时，vh 会让输入栏被顶到屏幕外，
+   而聊天页最不能忍的就是「输入框看不见」。
+   ========================================================================== */
+
+.chat-page {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-bg);
+
+  /* 输入区四个控件共用一套尺寸。
+     之前文本框是按内容撑开的 48px（11px 内边距 + 24px 行高 + 2px 边框），
+     而两侧按钮写死 44px —— 一行里两种高度：上沿差 4px、下沿差 6.6px，
+     看上去就是「文本框浮起来了」。统一到变量后，改一处整排跟着走。 */
+  --ctl-h: 44px;
+  --ctl-radius: var(--radius-sm);
+}
+
+/* 图标一律走 block：inline 的 svg 会带基线间隙，混在 flex 行里就是几个像素的错位 */
+.chat-page .icon { display: block; flex: 0 0 auto; }
+
+/* ---------------------------------------------------------------- 顶栏 */
+
+.chat-top {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-card);
+  border-bottom: 1px solid var(--color-border);
+  z-index: 2;
+}
+
+/* 品牌区与标准版顶栏保持一致：同一个实底标记 + 同一个平台名。
+   快速版只是换界面，不是换产品，所以这里不再另起一个「田头农技台 · 快速诊断」的锁标。 */
+.chat-top__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 1 auto;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.chat-top__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.chat-top__name {
+  min-width: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 方言选择器始终贴右：品牌与切换键之间的空隙由它的自动外边距吃掉，
+   这样「切换回标准版」就固定在品牌名右侧，和标准版里「切换回快速版」的位置一致。
+   原生下拉箭头在 Windows / macOS 上字形完全不同，且贴着边框、与文字基线不齐，
+   改成自绘箭头：位置固定在右侧 9px、垂直居中，换系统也不会跑。 */
+.chat-top__dialect {
+  margin-left: auto;
+  flex: 0 0 auto;
+  width: auto;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 26px 0 10px;
+  font-size: var(--text-sm);
+  line-height: 34px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23667270' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  background-size: 12px 12px;
+}
+
+/* 与品牌名的间距补到 24px（顶栏 gap 8px + 这里 16px），和标准版顶栏里
+   「切换回快速版」离站名的距离一致 —— 同一个控件在两个界面里该长在同一个位置。 */
+.chat-top__back {
+  height: 36px;
+  min-height: 36px;
+  margin-left: var(--space-4);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* 窄屏用短标签：320px 上一行要塞下「标记 + 站名 + 方言 + 返回」，
+   六个字的「切换回标准版」会把站名挤得只剩两个字 */
+.chat-top__backShort { display: none; }
+
+/* ---------------------------------------------------------------- 消息区 */
+
+.chat-log {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-4) var(--space-3) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  scroll-behavior: smooth;
+}
+
+.chat-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  max-width: 100%;
+}
+
+.chat-row--me {
+  flex-direction: row-reverse;
+}
+
+.chat-avatar {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  background: var(--color-muted);
+  color: var(--color-muted-fg);
+  border: 1px solid var(--color-border);
+  user-select: none;
+}
+
+/* AI 头像给一层极淡的绿描边：28px 的浅绿底在浅灰页面上几乎看不见边界，
+   加边框后两颗头像的"体积"才一致 */
+.chat-avatar--ai {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-fg);
+  border-color: var(--color-primary-line);
+}
+
+.chat-body {
+  min-width: 0;
+  max-width: min(78%, 560px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-row--me .chat-body {
+  align-items: flex-end;
+}
+
+/* 气泡：一角收小，指向头像，是「聊天」这个语义最强的形状信号 */
+.bubble {
+  position: relative;
+  padding: 11px 14px;
+  border-radius: var(--radius);
+  font-size: var(--text-base);
+  line-height: 1.65;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* 自己的消息用中性灰，不用品牌色。品牌色一旦同时表示「我说的话」和
+   「可点击」，主按钮就不再突出 —— 这是旧版最影响判断的一处用色。 */
+.bubble--me {
+  background: var(--color-muted);
+  color: var(--color-fg-body);
+}
+
+.bubble--ai {
+  background: var(--color-card);
+  color: var(--color-fg-body);
+  border: 1px solid var(--color-border);
+}
+
+.bubble__time {
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+  padding: 0 2px;
+}
+
+/* ---------------------------------------------------------------- 语音消息 */
+
+.voice-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 96px;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.voice-bubble__waves {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+}
+
+.voice-bubble__waves i {
+  display: block;
+  width: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.voice-bubble__waves i:nth-child(1) { height: 6px; }
+.voice-bubble__waves i:nth-child(2) { height: 12px; }
+.voice-bubble__waves i:nth-child(3) { height: 16px; }
+.voice-bubble__waves i:nth-child(4) { height: 9px; }
+
+.voice-bubble[data-playing="1"] .voice-bubble__waves i {
+  animation: voice-wave 0.7s ease-in-out infinite;
+}
+
+.voice-bubble[data-playing="1"] .voice-bubble__waves i:nth-child(2) { animation-delay: 0.1s; }
+.voice-bubble[data-playing="1"] .voice-bubble__waves i:nth-child(3) { animation-delay: 0.2s; }
+.voice-bubble[data-playing="1"] .voice-bubble__waves i:nth-child(4) { animation-delay: 0.3s; }
+
+@keyframes voice-wave {
+  0%, 100% { transform: scaleY(0.6); }
+  50% { transform: scaleY(1.25); }
+}
+
+/* 转写文字挂在语音气泡下面，字号小一档 —— 它是「这条语音说了什么」的注脚 */
+.voice-text {
+  font-size: var(--text-sm);
+  color: var(--color-muted-fg);
+  padding: 0 4px;
+  white-space: pre-wrap;
+}
+
+.voice-text--pending {
+  opacity: 0.7;
+}
+
+/* ---------------------------------------------------------------- 图片消息 */
+
+.bubble--image {
+  padding: 4px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+}
+
+.bubble--image img {
+  display: block;
+  max-width: 200px;
+  max-height: 170px;
+  border-radius: var(--radius-sm);
+  cursor: zoom-in;
+  object-fit: cover;
+}
+
+/* ---------------------------------------------------------------- 诊断结论卡 */
+
+/* 结论不是一句聊天，是一张短报告：所以它没有气泡尖角，也没有 4px 圆角的
+   「对头像说话」的暗示，而是一张自带标题栏、指标、编号步骤和来源页脚的白卡。
+   卡片铺得比聊天气泡宽一档 —— 报告需要横向空间，气泡不需要。 */
+.report {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  max-width: 100%;
+  /* 整张结论卡浮起 1px：同屏有多条对话时，"报告"和"气泡"靠这一层阴影区分层级 */
+  box-shadow: var(--shadow-sm);
+}
+
+.chat-row--report .chat-body {
+  max-width: min(92%, 600px);
+}
+
+.report__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 8px var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+}
+
+/* 时间戳用等宽：同屏多张卡时，数字纵向对齐才不会一列歪一列正 */
+.report__time {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.report__body {
+  padding: var(--space-4);
+}
+
+.report__titlerow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* 结论升到 --text-lg：与 14px 正文拉开三档，扫一眼就能抓住病名。
+   旧版和正文只差 1px，等于让读者自己去判断哪句是结论。 */
+.report__title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-fg);
+  line-height: 1.35;
+}
+
+.report__meta {
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+}
+
+/* 「未见病斑」用主绿：和「病害诊断」的中性灰一眼分开，又不像成功提示那样张扬。
+   健康结论在本产品里是常见且正常的结果（21 个健康类），值得一个自己的颜色。 */
+.report__meta--ok {
+  color: var(--color-primary-fg);
+  background: var(--color-primary-soft);
+  border-radius: 999px;
+  padding: 1px var(--space-2);
+}
+
+/* 置信度用刻度条，不用彩色徽章：条长就是比例，读数字和看长度是同一个动作 */
+.report__conf {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.report__bar {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-muted);
+  overflow: hidden;
+}
+
+.report__bar i {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+}
+
+.report__num {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-primary-fg);
+  white-space: nowrap;
+}
+
+.report__text {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  line-height: 1.7;
+  color: var(--color-fg-body);
+}
+
+.report__steps {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) 0 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--color-border);
+}
+
+.report__steps li {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: var(--color-fg-body);
+}
+
+/* 编号而不是圆点：要点是有先后的处置动作，"1 2 3" 读起来是步骤，圆点只是并列清单 */
+.report__no {
+  flex: 0 0 auto;
+  width: 16px;
+  padding-top: 2px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.report__step { min-width: 0; }
+
+.report__note {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+  line-height: 1.6;
+}
+
+/* 来源紧贴结论，而不是塞进卡片最底部：
+   可回溯的证据离结论越远，越像一条"仅供参考"的免责声明 */
+/* 数据来源：卡片最底部的一行小字，可点、可核对。
+   放在操作按钮之后而不是正文里 —— 它的作用是"这条结论从哪来"，
+   读者读完结论、看完下一步动作，最后才需要这条凭证。 */
+.report__sources {
+  display: flex;
+  gap: var(--space-2);
+  padding: 10px var(--space-4);
+  border-top: 1px dashed var(--color-border);
+  background: var(--color-card);
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+}
+
+.report__sourcesLabel {
+  flex: 0 0 auto;
+  color: var(--color-muted-fg);
+}
+
+.report__sourcesList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+/* 不用 flex：政策来源的单位名很长，flex 会把「2026年3月」当成一个独立盒子挤到
+   下一行、单独占一行。按文字流排，日期就跟着标题末尾走、该断哪断哪。 */
+.report__sourcesList li {
+  line-height: 1.5;
+  /* 来源主体用正文色，只有补充说明（编号/日期/数据集）压成次要色：
+     两行都灰的话，「图像识别模型」和它的说明就分不清谁是主谁是注了。 */
+  color: var(--color-fg);
+}
+
+.report__sourcesList a {
+  color: var(--color-link);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.report__sourcesList a:hover { text-decoration: underline; }
+
+/* 政策来源挂的是原文地址（target=_blank）。补一个小箭头：否则「农业农村部
+   计划财务司《…》」看上去只是一行说明文字，没人会想到它其实点得开。 */
+.report__sourcesList a[target="_blank"]::after {
+  content: "↗";
+  margin-left: 2px;
+  font-size: 0.92em;
+  opacity: 0.72;
+}
+
+.report__srcMeta {
+  margin-left: 6px;
+  color: var(--color-muted-fg);
+  white-space: nowrap;
+}
+
+.report__more {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.report__more a {
+  font-size: var(--text-xs);
+  color: var(--color-link);
+  text-decoration: none;
+}
+
+.report__more a:hover { text-decoration: underline; }
+
+/* 操作区落在浅灰底上：主次两级按钮共用一条底，读起来是"这张卡的出口"，
+   而不是散在正文里的两个链接 */
+.report__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+/* ---------------------------------------------------------------- 气泡工具条 */
+
+/* 气泡工具条：平时几乎隐形，悬停才浮出来。
+   做成无边框的文字按钮 —— 一条 28px 的小方框挂在结论卡下面，
+   读者会以为那也是可点的正文操作，抢了卡片里两个真按钮的位次。 */
+.bubble-tools {
+  display: flex;
+  gap: var(--space-1);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.chat-row:hover .bubble-tools,
+.chat-row:focus-within .bubble-tools {
+  opacity: 1;
+}
+
+/* 触屏没有 hover：给不了悬停反馈就直接常驻，否则手机上永远看不见「朗读」 */
+@media (hover: none) {
+  .bubble-tools { opacity: 1; }
+}
+
+.bubble-tools__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted-fg);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.bubble-tools__btn:hover {
+  color: var(--color-primary-fg);
+  background: var(--color-primary-soft);
+}
+
+.bubble-tools__btn:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 1px;
+}
+
+/* ---------------------------------------------------------------- 正在输入 */
+
+.typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 2px;
+}
+
+.typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-muted-fg);
+  animation: typing-bounce 1.2s infinite ease-in-out;
+}
+
+.typing i:nth-child(2) { animation-delay: 0.15s; }
+.typing i:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* ---------------------------------------------------------------- 开场页 */
+
+/* 空对话时整块内容在视觉中心，而不是孤零零贴在顶部留一大片空白。
+   发出第一条消息后这块由 JS 移除，对话回到顶部正常滚动。 */
+.chat-log.is-empty {
+  justify-content: center;
+  padding-bottom: var(--space-6);
+}
+
+.chat-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0 var(--space-4);
+  animation: chat-in 0.32s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.chat-hero__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: var(--shadow-md);
+}
+
+/* 上标一行小字给"谁在说话"，标题才是主角 */
+.chat-hero__kicker {
+  margin-top: var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--color-primary-fg);
+}
+
+.chat-hero__title {
+  margin: 6px 0 0;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-fg);
+  letter-spacing: 0.01em;
+}
+
+.chat-hero__sub {
+  margin: var(--space-2) 0 0;
+  max-width: 26em;
+  font-size: var(--text-sm);
+  line-height: 1.75;
+  color: var(--color-muted-fg);
+}
+
+.chat-hero__list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.chat-hint {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: var(--ctl-radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-fg-body);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition),
+              border-color var(--transition), transform var(--transition);
+}
+
+.chat-hint:hover {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-line);
+  color: var(--color-primary-fg);
+}
+
+.chat-hint:active { transform: translateY(1px); }
+
+.chat-hint:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 1px;
+}
+
+/* ---------------------------------------------------------------- 入场 */
+
+/* 新消息轻轻上浮 6px。幅度刻意做小：再大就成了"动效表演"，
+   而这里要的只是让人看出「这条是刚来的」。 */
+@keyframes chat-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.chat-row {
+  animation: chat-in 0.26s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-row,
+  .chat-hero { animation: none; }
+}
+
+/* ---------------------------------------------------------------- 输入区 */
+
+.composer {
+  flex: 0 0 auto;
+  padding: 10px var(--space-3) calc(8px + env(safe-area-inset-bottom, 0px));
+  background: var(--color-card);
+  border-top: 1px solid var(--color-border);
+  z-index: 2;
+}
+
+.composer__row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+/* 幽灵态图标按钮：一行里只留一个实心绿（发送），其余两个退到背景里。
+   三个描边方块并排时，视觉重量和发送键一样重，"发送"就不再是主行动。
+   44px 的触控区不变，只是不再画边框。 */
+.icon-btn {
+  flex: 0 0 auto;
+  width: var(--ctl-h);
+  height: var(--ctl-h);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: var(--ctl-radius);
+  border: 1px solid transparent;      /* 保留 1px，状态切换时不产生位移 */
+  background: transparent;
+  color: var(--color-muted-fg);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition),
+              border-color var(--transition);
+}
+
+.icon-btn:hover:not(:disabled) {
+  background: var(--color-muted);
+  color: var(--color-fg);
+}
+
+.icon-btn:active:not(:disabled) { transform: translateY(1px); }
+
+.icon-btn:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: -2px;
+}
+
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.icon-btn[aria-pressed="true"] {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-line);
+  color: var(--color-primary-fg);
+}
+
+/* 关键：把输入框包成一个 flex 容器。
+   textarea 默认是 inline-block，父级行盒会在它下方留一条基线间隙（约 6.6px），
+   于是"输入框比按钮高一点、底边又高一点"。display:flex 之后这条间隙消失。 */
+.composer__field {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+}
+
+.chat-input {
+  display: block;
+  width: 100%;
+  height: var(--ctl-h);
+  min-height: var(--ctl-h);
+  max-height: 132px;
+  padding: 9px var(--space-3);        /* (44 - 2 边框 - 24 行高) / 2 = 9 */
+  border-radius: var(--ctl-radius);
+  border: 1px solid transparent;
+  background: var(--color-bg);        /* 填充式输入框：与白底按钮区分靠底色，不靠描边 */
+  color: var(--color-fg-body);
+  font: inherit;
+  line-height: 24px;
+  resize: none;
+  overflow-y: auto;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.chat-input::placeholder { color: var(--color-muted-fg); }
+
+.chat-input:hover { background: var(--color-muted); }
+
+/* 焦点只用一条 2px 内描边（outline-offset: -2px 压在边框上）。
+   旧版是 2px outline + 1px border 中间还留 1px 缝，等于套了两个框。 */
+.chat-input:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: -2px;
+  border-color: transparent;
+  background: var(--color-card);
+}
+
+/* 「按住说话」：与微信一样占满输入框位置，按下时变深 */
+.hold-btn {
+  width: 100%;
+  height: var(--ctl-h);
+  min-height: var(--ctl-h);
+  border-radius: var(--ctl-radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  touch-action: none;          /* 关键：否则长按会触发页面滚动/选中，pointerup 收不到 */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.hold-btn:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: -2px;
+}
+
+.hold-btn[data-recording="1"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.chat-send {
+  flex: 0 0 auto;
+  height: var(--ctl-h);
+  min-height: var(--ctl-h);
+  padding: 0 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.composer__hint {
+  margin: 8px 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.recording-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-destructive-fg);
+  font-weight: 600;
+}
+
+.recording-tip::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-destructive);
+  animation: rec-pulse 1s infinite;
+}
+
+@keyframes rec-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+/* ---------------------------------------------------------------- 待发送的附件 */
+
+.attach {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 0 6px;
+}
+
+.attach__thumb {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  flex: 0 0 auto;
+}
+
+.attach__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.attach__remove {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.attach__remove:hover { background: rgba(0, 0, 0, 0.72); }
+
+.attach__hint {
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+}
+
+/* ---------------------------------------------------------------- 图片放大 */
+
+.chat-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  background: rgba(9, 20, 14, 0.82);
+  border: 0;
+  cursor: zoom-out;
+}
+
+.chat-zoom img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: var(--radius);
+}
+
+/* ---------------------------------------------------------------- 窄屏 */
+
+@media (max-width: 640px) {
+  .chat-body { max-width: 84%; }
+  /* 建议按钮不再清零缩进：与气泡左缘对齐这条在所有宽度都成立 */
+  .chat-top__dialect { max-width: 88px; }
+  /* 结论卡在窄屏收紧内边距，把宽度留给正文 —— 手机上横排比留白值钱 */
+  .report__body { padding: var(--space-3); }
+  .report__foot { padding: var(--space-3); }
+  .report__sources { padding: 10px var(--space-3); }
+  .report__title { font-size: var(--text-md); }
+}
+
+@media (max-width: 380px) {
+  .chat-top { gap: 6px; padding: var(--space-2) 10px; }
+  .chat-top__mark { width: 28px; height: 28px; }
+  .chat-top__name { font-size: var(--text-xs); }
+  .chat-top__dialect { max-width: 74px; padding: 0 22px 0 8px; font-size: var(--text-xs); }
+  .chat-top__back { padding: 0 10px; margin-left: 2px; }
+  .chat-top__backFull { display: none; }
+  .chat-top__backShort { display: inline; }
+
+  /* 输入框在 320px 上只剩 120px 宽，16px 字号放不下占位语，
+     会折成两行再被裁掉一半 —— 降一档字号并换短句（见 chat.js） */
+  .chat-input { font-size: var(--text-sm); padding-left: 10px; padding-right: 10px; }
+  .chat-send { padding: 0 14px; }
+}
+
+/* 矮屏（小屏手机横屏/分屏）：开场页收紧，避免把建议按钮挤出可视区 */
+@media (max-height: 640px) {
+  .chat-hero__mark { width: 42px; height: 42px; border-radius: 12px; }
+  .chat-hero__kicker { margin-top: var(--space-3); }
+  .chat-hero__title { font-size: var(--text-lg); }
+  .chat-hero__list { margin-top: var(--space-3); }
+}
+
+/* 深色下自绘箭头要换浅色，否则深底上看不见 */
+@media (prefers-color-scheme: dark) {
+  .chat-top__dialect {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa8a1' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+}
+
+@media (min-width: 900px) {
+  /* 顶栏与对话列对齐：否则大屏上 logo 贴着屏幕左缘、气泡却从 260px 处开始，
+     视觉上像两个不相干的页面拼在一起 */
+  .chat-top,
+  .chat-log,
+  .composer {
+    padding-left: max(var(--space-3), calc((100vw - 760px) / 2));
+    padding-right: max(var(--space-3), calc((100vw - 760px) / 2));
+  }
+}

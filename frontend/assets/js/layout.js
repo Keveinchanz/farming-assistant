@@ -6,7 +6,7 @@
 (function () {
   "use strict";
 
-  /* 五个导航入口只留文字，不再各配一个图标（地图/扫描/书本/文件）。
+  /* 六个导航入口只留文字，不再各配一个图标（地图/扫描/书本/文件/技能）。
      挨在一起时那几个图标是噪声，入口名本身已经说清了是哪个入口；
      顶栏只保留品牌区那一个标记（见 brand__mark），左侧才有一处视觉锚点。 */
   const NAV = [
@@ -15,6 +15,7 @@
     { key: "library", label: "知识图书库", href: "/library.html" },
     { key: "policy", label: "惠农政策", href: "/policy.html" },
     { key: "farm", label: "我的农田", href: "/farm.html" },
+    { key: "skills", label: "技能", href: "/skills.html" },
   ];
 
   function activeKey() {
@@ -39,9 +40,18 @@
       `<a class="brand" href="/index.html" aria-label="返回首页">` +
       `<span class="brand__mark">${Icon.render("leaf", 22)}</span>` +
       `<span class="brand__text">` +
-      `<span class="brand__name">多方言 AI 农技与农田数字孪生平台</span>` +
-      `<span class="brand__sub">病虫害识别、方言服务、知识图书库、惠农政策</span>` +
+      // 只留站名，不挂副标：名字本身已经说清「田头」是谁的地盘、
+      // 「农技台」是干什么的，再补一句解释只会把顶栏挤满。
+      `<span class="brand__name">田头农技台</span>` +
       `</span></a>` +
+      // 「切换回快速版」紧挨品牌名，而不是塞进导航条：它是「同一个平台换一种界面」，
+      // 与首页/诊断那六个功能入口不是同一层级。带上 from，快速版里点「切换回标准版」
+      // 才能回到用户原来那一页（而不是一律回首页）。
+      `<a class="site-header__quick" ` +
+      `href="/chat.html?from=${encodeURIComponent(location.pathname + location.search)}" ` +
+      `title="切到仿微信的聊天框：拍张照片或说一句话就能问病情">` +
+      `<span class="site-header__quickFull">切换回快速版</span>` +
+      `<span class="site-header__quickShort">快速版</span></a>` +
       `<nav class="site-nav" aria-label="主导航">${links}</nav>` +
       `<div class="dialect-picker">` +
       `<label class="dialect-picker__label" for="dialect-select">方言</label>` +
@@ -61,8 +71,8 @@
     host.innerHTML =
       `<div class="site-footer__inner">` +
       `<div class="site-footer__group">` +
-      `<strong>多方言 AI 农技与农田数字孪生平台</strong>` +
-      `<span>病虫害图像识别、智能诊断、农业知识图书库、2026 年惠农政策</span>` +
+      `<strong>田头农技台</strong>` +
+      `<span>多方言病虫害诊断、问诊单与回访队列、农田数字孪生、知识图书库与惠农政策</span>` +
       `</div>` +
       `<div class="site-footer__group">` +
       `<strong>数据来源</strong>` +

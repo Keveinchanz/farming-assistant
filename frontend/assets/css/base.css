@@ -1,32 +1,42 @@
 /* ==========================================================================
    设计令牌与基础样式
-   配色：单一强调色 —— 大地绿 #15803D（取农业语义，不是「紫的替代色」）；
-        中性底色是极低饱和的浅绿灰，既不是冷绿 SaaS 默认底，也不是暖奶油
-        （#F4F1EA 那类「有品味的逃跑路线」如今本身就是一种 AI 套路）。
+   配色：单一强调色 —— 深墨绿 #166534（取农业语义，不是「紫的替代色」）；
+        中性骨架是中性的浅灰白 #F7F8F7 + 灰边框，绿色只出现在交互点与状态上。
+        旧版整页都是同一色相的深浅（#f1f7f3 底 / #cfe9d8 边），绿色出现十几次，
+        等于一次都没在说「这里能点」—— 这是这一版换肤要解决的根本问题。
         深色只按语义需要覆盖令牌，不再出现组件里的硬编码色值。
-   风格：两级圆角（控件 8 / 表面 12），阴影用品牌绿而非通用灰 rgba(0,0,0,.1)
+   风格：三级圆角（控件 6 / 表面 8 / 大表面 10），阴影中性且极浅；
+        数字用等宽字体（置信度、编号、时间戳），与正文在字形上分开。
    字体：只用系统字体栈 —— 不声明任何未随包发布的字体，也不依赖外网 webfont。
         农村弱网/离线环境同样可用，这是本平台面向的典型使用场景。
    ========================================================================== */
 
 :root {
-  /* 主色板：一个强调色 + 它自己的深浅档，没有第二个色相的「第二主色」 */
-  --color-primary: #15803d;
-  --color-primary-hover: #166534;
-  --color-primary-soft: #dcfce7;
-  --color-primary-line: #a7d7bb;   /* 悬停/描边用的低饱和绿 */
-  --color-primary-fg: #166534;     /* 落在 primary-soft 上的文字 */
+  /* 主色板：一个强调色 + 它自己的深浅档，没有第二个色相的「第二主色」。
+     压到 green-800：更接近墨色 —— 同样的绿落在中性灰底上，
+     读起来是「印章」，而不是「荧光笔」。 */
+  --color-primary: #166534;
+  --color-primary-hover: #14532d;
+  --color-primary-soft: #e8f0ea;   /* 只做 hover 底与徽标底，不再当整块背景 */
+  --color-primary-line: #c3d6c8;   /* 悬停/描边用的低饱和绿 */
+  --color-primary-fg: #14532d;     /* 落在 primary-soft 上的文字 */
   --color-on-primary: #ffffff;
-  --color-link: #15803d;
+  --color-link: #166534;
 
-  /* 中性色 */
-  --color-bg: #f1f7f3;
+  /* 中性色：底色、边框、次要文字全部去色。
+     旧版底色 #f1f7f3 与边框 #cfe9d8 都是同一色相的深浅，整页只有一个色相在说话，
+     色相本身就不再是信号 —— 绿色出现太多次，等于没有一次在说「这里能点」。
+     现在绿色只留给交互点，中性色负责信息骨架。
+
+     三档灰的次序（白卡 → 页底 → 淡底块）必须真的拉开：
+     底色若和白卡只差 2% 亮度，卡片就浮不起来，整页看起来是一张白纸。 */
+  --color-bg: #f3f5f4;
   --color-card: #ffffff;
-  --color-fg: #14532d;
-  --color-fg-body: #1f2d26;
-  --color-muted: #e8f0f1;
-  --color-muted-fg: #5b6b64;
-  --color-border: #cfe9d8;
+  --color-fg: #16211b;
+  --color-fg-body: #2b3630;
+  --color-muted: #eaedeb;
+  --color-muted-fg: #667270;
+  --color-border: #dfe3e0;
 
   /* 语义色：每个语义色都成对给出「底 / 边 / 字」三档，
      组件里一律引用令牌 —— 深色模式漏覆盖某一档，就是之前那批
@@ -43,7 +53,7 @@
   --color-info-soft: #e0f2fe;
   --color-info-line: #bae6fd;
   --color-info-fg: #075985;
-  --color-ring: #15803d;
+  --color-ring: #166534;
 
   /* 间距（density 7：标准档 4→64） */
   --space-1: 4px;
@@ -65,16 +75,18 @@
   --text-xl: 1.375rem;    /* 22px  页面标题 */
   --text-2xl: 1.75rem;    /* 28px  主标题 */
 
-  /* 圆角：两级制 —— 控件 8 / 表面 12。
+  /* 圆角：三级制 —— 控件 6 / 表面 8 / 大表面 10。
+     比原来的 8/12 紧一档：同一尺寸下圆角越小，界面越像工具、越不像玩具。
      胶囊形只留给真正的徽标（.badge），不再往导航、页签、进度条上套。 */
-  --radius-sm: 8px;
-  --radius: 12px;
-  --radius-lg: 12px;
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 10px;
 
-  /* 阴影：自然、低对比，且带品牌绿而不是中性灰 */
-  --shadow-sm: 0 1px 2px rgba(20, 83, 45, 0.06), 0 1px 3px rgba(20, 83, 45, 0.04);
-  --shadow-md: 0 4px 12px rgba(20, 83, 45, 0.08), 0 2px 4px rgba(20, 83, 45, 0.04);
-  --shadow-lg: 0 12px 32px rgba(20, 83, 45, 0.12), 0 4px 8px rgba(20, 83, 45, 0.06);
+  /* 阴影：改中性、压得更浅。带品牌绿的阴影会让每张卡片边缘透出一层绿，
+     十几张卡同屏时整页发闷。商业化界面靠边框分层次，投影只负责"浮起"这一件事。 */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 20, 0.05);
+  --shadow-md: 0 2px 8px rgba(16, 24, 20, 0.06), 0 1px 2px rgba(16, 24, 20, 0.04);
+  --shadow-lg: 0 8px 24px rgba(16, 24, 20, 0.10), 0 2px 6px rgba(16, 24, 20, 0.05);
 
   --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -134,8 +146,50 @@
   --map-winter-risk-4: #55749b;
   --map-winter-risk-5: #2f4a6e;
 
+  /* 另外两个图层的配色（首页顶部的选项控件在「山川地貌 / 主要作物 / 当季病害」
+     之间切换；「当季病害」用的就是上面那套四季令牌）。
+
+     命名同样把图层写进令牌名，不挂 [data-layer] 选择器 —— 理由与四季那套一致：
+     首帧写入 data-layer 与首次读令牌是同一轮，选择器方案会读到上一层；
+     而 map.js 一律从 documentElement 读，样式表里只有这一份定义。
+
+     地形图层：底板偏土黄（沙盘质感），省色按「本省收录的地貌条目数」加深。 */
+  --map-terrain-area: #efe7d6;
+  --map-terrain-border: #fffdf7;
+  --map-terrain-label: #5b4a30;
+  --map-terrain-nodata: #e9e0cd;
+  /* 色阶刻意压成「暖灰」而不是土黄：秋季的病害色阶本来就是金黄（--map-autumn-risk-*），
+     两层都走黄棕时切过去几乎看不出换了内容。灰棕既保留沙盘的土质感，又能和四季拉开。 */
+  --map-terrain-count-1: #ead9c2;
+  --map-terrain-count-2: #d9bf9f;
+  --map-terrain-count-3: #bf9b74;
+  --map-terrain-count-4: #9c7550;
+  --map-terrain-count-5: #71502f;
+  /* 地貌类型（沙盘上圆点的颜色）。六类各占一个色相，明度压在同一带里，
+     这样「颜色回答类型、深浅回答条目数」两件事不互相干扰。 */
+  --map-terrain-mountain: #7d5636;
+  --map-terrain-plateau: #b07a3e;
+  --map-terrain-basin: #a85c56;
+  --map-terrain-plain: #6b9848;
+  --map-terrain-river: #3d7ba4;
+  --map-terrain-lake: #4798a9;
+
+  /* 作物图层：省色按「该省主要作物里出现最多的类别」上色，四类四色。 */
+  --map-crop-area: #ecf2e6;
+  --map-crop-border: #ffffff;
+  --map-crop-label: #3c5136;
+  --map-crop-nodata: #e4eddd;
+  --map-crop-grain: #dcc46c;
+  --map-crop-veg: #8fbf7e;
+  --map-crop-fruit: #d9938a;
+  --map-crop-cash: #a99bd0;
+
   --font-sans: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB",
     system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* 等宽只给数字：置信度、编号、时间戳。数字定宽后纵向才对得齐，
+     这也是「读数」和「正文」在字形上就该分开的地方。同样不引外网字体。 */
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
   --nav-height: 64px;
   --content-max: 1280px;
 }
@@ -144,20 +198,20 @@
    凡是在组件里能当「底」「边」「字」用的令牌，这里都要给一份 —— 漏一个就是一档低对比。 */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #0f1a14;
-    --color-card: #16241c;
-    --color-fg: #d9f2e3;
-    --color-fg-body: #cfe3d8;
-    --color-muted: #1e2f26;
-    --color-muted-fg: #9db5a8;
-    --color-border: #2c4438;
+    --color-bg: #101513;
+    --color-card: #181f1c;
+    --color-fg: #e8eee9;
+    --color-fg-body: #cbd4ce;
+    --color-muted: #1f2724;
+    --color-muted-fg: #9aa8a1;
+    --color-border: #2b3532;
 
     /* 主色在深色下分成两个用途：当按钮底要够深（白字才够对比），
        当文字/链接要够亮（深底上才够对比）—— 一个值兼顾不了两边。 */
     --color-primary: #1f7a45;
     --color-primary-hover: #279052;
-    --color-primary-soft: #14351f;
-    --color-primary-line: #2f5c42;
+    --color-primary-soft: #16281d;
+    --color-primary-line: #2f5540;
     --color-primary-fg: #7cc79b;
     --color-link: #45a874;
     --color-ring: #45a874;
@@ -225,6 +279,34 @@
     --map-winter-risk-3: #405e7d;
     --map-winter-risk-4: #5d84ab;
     --map-winter-risk-5: #84a7cd;
+
+    /* 地形 / 作物两个图层的深色版：底板压到近黑，省色整体提亮一档。
+       地形图层仍是「条目越多越亮」（浅色下是越深），
+       作物图层的四类色相保持不变，只换明度。 */
+    --map-terrain-area: #1d1a13;
+    --map-terrain-border: #0d0b08;
+    --map-terrain-label: #c8b899;
+    --map-terrain-nodata: #1a1710;
+    --map-terrain-count-1: #211c13;
+    --map-terrain-count-2: #332a1b;
+    --map-terrain-count-3: #4b3d26;
+    --map-terrain-count-4: #67512f;
+    --map-terrain-count-5: #856840;
+    --map-terrain-mountain: #c08a5c;
+    --map-terrain-plateau: #d89a63;
+    --map-terrain-basin: #cf8078;
+    --map-terrain-plain: #93c46a;
+    --map-terrain-river: #6db2d8;
+    --map-terrain-lake: #6fc3d4;
+
+    --map-crop-area: #141f16;
+    --map-crop-border: #0b120c;
+    --map-crop-label: #a9c9a3;
+    --map-crop-nodata: #121b13;
+    --map-crop-grain: #6d5a22;
+    --map-crop-veg: #33603b;
+    --map-crop-fruit: #6e3f3a;
+    --map-crop-cash: #4b4070;
   }
 }
 

@@ -123,3 +123,28 @@ runtime_assets/data/admin_divisions.json
 shot.py
 shot.ps1
 
+# ---- 本地备份、回收站与工作区记忆（2026-10-28）----
+# 每轮改动前的快照与清理出的文件，只在本地留着回滚用，体积 600 MB 以上
+_backup_*/
+_trash_*/
+_tmp_*/
+tmp_fix/
+.workbuddy/
+
+# ---- 参赛交付包（2.6 GB）----
+# 含 docx / pptx 原件、答辩视频与「代码与模型」副本；材料单独提交给主办方，
+# 不进代码仓库。交付包内的代码副本与这里有同样的源码，留着只会重复。
+AIC-*/
+演讲稿.docx
+
+# ---- 虫害作物图库（scripts/45 生成，22283 个文件 / 425 MB）----
+data/pest_crops/
+
+# ---- 本机工作脚本（2026-10-28）----
+# tools/diag 是排查 PPT 排版、复评模型指标的一次性脚本，tools/aic_submission 是
+# 参赛材料的排版补丁。都写死了本机路径，项目本身不引用，留一份在本地即可。
+tools/
+
+# 技术方案配图（14 张），已嵌入交付的 docx，代码仓库不重复存
+docs/screenshots/v2/
+

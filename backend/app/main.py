@@ -24,7 +24,19 @@ from backend.app import deps
 from backend.app.core.auth_deps import require_admin
 from backend.app.core.config import get_settings
 from backend.app.core.errors import install_error_handlers
-from backend.app.routers import assistant, auth, diagnose, farm, library, map as map_router, policy, voice
+from backend.app.routers import (
+    assistant,
+    auth,
+    chat as chat_router,
+    diagnose,
+    farm,
+    library,
+    map as map_router,
+    policy,
+    share,
+    skills as skills_router,
+    voice,
+)
 from backend.app.schemas.models import ApiResponse
 from src.common.io_utils import ensure_dir
 from src.common.logging_utils import setup_logger
@@ -33,7 +45,7 @@ from src.common.paths import path_of
 logger = setup_logger("agri.api")
 
 DESCRIPTION = """
-**乡村农技多方言智能服务平台** 后端服务。
+**田头农技台** 后端服务。
 
 覆盖任务清单阶段 4 的全部接口：
 
@@ -48,7 +60,7 @@ DESCRIPTION = """
 
 另有方言与语音接口：`GET /api/dialect/list`、`POST /api/voice/tts`、`POST /api/voice/asr`。
 
-**降级说明**：未配置百度语音 / DeepSeek 的 Key 时，语音与大模型会自动降级为 Mock，
+**降级说明**：未配置语音服务（当前默认科大讯飞方言大模型）/ DeepSeek 的 Key 时，语音与大模型会自动降级为 Mock，
 接口契约不变，响应里的 `degraded` 字段会如实标注哪些能力走了降级。
 """
 
@@ -88,10 +100,10 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="乡村农技多方言智能服务平台",
+        title="田头农技台",
         description=DESCRIPTION,
         version="1.0.0",
-        contact={"name": "乡村农技多方言智能服务平台"},
+        contact={"name": "田头农技台"},
         lifespan=lifespan,
     )
 
@@ -113,10 +125,16 @@ def create_app() -> FastAPI:
     app.include_router(voice.router)
     # AI 助手：页面内常驻宠物，公开可用（未登录也能聊，只是读不到私有农田数据）
     app.include_router(assistant.router)
+    # 快速版：仿微信聊天框。与宠物共用同一条诊断链路，只是把结果压成一条气泡
+    app.include_router(chat_router.router)
     # 阶段 7：账号与我的农田。公开接口（诊断/知识库/地图/政策）不受影响，
     # /api/farm/* 由路由自己的依赖强制登录（7.0.6）。
     app.include_router(auth.router)
     app.include_router(farm.router)
+    # 模型技能：两个按功能封装的统一接口（病虫害诊断 / 农田生长与 3D）
+    app.include_router(skills_router.router)
+    # 问诊单交付：只读分享页 / 二维码 / PDF（公开读接口 + 登录后写的接口）
+    app.include_router(share.router)
 
     # ---- 健康检查：一眼看清哪个能力可用、哪个在降级 ----
     @app.get("/api/health", response_model=ApiResponse[dict], tags=["服务状态"],

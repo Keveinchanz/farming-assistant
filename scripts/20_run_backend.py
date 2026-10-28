@@ -44,7 +44,7 @@ logger = setup_logger("agri.run")
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="启动乡村农技多方言智能服务平台后端")
+    parser = argparse.ArgumentParser(description="启动田头农技台后端")
     parser.add_argument("--host", default=str(env("HOST", "127.0.0.1")))
     parser.add_argument("--port", type=int, default=int(env("PORT", 8000, cast="int") or 8000))
     parser.add_argument("--reload", action="store_true", help="代码改动自动重载（开发模式）")
@@ -72,7 +72,7 @@ def main() -> int:
 
     url = f"{scheme}://{args.host}:{args.port}"
     logger.info("=" * 62)
-    logger.info("乡村农技多方言智能服务平台 后端服务")
+    logger.info("田头农技台 后端服务")
     logger.info("  首页      %s/", url)
     logger.info("  接口文档  %s/docs", url)
     logger.info("  服务状态  %s/api/health", url)

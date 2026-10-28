@@ -360,6 +360,105 @@ def _():
         raise AssertionError("只有头没有 data 段的 WAV 应当明确报错，而不是回传一整段垃圾")
 
 
+@case("讯飞音频：非 WAV/PCM 容器要在发请求之前拦下（mp3 走 raw 编码只会拿回一段乱码）")
+def _():
+    from src.voice.iflytek_provider import container_of
+
+    assert container_of(b"RIFF" + b"\x00" * 40) == "wav"
+    assert container_of(b"ID3\x03\x00\x00\x00") == "mp3"
+    assert container_of(b"\xff\xfb\x90\x00") == "mp3"
+    assert container_of(b"OggS\x00\x02\x00\x00") == "ogg"
+    assert container_of(b"fLaC\x00\x00\x00\x22") == "flac"
+    assert container_of(b"\x1a\x45\xdf\xa3\x9f\x42") == "webm"
+    assert container_of(b"#!AMR\n\x3c") == "amr"
+    assert container_of(b"\x00\x00\x00\x18ftypM4A ") == "m4a"
+    assert container_of(b"\x01\x02\x03\x04" * 8) == "pcm", "认不出的文件头应按裸 PCM 处理"
+
+
+@case("讯飞音频：44.1kHz 立体声要报参数错，不能按 16kHz 单声道硬解成慢放")
+def _():
+    import struct
+
+    from src.voice.iflytek_provider import IflytekVoice, wav_params
+
+    def wav(rate, channels, bits, pcm=b"\x00" * 64):
+        fmt = struct.pack(
+            "<HHIIHH", 1, channels, rate,
+            rate * channels * bits // 8, channels * bits // 8, bits,
+        )
+        body = (b"fmt " + struct.pack("<I", len(fmt)) + fmt +
+                b"data" + struct.pack("<I", len(pcm)) + pcm)
+        return b"RIFF" + struct.pack("<I", 4 + len(body)) + b"WAVE" + body
+
+    assert wav_params(wav(16000, 1, 16)) == (16000, 1, 16)
+    assert wav_params(b"\x00" * 64) is None, "不是 WAV 时应返回 None，交给裸 PCM 路径"
+
+    voice = IflytekVoice(app_id="a", api_key="k", api_secret="s")
+    try:
+        voice.transcribe(wav(44100, 2, 16))
+    except ValueError as e:
+        assert "44100" in str(e) or "16000" in str(e), f"报错没说清要求：{e}"
+    else:
+        raise AssertionError("44.1kHz 立体声 WAV 应当直接报错")
+
+    try:
+        voice.transcribe(b"ID3\x03\x00\x00\x00" + b"\x00" * 64)
+    except ValueError as e:
+        assert "mp3" in str(e), f"报错应指明实际格式：{e}"
+    else:
+        raise AssertionError("mp3 应当在发请求之前被拦下")
+
+
+@case("追问：模型把答案包成 JSON 时要拆成正文，正常纯文本不许改写")
+def _():
+    """真实踩过的坑：`/api/diagnose/ask` 曾复用诊断的 SYSTEM_PROMPT
+    （「必须输出严格 JSON」），模型于是返回
+    {"disease_name":"","confidence":0,"symptom_match":"…","prevention_advice":"…"}，
+    前端按纯文本渲染，农户看到的就是一坨花括号。"""
+    from src.llm.deepseek_provider import DeepSeekProvider
+
+    raw = ('{"disease_name":"","confidence":0,'
+           '"symptom_match":"虫害叶蝉不是病害，先不要按病害打药。",'
+           '"prevention_advice":"1. 农业防治：清除田边杂草。2. 化学防治：轮换用药。",'
+           '"additional_info":"邻田同步查虫。"}')
+    out = DeepSeekProvider._plain_text(raw)
+
+    assert "{" not in out, f"JSON 花括号没被拆掉：{out}"
+    for need in ("虫害叶蝉不是病害", "清除田边杂草", "邻田同步查虫"):
+        assert need in out, f"正文丢了：{need}"
+    assert "disease_name" not in out and "confidence" not in out, \
+        "元信息字段不该出现在正文里"
+    # 几点防治挤在一行读不了，句读之后的编号要另起一行
+    assert out.count("\n") >= 2, f"编号没分行：{out!r}"
+
+    # 正常纯文本只做分行，不改字
+    plain = "叶蝉不会传染。1. 清除田边杂草。2. 黄板诱杀。"
+    assert DeepSeekProvider._plain_text(plain) == \
+        "叶蝉不会传染。\n1. 清除田边杂草。\n2. 黄板诱杀。", "纯文本被改写了"
+
+    # 既不是 { 开头也不是 JSON 的，一个字都不动
+    other = "先别打药，等看清病斑再说。"
+    assert DeepSeekProvider._plain_text(other) == other
+
+
+@case("追问：answer 传了 system 才换问答提示，默认仍给调用方 JSON")
+def _():
+    """叙述层与语音解析都在解析 `llm.answer()` 的返回值，
+    不能因为修追问就把它们的输出改成纯文本。"""
+    import inspect
+
+    from src.llm.base import BaseLLM
+    from src.llm.mock_provider import MockLLM
+
+    sig = inspect.signature(BaseLLM.answer)
+    assert "system" in sig.parameters, "answer 少了 system 参数，调用方无法选提示词"
+    assert sig.parameters["system"].default is None, "system 的默认值必须是 None"
+
+    # Mock 也要接受这个参数，否则配了 mock 时追问会 TypeError
+    assert "system" in inspect.signature(MockLLM.answer).parameters
+    assert MockLLM().answer("会不会传染", system=None) != ""
+
+
 @case("讯飞分帧：数据帧之后补空末帧，而不是把最后一个数据帧标成末帧")
 def _():
     from src.voice.iflytek_provider import FRAME_BYTES, asr_frames
@@ -2472,18 +2571,22 @@ def _():
     assert "gain.value = 0" in rec, "静音节点没了 —— 麦克风声音会从扬声器放出来形成啸叫"
     assert "TARGET_SAMPLE_RATE = 16000" in rec, "没有重采样到 16kHz，短语音接口不认"
     assert '"RIFF"' in rec and 'type: "audio/wav"' in rec, "WAV 封装被改动了"
+    assert "fileToWav" in rec and "decodeAudioData" in rec, (
+        "上传文件的转码入口（fileToWav / decodeAudioData）必须留在 recorder.js —— "
+        "各页面自己解一遍，支持的格式与重采样口径就会各说各话"
+    )
     assert 'ctx.state === "suspended"' in rec, (
         "缺 AudioContext 的 resume —— 停在 suspended 时 onaudioprocess 一次都不触发，"
         "用户明明说了话却收到「没有录到声音」"
     )
 
-    for gone in ("createScriptProcessor", "getUserMedia", "function makeWav"):
-        assert gone not in files["diagnose.js"], f"diagnose.js 里还残留采集代码：{gone}"
+    for gone in ("createScriptProcessor", "getUserMedia", "function makeWav", "decodeAudioData"):
+        assert gone not in files["diagnose.js"], f"diagnose.js 里还残留采集/解码代码：{gone}"
     for gone in ("createScriptProcessor", "getUserMedia"):
         assert gone not in files["library.js"], f"library.js 里还残留采集代码：{gone}"
     # 诊断页改成委托后，用户可见的行为必须原样保留
     for need in ("没有录到声音，请检查麦克风后重试", "当前浏览器不支持录音", "btn-record-label",
-                 '"audio", state.audioBlob, "record.wav"'):
+                 '"audio", state.audioBlob, state.audioName'):
         assert need in files["diagnose.js"], f"诊断页录音改造后丢了：{need}"
 
     for page, own in (("library.html", "library.js"), ("diagnose.html", "diagnose.js")):
@@ -3178,6 +3281,37 @@ def _():
             os.environ.pop("DEMO_SEED_ACCOUNT", None)
         else:
             os.environ["DEMO_SEED_ACCOUNT"] = old
+
+
+@case("演示回访：预置六条待办，日期相对今天算，重复调用不重复插入")
+def _():
+    from src.farm import repo, seed
+
+    with _farm_db() as conn:
+        user = _new_user(conn)
+        seed.seed_demo_fields(conn, user["id"])
+
+        made = seed.seed_demo_followups(conn, user["id"], today="2026-10-24")
+        assert len(made) == 6, f"应预置 6 条待回访，实际 {len(made)}"
+
+        groups = repo.list_followups(conn, user["id"], today="2026-10-24")
+        assert len(groups["overdue"]) == 2, "两条过期，才演示得出「会被漏掉」"
+        assert len(groups["today"]) == 1
+        assert len(groups["upcoming"]) == 3
+        # 过期组按拖得最久排最前：-9 天那条必须是第一行
+        assert groups["overdue"][0]["days_left"] == -9
+        # 队列一条都没有时卡片是隐藏的，所以演示账号必须有到期待办
+        assert repo.count_pending_followups(conn, user["id"], today="2026-10-24") == 3
+
+        # 病害必须落在同作物的田上，否则队列里会出现「油菜田 · 稻瘟病」这种搭配
+        crops = {f["id"]: f["crop"] for f in repo.list_fields(conn, user["id"])}
+        spec = {it["label"]: it["crop"] for it in seed.DEMO_FOLLOWUPS}
+        for it in groups["overdue"] + groups["today"] + groups["upcoming"]:
+            assert crops[it["field_id"]] == spec[it["label"]], it
+
+        # 幂等：固定 id 插入，隔一段时间再跑只补缺的（这里一条都不缺）
+        again = seed.seed_demo_followups(conn, user["id"], today="2026-11-30")
+        assert again == [], "重复调用不该再插一遍"
 
 
 @case("逐日气温与快照：查出来的行都限制在自己的 user_id 内")
@@ -4561,19 +4695,19 @@ def _():
         assert 70 < pt[0] < 140 and 3 < pt[1] < 55, f"{name} 的坐标不在中国境内：{pt}"
 
 
-@case("前端：顶栏五个导航入口 + 用户名菜单，且菜单不破坏「入口不再各带图标」那条锁")
+@case("前端：顶栏六个导航入口 + 用户名菜单，且菜单不破坏「入口不再各带图标」那条锁")
 def _():
     from src.common.paths import path_of
 
     js = (path_of("frontend_dir") / "assets" / "js" / "layout.js").read_text(encoding="utf-8")
 
-    # 五个导航入口（阶段 7 加了「我的农田」）
-    labels = ["首页", "智能诊断", "知识图书库", "惠农政策", "我的农田"]
+    # 六个导航入口（阶段 7 加了「我的农田」，本轮加了「技能」）
+    labels = ["首页", "智能诊断", "知识图书库", "惠农政策", "我的农田", "技能"]
     i_nav = js.find("const NAV = [")
     nav_src = js[i_nav:js.find("];", i_nav)]
     for label in labels:
         assert label in nav_src, f"顶栏少了导航入口「{label}」"
-    assert nav_src.count("href:") == 5, f"顶栏导航入口数不是 5：{nav_src.count('href:')}"
+    assert nav_src.count("href:") == 6, f"顶栏导航入口数不是 6：{nav_src.count('href:')}"
     assert "icon" not in nav_src, "NAV 里又混进了图标字段"
 
     # renderHeader 到 renderFooter 之间仍然只许 1 处 Icon.render（品牌叶子）
@@ -4831,6 +4965,984 @@ def _():
         assert key in dumped, f"响应模型缺少 {key}"
     for key in ("name", "confidence", "source", "route", "slots"):
         assert key in dumped["intent"], f"intent 缺少 {key}"
+
+
+# ==================================================================== 技能接口（本轮）
+
+@case("技能：清单恰好两个，且 manifest 字段完整")
+def _():
+    from skills.registry import SKILLS, list_skills
+
+    assert set(SKILLS) == {"crop-diagnosis", "farm-growth"}, f"技能清单不对：{set(SKILLS)}"
+    for item in list_skills():
+        for key in ("name", "title", "description", "version", "endpoint",
+                    "requires", "available"):
+            assert key in item, f"技能 {item.get('name')} 的清单缺少 {key}"
+        assert item["endpoint"].endswith(item["name"]), f"endpoint 不对：{item['endpoint']}"
+
+
+@case("技能：输入 schema 与跨字段校验")
+def _():
+    from pydantic import ValidationError
+
+    from skills.schemas import CropDiagnosisInput, FarmGrowthInput
+
+    schema = CropDiagnosisInput.model_json_schema()
+    for key in ("image_base64", "image_path", "audio_base64", "audio_path", "text", "topk"):
+        assert key in schema["properties"], f"crop-diagnosis 输入 schema 缺少 {key}"
+
+    try:
+        CropDiagnosisInput()
+        raise AssertionError("空输入应当校验失败")
+    except ValidationError:
+        pass
+
+    try:
+        CropDiagnosisInput(image_base64="x", image_path="y")
+        raise AssertionError("base64 与 path 同时出现应当校验失败")
+    except ValidationError:
+        pass
+
+    farm = FarmGrowthInput.model_json_schema()
+    assert "field" in farm["properties"] and "history" in farm["properties"]
+    try:
+        FarmGrowthInput(field={"crop": "水稻", "sow_date": "2026/05/01"})
+        raise AssertionError("非 ISO 日期应当校验失败")
+    except ValidationError:
+        pass
+
+
+@case("技能：crop-diagnosis 只传文字时走融合器且不碰模型")
+def _():
+    from unittest.mock import patch
+
+    from skills.crop_diagnosis.handler import run
+
+    class FakeFusion:
+        def __init__(self):
+            self.kwargs = None
+
+        def diagnose(self, **kwargs):
+            self.kwargs = kwargs
+            return {
+                "recognition": None, "asr": None, "pest": None,
+                "fused_summary": "仅文字诊断",
+                "report": {
+                    "disease_name": "测试病", "confidence": 0.5,
+                    "source_notes": [{
+                        "organization": "农业农村部农药管理司",
+                        "document": "《农药登记信息》", "kind": "registry",
+                    }],
+                },
+                "candidates": [], "sources": [],
+                "degraded": {"llm": True, "rag": True, "voice": False, "pest": False},
+                "dialect": {"key": "mandarin", "name": "普通话"},
+                "llm_provider": "mock",
+                "input_summary": {"has_image": False, "has_audio": False, "has_text": True},
+            }
+
+    fake = FakeFusion()
+    with patch("src.llm.fusion.get_fusion", return_value=fake):
+        out = run({"text": "水稻叶片有褐色斑点"})
+
+    assert out["report"]["source_notes"][0]["document"] == "《农药登记信息》"
+    assert fake.kwargs["user_text"] == "水稻叶片有褐色斑点"
+    assert fake.kwargs["topk"] == 5
+
+    from skills.errors import SkillInputError
+
+    try:
+        run({"image_path": "leaf.jpg"}, allow_paths=False)
+        raise AssertionError("HTTP 模式应当拒绝本地路径")
+    except SkillInputError:
+        pass
+
+
+@case("技能：farm-growth 注入 history 即可算生长/3D/收获，不读数据库")
+def _():
+    from unittest.mock import patch
+
+    from skills.farm_growth.handler import run
+
+    history = [
+        {"date": f"2026-05-{day:02d}", "tmax": 30, "tmin": 20}
+        for day in range(1, 26)
+    ]
+    payload = {
+        "field": {"id": "fld_test", "crop": "水稻", "sow_date": "2026-05-01"},
+        "today": "2026-05-25",
+        "history": history,
+        "include": ["growth", "model", "harvest"],
+    }
+
+    with patch("src.farm.db.connect", side_effect=RuntimeError("不应打开数据库")):
+        out = run(payload)
+
+    assert out["growth"]["gdd_cum"] > 0, "积温应大于 0"
+    assert out["growth"]["stage"], "缺少生育阶段"
+    assert out["model"]["height"] > 0 and out["model"]["leafCount"] >= 2
+    assert out["harvest"]["method"] in ("xgboost", "gdd_fallback")
+    assert "weather" not in out, "未请求天气时不应返回 weather"
+    assert out["degraded"]["history"] is False
+
+
+@case("技能：HTTP 路由已注册，result 不被响应模型过滤")
+def _():
+    from fastapi.routing import APIRoute
+
+    from backend.app.main import create_app
+    from backend.app.schemas.skills import SkillRunData
+
+    app = create_app()
+
+    def walk(routes) -> list:
+        out = []
+        for route in routes:
+            if isinstance(route, APIRoute):
+                out.append(route)
+                continue
+            sub = getattr(route, "routes", None)
+            if not sub:
+                sub = getattr(getattr(route, "original_router", None), "routes", None)
+            if sub:
+                out.extend(walk(sub))
+        return out
+
+    pairs = {
+        (r.path, tuple(sorted(r.methods or [])))
+        for r in walk(app.routes)
+    }
+    assert ("/api/skills", ("GET",)) in pairs, "缺少 GET /api/skills"
+    assert ("/api/skills/{name}", ("GET",)) in pairs, "缺少技能详情路由"
+    assert ("/api/skills/{name}", ("POST",)) in pairs, "缺少技能执行路由"
+
+    data = SkillRunData.model_validate({
+        "skill": "farm-growth", "version": "1.0.0",
+        "result": {"a": 1, "nested": {"b": 2}},
+        "degraded": {"history": True}, "elapsed_ms": 1.2,
+    }).model_dump()
+    assert data["result"] == {"a": 1, "nested": {"b": 2}}, "result 字段被过滤了"
+
+
+@case("来源：知识卡片只标登记命中与真实配图，养护卡不误标")
+def _():
+    from backend.app.routers.library import _content_source_notes, _image_source_notes
+    from backend.app.schemas.models import (
+        DiagnosisReport,
+        LibraryDetailData,
+        SourceNote,
+    )
+
+    assert "source_notes" in DiagnosisReport.model_fields
+    assert "source_notes" in LibraryDetailData.model_fields
+    assert "image_source_notes" in LibraryDetailData.model_fields
+    assert SourceNote(organization="x", document="y", kind="registry").kind == "registry"
+
+    pest = {
+        "category": "pest", "condition": "水稻稻飞虱", "cover": "/media/x.jpg",
+        "sections": [{"type": "medication", "text": "..."}],
+    }
+    notes = _content_source_notes(pest)
+    assert notes and notes[0]["organization"] == "农业农村部农药管理司"
+    assert notes[0]["document"] == "《农药登记信息》"
+
+    care = {"category": "care", "condition": "养护", "sections": [{"type": "care"}]}
+    assert _content_source_notes(care) == [], "养护卡没有用药段，不应标登记来源"
+
+    assert _image_source_notes({"category": "insect", "cover": "/x.jpg"})[0]["organization"] == "IP102 数据集"
+    assert _image_source_notes({"category": "pest", "cover": "/x.jpg"})[0]["organization"] == "PDD271 数据集"
+    assert _image_source_notes({"category": "pest", "cover": None, "sections": []}) == []
+
+
+@case("前端：技能页、来源行与六导航入口的静态契约")
+def _():
+    from src.common.paths import path_of
+
+    root = path_of("frontend_dir")
+    html = (root / "skills.html").read_text(encoding="utf-8")
+    js_layout = (root / "assets" / "js" / "layout.js").read_text(encoding="utf-8")
+    js_api = (root / "assets" / "js" / "api.js").read_text(encoding="utf-8")
+    js_lib = (root / "assets" / "js" / "library.js").read_text(encoding="utf-8")
+    js_diag = (root / "assets" / "js" / "diagnose.js").read_text(encoding="utf-8")
+    js_policy = (root / "assets" / "js" / "policy.js").read_text(encoding="utf-8")
+    css = (root / "assets" / "css" / "pages.css").read_text(encoding="utf-8")
+    layout_css = (root / "assets" / "css" / "layout.css").read_text(encoding="utf-8")
+
+    assert "data-layout-header" in html and "data-layout-footer" in html
+    assert "skills.js" in html and "/assets/css/pet.css" not in html
+    assert "crop-diagnosis" in html and "farm-growth" in html
+    assert "Farm3D.create" in html and "view.setModel(result.model)" in html
+    assert "badge" not in html, "技能页按约定不使用徽章"
+    assert "home" in js_layout and 'href: "/skills.html"' in js_layout
+
+    assert "function sourceNote(" in js_api and "sourceNote" in js_api.split("window.UI =", 1)[1]
+    assert "UI.sourceNote(item.source_notes" in js_lib
+    assert "UI.sourceNote(item.image_source_notes" in js_lib
+    assert "_sourceNotes(report.source_notes)" in js_diag
+    i_note = js_diag.find("_sourceNotes(report.source_notes)")
+    i_actions = js_diag.find("_actions(report)", i_note)
+    assert 0 <= i_note < i_actions, "来源行应排在操作按钮之前"
+    assert "来源：" in js_policy
+    assert ".source-note" in css and ".skill-code" in css
+    assert "max-width: 520px" in layout_css, "六入口折行阈值应覆盖到 520px"
+
+    start = js_api.find("function sourceNote(")
+    end = js_api.find("window.Api =", start)
+    assert "<a" not in js_api[start:end], "来源行不应生成链接"
+
+
+# ============================================ 首页沙盘三图层（山川地貌 / 作物 / 病害）
+
+def _body_of(src: str, header: str) -> str:
+    """按大括号配对取函数体 —— 正则数不清嵌套的 if / 对象字面量。"""
+    i = src.find(header)
+    assert i >= 0, f"没找到 {header}"
+    j = src.find("{", i)
+    depth = 0
+    for k in range(j, len(src)):
+        if src[k] == "{":
+            depth += 1
+        elif src[k] == "}":
+            depth -= 1
+            if depth == 0:
+                return src[j + 1:k]
+    raise AssertionError(f"{header} 的大括号不配对")
+
+
+@case("首页三图层：山川地貌词典的省名与快照对得上，作物类别覆盖全部作物")
+def _():
+    import json
+    import re
+
+    from src.common.paths import path_of
+
+    frontend = path_of("frontend_dir")
+    layers = (frontend / "assets" / "data" / "home_layers.js").read_text(encoding="utf-8")
+    snap = (frontend / "assets" / "data" / "home_preload.js").read_text(encoding="utf-8")
+    data = json.loads(re.search(r"__PROVINCE_PEST__\s*=\s*(\{.*?\});", snap, re.S).group(1))
+    shorts = {p["short_name"] for p in data["provinces"]}
+
+    # 类型清单要齐全：六个 key 一个都不能少，否则圆点会退成默认色
+    types = re.findall(r'\{ key: "(\w+)", name: "([^"]+)" \}', layers)
+    assert [t[0] for t in types] == ["mountain", "plateau", "basin", "plain", "river", "lake"], \
+        f"地貌类型清单不对：{types}"
+
+    blocks = re.findall(r'type: "(\w+)", lon: ([\d.]+), lat: ([\d.]+),[^}]*?provinces: \[([^\]]*)\]',
+                        layers, re.S)
+    assert len(blocks) >= 40, f"地貌条目只有 {len(blocks)} 条，作为「介绍页」太薄"
+
+    bad_type = [b[0] for b in blocks if b[0] not in {t[0] for t in types}]
+    assert not bad_type, f"出现了没在图例里声明的类型：{bad_type}"
+
+    covered = set()
+    for _, lon, lat, provs in blocks:
+        lon_f, lat_f = float(lon), float(lat)
+        # 经纬度写反是最典型的沉默错误：lat 84 在世界地图上不会报错，
+        # 但圆点会飞到北极圈外，这里直接用中国的大致经纬范围兜住
+        assert 73 <= lon_f <= 136 and 3 <= lat_f <= 54, (
+            f"坐标 ({lon}, {lat}) 超出中国的经纬范围 —— 大概率 lon/lat 写反了"
+        )
+        names = re.findall(r'"([^"]+)"', provs)
+        assert names, f"({lon}, {lat}) 这条没有写所在省区市"
+        unknown = [n for n in names if n not in shorts]
+        assert not unknown, f"省名 {unknown} 不在首页快照的 short_name 里（不能写全称）"
+        covered.update(names)
+
+    assert len(covered) >= 30, f"只有 {len(covered)} 个省区市有地貌条目，另外几个会整块留白"
+
+    # 作物类别：快照里出现的每一种作物都要能查到类别，否则那一种在图上没有颜色
+    cats = dict(re.findall(r'"([^"]+)": "(粮食作物|蔬菜|果树|经济作物)"', layers))
+    crops = {c for p in data["provinces"] for c in (p.get("crops") or [])}
+    missing = sorted(crops - set(cats))
+    assert not missing, f"这些作物在 __CROP_CATEGORY__ 里查不到类别：{missing}"
+
+
+@case("首页三图层：选项控件三项顺序固定，第一项默认选中（回归锁）")
+def _():
+    import re
+
+    from src.common.paths import path_of
+
+    html = (path_of("frontend_dir") / "index.html").read_text(encoding="utf-8")
+
+    i = html.find('id="map-modes"')
+    assert i > 0, "首页缺少选项控件 #map-modes"
+    block = html[i:html.find("</div>", i)]
+    keys = re.findall(r'data-layer-btn="(\w+)"', block)
+    assert keys == ["terrain", "crop", "pest"], (
+        f"三项的顺序被改了：{keys} —— 需求是 山川地貌 → 主要作物 → 当季病害"
+    )
+    # 用 button 而不是 div：键盘 Tab 与读屏都靠它；三个都要是 button
+    assert block.count("<button") == 3, "选项必须是三个 button"
+    first = block[block.find("<button"):block.find("/>") if "/>" in block else block.find("</button>")]
+    assert 'aria-pressed="true"' in first, "默认选中的必须是第一项（山川地貌）"
+
+    assert 'id="map-pins"' in html, "缺少地貌圆点容器"
+    # 词典必须排在 map.js 之前：它是同步加载的静态 JS，晚于 map.js 就等于没有
+    i_layers = html.find("/assets/data/home_layers.js")
+    assert 0 < i_layers < html.find("/assets/js/map.js"), \
+        "home_layers.js 必须在 map.js 之前同步加载"
+
+
+@case("首页三图层：切换只重算不请求，圆点进 applyData，事件只绑一次（回归锁）")
+def _():
+    from src.common.paths import path_of
+
+    js = (path_of("frontend_dir") / "assets" / "js" / "map.js").read_text(encoding="utf-8")
+
+    fn = _body_of(js, "function setLayer(")
+    assert "applyData()" in fn, "切图层必须重算数据（省色 / 图例 / 圆点）"
+    assert "fetch(" not in fn and "location.href" not in fn, (
+        "切图层应当是纯内存重算：拿接口或跳转去实现「即时生效」都会有一帧白屏"
+    )
+    assert "closeCard()" in fn, "切层后要把停住的卡片收起来 —— 上一层的内容在这一层讲不通"
+
+    # 圆点属于「数据」那一层：applyData 里少它就会切筛选时圆点不跟着变
+    apply_data = _body_of(js, "function applyData(")
+    assert "renderPins()" in apply_data, "applyData 没有重画地貌圆点"
+
+    # 选项控件、图例筛选的事件都靠哨兵防重复绑定：renderAll 每次换季都会走一遍，
+    # 少一个哨兵就是「点一次切两次」（切两次 = 看起来没反应）
+    assert "if (!host || layerBound) return;" in js, "选项控件的事件没有防重复绑定"
+    assert "if (!host || legendBound) return;" in js, "图例筛选的事件没有防重复绑定"
+
+    # 投影走批量接口：单点投影每次都要读一次 canvas 的 rect，五十多个圆点会强制重排
+    assert "map.projectPoints(" in js, "圆点摆放应走批量投影 projectPoints"
+    assert "projectPoints: projectOnScreen" in (
+        path_of("frontend_dir") / "assets" / "js" / "map3d.js"
+    ).read_text(encoding="utf-8"), "map3d 没有导出批量投影"
+
+
+@case("首页沙盘：选项控件贴在左上角，季节切换排在它下面（回归锁）")
+def _():
+    import re
+
+    from src.common.paths import path_of
+
+    pages = (
+        path_of("frontend_dir") / "assets" / "css" / "pages.css"
+    ).read_text(encoding="utf-8")
+
+    body = _rule_body_live(pages, ".map-modes {")
+    assert "position: absolute" in body, "选项控件是浮在沙盘上的，要绝对定位"
+    assert "top: var(--space-5)" in body and "left: var(--space-5)" in body, \
+        "选项控件要贴在沙盘的左上角"
+    # 顶部居中那一套要收干净：留一半就会变成「看着在左、算着在中」
+    assert "left: 50%" not in body and "translateX" not in body, \
+        "控件已经不在顶部居中了，别把居中那套写回来"
+
+    # 季节切换排在它下面：54px 控件高（按钮 44 + 上下内距 2×4 + 上下边框 2）+ 8px 缝
+    season = _rule_body_live(pages, ".season-switch {")
+    assert "calc(var(--space-5) + 62px)" in season, \
+        "季节切换要接在选项控件下方，否则两颗控件会叠在左上角同一处"
+
+    # 小屏同理：≤940 时两颗控件一起收到 12px，仍然贴左
+    m = re.search(r"@media \(max-width: 940px\) \{(.*?)\n\}", pages, re.S)
+    assert m, "pages.css 里没有 ≤940 的响应式段"
+    assert ".map-modes { top: var(--space-3); left: var(--space-3); }" in m.group(1), \
+        "≤940 时选项控件也要贴左上角"
+
+
+@case("回访队列：只收排过回访的诊断，过期/今天/未来分组，跨用户不可见")
+def _():
+    from src.farm import repo
+
+    with _farm_db() as conn:
+        a = _new_user(conn, "alice", "alice@example.com")
+        b = _new_user(conn, "bob", "bob@example.com")
+        fa = repo.create_field(conn, a["id"], name="A 的田", crop="水稻", sow_date="2026-06-01")
+
+        repo.create_diagnosis(conn, a["id"], field_id=fa["id"], date="2026-10-20",
+                              label="稻瘟病", recheck_date="2026-10-23", subject="王守田")
+        repo.create_diagnosis(conn, a["id"], field_id=fa["id"], date="2026-10-24",
+                              label="稻飞虱", recheck_date="2026-10-24")
+        repo.create_diagnosis(conn, a["id"], field_id=fa["id"], date="2026-10-24",
+                              label="纹枯病", recheck_date="2026-10-29")
+        # 这条**没有**排回访：它不该出现在队列里，
+        # 否则每诊断一次就多一条永远处理不完的待办
+        repo.create_diagnosis(conn, a["id"], field_id=fa["id"], date="2026-10-24",
+                              label="白叶枯病")
+
+        g = repo.list_followups(conn, a["id"], today="2026-10-24")
+        assert [x["label"] for x in g["overdue"]] == ["稻瘟病"], "过期那条必须单独一组"
+        assert g["overdue"][0]["days_left"] == -1, "过期天数要能算出来（负数）"
+        assert g["overdue"][0]["subject"] == "王守田", "服务对象要跟着回访项一起回来"
+        assert g["overdue"][0]["field_name"] == "A 的田", "要带出田块名，否则队列里分不清地"
+        assert [x["label"] for x in g["today"]] == ["稻飞虱"]
+        assert [x["label"] for x in g["upcoming"]] == ["纹枯病"]
+        assert repo.count_pending_followups(conn, a["id"], today="2026-10-24") == 2, \
+            "到期待回访数 = 过期 + 今天"
+
+        all_labels = [x["label"] for k in ("overdue", "today", "upcoming") for x in g[k]]
+        assert "白叶枯病" not in all_labels, "没排回访的诊断不该进队列"
+
+        g3 = repo.list_followups(conn, a["id"], today="2026-10-24", upcoming_days=3)
+        assert g3["upcoming"] == [], "超出窗口的未来回访不该进队列"
+
+        assert repo.list_followups(conn, b["id"], today="2026-10-24") == \
+            {"overdue": [], "today": [], "upcoming": []}, "回访队列也要按 user_id 隔离"
+
+
+@case("回访：勾掉后离开队列、重复勾不报错、非法日期与跨用户都拦得住")
+def _():
+    from src.farm import repo
+
+    with _farm_db() as conn:
+        a = _new_user(conn, "alice", "alice@example.com")
+        b = _new_user(conn, "bob", "bob@example.com")
+        fa = repo.create_field(conn, a["id"], name="A 的田", crop="水稻", sow_date="2026-06-01")
+        d = repo.create_diagnosis(conn, a["id"], field_id=fa["id"], date="2026-10-24",
+                                  label="稻瘟病", recheck_date="2026-10-24")
+
+        assert repo.count_pending_followups(conn, a["id"], today="2026-10-24") == 1
+        repo.mark_followup_done(conn, a["id"], d["id"])
+        assert repo.count_pending_followups(conn, a["id"], today="2026-10-24") == 0, \
+            "勾掉之后不能再出现在队列里"
+        # 列表是异步刷新的，连点两下很常见：第二次不能抛
+        repo.mark_followup_done(conn, a["id"], d["id"])
+
+        try:
+            repo.mark_followup_done(conn, b["id"], d["id"])
+        except repo.NotFound:
+            pass
+        else:
+            raise AssertionError("别人勾不动我的回访 —— 这里必须抛 NotFound")
+
+        try:
+            repo.create_diagnosis(conn, a["id"], field_id=fa["id"], date="2026-10-24",
+                                  recheck_date="10/30")
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("非法回访日期应在落库前就被拒，而不是变成一条永不出现的记录")
+
+
+@case("问诊单：白纸底不跟随深色主题、打印只留那张纸、模态里不浮着宠物（回归锁）")
+def _():
+    from src.common.paths import path_of
+
+    css = _css_bundle()
+    pages = css["pages"]
+
+    # 1. 纸必须显式白底 + 深字：深色主题下 --color-card 是深色，
+    #    照抄它就会得到「深底深字」或者「白字的纸」，两边都不可读。
+    i = pages.find(".sheet {")
+    assert i >= 0, "pages.css 里没有 .sheet 规则"
+    body = pages[i:i + 400]
+    assert "background: #ffffff" in body, "问诊单要显式白底，不能跟随深色主题的 --color-card"
+    assert "#16211b" in body, "纸上必须是深色字"
+
+    # 2. 打印只留纸：判据是 body.sheet-open（问诊单打开着），
+    #    这样浏览器菜单里的 Ctrl+P 也打同一张纸，不只限于页面上的按钮。
+    k = pages.find("@media print")
+    assert k >= 0, "pages.css 里没有打印样式"
+    seg = pages[k:]
+    assert "body.sheet-open .page > *:not(#sheet-modal)" in seg, \
+        "打印时要隐藏除问诊单以外的所有内容"
+    assert ".sheet-ops" in seg and "display: none !important" in seg, \
+        "打印时按钮不该出现在纸上"
+
+    # 3. 宠物挂件 z-index 1200 高于模态 60，会浮在纸面上（打印时还会被打到纸上）
+    pet = (path_of("frontend_dir") / "assets" / "css" / "pet.css").read_text(encoding="utf-8")
+    assert "body.modal-open .pet" in pet, "模态层里必须把宠物挂件藏起来"
+
+
+@case("问诊单分享：快照能存能取、换 token 读不到、过期即失效、超限被拒")
+def _():
+    from src.farm import shares
+
+    with _farm_db() as conn:
+        user = _new_user(conn)
+        snap = {"subject": "王守田", "result": {"name": "玉米大斑病", "confidence": 85}}
+
+        info = shares.create_share(conn, user["id"], snap)
+        assert info["days"] == shares.SHARE_DAYS, "有效期由服务端定，默认 30 天"
+        assert len(info["token"]) >= 10, "token 太短就等于可以被枚举"
+
+        got = shares.get_share(conn, info["token"])
+        assert got is not None and got["payload"]["subject"] == "王守田"
+
+        # 公开页只认 token：换一个串就取不到，不能顺着 id / 用户名摸到别的东西
+        assert shares.get_share(conn, "A" * len(info["token"])) is None
+
+        # 过期之后必须读不到 —— 村口贴着的二维码会一直存在，链接不能一直有效
+        conn.execute("UPDATE diag_shares SET expires_at = ? WHERE token = ?",
+                     ("2000-01-01T00:00:00Z", info["token"]))
+        assert shares.get_share(conn, info["token"]) is None, "过期链接不该还能读"
+
+        # 上限按「一张 A4 能写多少字」给，挡住「把整个 report 塞进来」
+        try:
+            shares.create_share(conn, user["id"], {"blob": "x" * (shares.MAX_PAYLOAD_BYTES + 1)})
+        except shares.ShareError:
+            pass
+        else:
+            raise AssertionError("超过上限应拒绝")
+
+
+@case("问诊单 PDF：生成合法文件，用户输入里的尖括号不会把排版打崩")
+def _():
+    try:
+        from src.export.sheet_pdf import build_sheet_pdf
+    except ImportError:      # 没装 reportlab 的机器上 PDF 是可选能力（接口会返回 503）
+        return
+
+    pdf = build_sheet_pdf({
+        "no": "dgn_test", "date": "2026-10-24",
+        "subject": "王<守>田 & Co",             # 用户输入：必须当纯文本
+        "field": "示例田 · 玉米", "crop": "玉米",
+        "sources": ["现场照片"],
+        "scene": "叶片<b>发黄</b>，\n第二行",
+        "result": {"name": "玉米大斑病", "healthy": False, "pest": False, "confidence": 85},
+        "sections": [{"title": "立即处置", "content": "清理病叶"}],
+        "medication": "核对安全间隔期",
+        "recheck": "2026-10-31",
+        "region": {"province": "湖北省", "items": ["1. 玉米大斑病"], "demo": True},
+    })
+    assert pdf.startswith(b"%PDF"), "必须是真的 PDF"
+    assert len(pdf) > 2000, "内容被吞了？正常一页纸不该这么小"
+
+
+@case("问诊单交付：三个新接口都在 app 上（防止「改了路由没 include」）")
+def _():
+    from fastapi.routing import APIRoute
+    from backend.app.main import create_app
+
+    app = create_app()
+
+    def walk(routes) -> list:
+        out = []
+        for route in routes:
+            if isinstance(route, APIRoute):
+                out.append(route)
+                continue
+            sub = getattr(route, "routes", None)
+            if not sub:
+                sub = getattr(getattr(route, "original_router", None), "routes", None)
+            if sub:
+                out.extend(walk(sub))
+        return out
+
+    found = {(r.path, tuple(sorted(r.methods or []))) for r in walk(app.routes)}
+    for path, method in (
+        ("/api/diagnose/share", "POST"),
+        ("/api/share/{token}", "GET"),
+        ("/api/share/{token}/qr.svg", "GET"),
+        ("/api/diagnose/report.pdf", "POST"),
+    ):
+        assert (path, (method,)) in found, f"缺少接口 {method} {path}"
+
+
+@case("品牌：页面标题统一为「田头农技台」，旧称与副标题都不再出现")
+def _():
+    from src.common.paths import path_of
+
+    root = path_of("frontend_dir")
+    # 三个都扫：参赛全名（多方言…平台）以及两代旧站名。改一次名，这份名单就长一条，
+    # 漏改的页面会在这里被揪出来，而不是等用户看见顶栏还挂着上一个名字。
+    stale = ["多方言 AI 农技与农田数字孪生平台", "乡村农技多方言智能服务平台",
+             "田语问诊", "田语智农"]
+
+    for page in sorted(root.glob("*.html")):
+        html = page.read_text(encoding="utf-8")
+        for old in stale:
+            assert old not in html, f"{page.name} 还带着旧名「{old}」"
+        if "<title>" in html:
+            title = html.split("<title>", 1)[1].split("</title>", 1)[0]
+            assert "田头农技台" in title, f"{page.name} 的标题没跟新站名：{title}"
+
+    layout = (root / "assets" / "js" / "layout.js").read_text(encoding="utf-8")
+    assert "田头农技台" in layout, "顶栏站名没改"
+    # 名字本身要能自证：定了「不要副标」之后，再有人往顶栏塞一行解释性小字，
+    # 就会把窄屏顶栏挤成两行 —— 这条断言就是那道闸。
+    assert "brand__sub" not in layout, "顶栏不要副标，只留站名"
+    assert "农技员的手机问诊台" not in layout, "副标题已废弃，别再挂回去"
+
+    css = (root / "assets" / "css" / "layout.css").read_text(encoding="utf-8")
+    assert ".brand__sub" not in css, "副标 DOM 已删，CSS 里的死规则也要一起清掉"
+
+    # 后端与脚本里的自述也要锁：OpenAPI 的 description、启动日志、包 docstring
+    # 都是「一打开就能看见」的地方 —— 上一代名字在这三处躲了整整一轮没被发现。
+    project = root.parent
+    for rel in ("backend/app/main.py", "scripts/20_run_backend.py", "src/__init__.py",
+                "src/llm/prompts.py", "src/export/sheet_pdf.py"):
+        text = (project / rel).read_text(encoding="utf-8")
+        for old in stale:
+            assert old not in text, f"{rel} 还带着旧名「{old}」"
+
+
+# ============================================ 阶段 8：安全间隔期与用药台账（8.x）
+
+def _spray_field(conn, user_id, name="东头那块", crop="水稻", sow_date="2026-06-01"):
+    from src.farm import repo
+    return repo.create_field(conn, user_id, name=name, crop=crop, sow_date=sow_date)
+
+
+@case("安全间隔期：约束取「解禁日最晚」那次，不是字面最近那次")
+def _():
+    from src.farm import spray
+
+    # 10-01 打的是 30 天的药（解禁 10-31），10-10 又补了一次 7 天的（解禁 10-17）。
+    # 按「最近一次」算会得出 10-17 —— 这块田就会被提前两周放行。
+    logs = [
+        {"id": "a", "type": "spray", "date": "2026-10-01", "interval_days": 30,
+         "item": "唑醚·戊唑醇"},
+        {"id": "b", "type": "spray", "date": "2026-10-10", "interval_days": 7,
+         "item": "吡唑醚菌酯"},
+    ]
+    cons = spray.constraint(logs, today="2026-10-20")
+
+    assert cons is not None
+    assert cons["earliest_date"] == "2026-10-31", \
+        f"应取解禁最晚的那次（10-31），实际 {cons['earliest_date']}"
+    assert cons["log_id"] == "a", "约束来源应是 10-01 那次 30 天的药"
+    assert cons["days_left"] == 11
+    assert cons["locked"] is True
+
+    # 解禁当天就解禁（days_left == 0），不能算「还锁着」
+    assert spray.constraint(logs, today="2026-10-31")["locked"] is False
+    assert spray.constraint(logs, today="2026-11-05")["locked"] is False
+
+
+@case("安全间隔期：没记录是「不知道」，绝不能退化成「可以采收」")
+def _():
+    from src.farm import ledger, repo, spray
+
+    logs = [{"id": "x", "type": "spray", "date": "2026-10-18",
+             "interval_days": None, "item": "稻瘟灵"}]
+
+    assert spray.constraint(logs, today="2026-10-20") is None, \
+        "没填间隔期就不能凭空算出一个解禁日"
+
+    one = spray.annotate(logs, today="2026-10-20")[0]
+    assert one["interval_end"] == "", "没有间隔期就不该画一个假日期"
+    assert one["days_left"] is None, "没有间隔期就没有倒计时，0 会被读成「已解禁」"
+    assert one["locked"] is False
+
+    # 台账层面：这一档必须是 unknown，不是 ok
+    with _farm_db() as conn:
+        user = _new_user(conn)
+        f = _spray_field(conn, user["id"], name="没填间隔期的田")
+        repo.create_log(conn, user["id"], field_id=f["id"], type="spray",
+                        date="2026-10-18", item="稻瘟灵")
+        data = ledger.build(conn, user["id"], today="2026-10-20")
+        row = data["fields"][0]
+
+        assert row["status"] == "unknown", f"状态应是 unknown，实际 {row['status']}"
+        assert row["locked"] is False
+        assert row["has_unknown_interval"] is True
+        assert data["summary"]["unknown_fields"] == 1
+        assert data["summary"]["locked_fields"] == 0
+        assert data["alerts"] == [], "「未记录」不该进红条预警 —— 红条是另一档含义"
+
+
+@case("安全间隔期：空串是「没记录」不是 0，越界与脏值在落库前被挡")
+def _():
+    from src.farm import spray
+
+    assert spray.valid_interval(None) is None
+    assert spray.valid_interval("") is None, "空串必须当没记录，当 0 就等于当场放行"
+    assert spray.valid_interval("21") == 21, "表单提交的是字符串"
+    assert spray.valid_interval(0) == 0, "0 天是合法值（部分药剂当天可收）"
+    assert spray.valid_interval(spray.MAX_INTERVAL_DAYS) == spray.MAX_INTERVAL_DAYS
+
+    for bad, why in ((-1, "负数"), (spray.MAX_INTERVAL_DAYS + 1, "越界"), ("二十天", "脏值")):
+        try:
+            spray.valid_interval(bad)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"{why}（{bad!r}）应被拒，而不是默默存进去")
+
+
+@case("农事记录：非打药类型的登记证与间隔期会被清空，不让台账误判")
+def _():
+    from src.farm import repo
+
+    with _farm_db() as conn:
+        user = _new_user(conn)
+        f = _spray_field(conn, user["id"])
+
+        # 接口是公开的：一条 type=fertilize 却带着间隔期，会让这块田被误锁
+        fert = repo.create_log(conn, user["id"], field_id=f["id"], type="fertilize",
+                               date="2026-10-19", item="复合肥",
+                               reg_no="PD20110955", interval_days=21)
+        assert fert["reg_no"] == "", "非打药记录不该留下登记证号"
+        assert fert["interval_days"] is None, "非打药记录不该留下间隔期"
+
+        ok = repo.create_log(conn, user["id"], field_id=f["id"], type="spray",
+                             date="2026-10-20", item="稻瘟灵 乳油",
+                             reg_no="PD20110955", interval_days=21)
+        assert ok["reg_no"] == "PD20110955"
+        assert ok["interval_days"] == 21
+
+        from src.farm import ledger
+        data = ledger.build(conn, user["id"], today="2026-10-22")
+        assert data["summary"]["spray_count"] == 1, "汇总只数打药"
+        assert data["summary"]["locked_fields"] == 1
+
+
+@case("用药台账：区间只筛统计，不筛「还在不在间隔期」")
+def _():
+    from src.farm import ledger, repo
+
+    with _farm_db() as conn:
+        user = _new_user(conn)
+        f = _spray_field(conn, user["id"], name="九月打的药")
+
+        # 9-25 施药、间隔期 40 天 → 11-04 解禁；今天是 10-20，还剩 15 天
+        repo.create_log(conn, user["id"], field_id=f["id"], type="spray",
+                        date="2026-09-25", item="稻瘟灵 乳油", reg_no="PD20110955",
+                        interval_days=40)
+
+        full = ledger.build(conn, user["id"], today="2026-10-20")
+        assert full["summary"]["locked_fields"] == 1
+        assert full["fields"][0]["earliest_date"] == "2026-11-04"
+
+        # 把区间收到 10 月：区间内一条施药都没有，但田还锁着 —— 必须还是 locked
+        narrow = ledger.build(conn, user["id"], today="2026-10-20",
+                              date_from="2026-10-01", date_to="2026-10-20")
+        assert narrow["summary"]["spray_count"] == 0, "区间内确实没有施药记录"
+        row = narrow["fields"][0]
+        assert row["locked"] is True, "区间筛掉的是次数统计，不是采收约束"
+        assert row["days_left"] == 15
+        assert narrow["summary"]["locked_fields"] == 1
+        assert len(narrow["alerts"]) == 1, "红条也应按全量判定"
+        assert narrow["history"] == [], "时间线才该跟着区间走"
+
+        # 解禁之后同一个查询应放开
+        later = ledger.build(conn, user["id"], today="2026-11-06",
+                             date_from="2026-10-01", date_to="2026-10-20")
+        assert later["fields"][0]["locked"] is False
+        assert later["alerts"] == []
+
+
+@case("用药台账：相邻两次同一有效成分才提醒轮换，换个商品名不算换药")
+def _():
+    from src.farm import ledger, repo
+
+    with _farm_db() as conn:
+        user = _new_user(conn)
+        f = _spray_field(conn, user["id"], name="连打两次的田")
+
+        repo.create_log(conn, user["id"], field_id=f["id"], type="spray",
+                        date="2026-09-01", item="稻瘟灵 乳油 40%",
+                        reg_no="PD20110955", interval_days=21)
+        # 隔了 20 天又来一次同成分的（只是含量写法不同，成分还是稻瘟灵）
+        repo.create_log(conn, user["id"], field_id=f["id"], type="spray",
+                        date="2026-09-21", item="稻瘟灵 乳油 30%",
+                        reg_no="PD20110955", interval_days=21)
+
+        data = ledger.build(conn, user["id"], today="2026-10-20")
+        assert len(data["products"]) == 1, "同一登记证应合并成一行，不是两行"
+        g = data["products"][0]
+        assert g["count"] == 2
+        assert g["rotate_warning"] is True, "连打两次同成分必须提醒轮换"
+        assert "连打两次的田" in g["repeat_fields"]
+
+        # 换成不同成分：不该再提醒（虽然还没解决抗性问题，但至少不是同一个药）
+        f2 = _spray_field(conn, user["id"], name="换了药的田", crop="玉米")
+        repo.create_log(conn, user["id"], field_id=f2["id"], type="spray",
+                        date="2026-09-02", item="吡唑醚菌酯 悬浮剂",
+                        reg_no="PD20161186", interval_days=14)
+        repo.create_log(conn, user["id"], field_id=f2["id"], type="spray",
+                        date="2026-09-22", item="苯醚甲环唑 水分散粒剂",
+                        reg_no="PD20180321", interval_days=14)
+
+        data2 = ledger.build(conn, user["id"], today="2026-10-20")
+        rotated = [g for g in data2["products"] if g["item"].startswith("苯醚甲环唑")]
+        assert rotated and rotated[0]["rotate_warning"] is False, \
+            "换了有效成分不该报轮换提醒"
+
+
+@case("药剂检索：不给条件就不返回全库，同一登记证不重复出现")
+def _():
+    from src.farm import pesticides
+
+    # 三千多条塞进下拉等于没有筛选 —— 空条件返回空列表，让前端提示先输入
+    assert pesticides.search() == []
+    assert pesticides.search(q="   ") == []
+    assert pesticides.search(crop="水稻") == [], "只给作物不给药名/病害也算没筛"
+
+    hits = pesticides.search(q="稻瘟灵")
+    assert hits, "库里应该有稻瘟灵"
+    regs = [h["reg_no"] for h in hits]
+    assert len(regs) == len(set(regs)), "同一登记证登记多个防治对象会被重复收录，必须按证号合并"
+    assert all("product" in h and "reg_no" in h for h in hits)
+
+    # 按防治对象查：全称与简称都要命中（库里的键名长短不一）
+    by_target = pesticides.search(target="稻瘟病", crop="水稻")
+    assert by_target, "按防治对象应能查到药"
+
+    # 有上限，不能一次吐全部
+    assert len(pesticides.search(q="病", limit=5)) <= 5
+
+    one = pesticides.get(regs[0])
+    assert one is not None and one["reg_no"].upper() == regs[0].upper()
+    assert pesticides.get("") is None
+    assert pesticides.get("PD00000000") is None, "查不到应返回 None，不是抛异常"
+
+
+@case("记一笔：打字这条路必须通（重新解析可点、原因能看见、最早可采收算得出来）")
+def _():
+    from src.common.paths import path_of
+
+    js = (path_of("frontend_dir") / "assets" / "js" / "farm.js").read_text(encoding="utf-8")
+
+    # 1. pad 必须是共用作用域里的一份。曾经它只定义在 todayISO() 内部，而
+    #    updateEarliest 也调 pad —— 于是每敲一下间隔期都抛 ReferenceError，
+    #    「最早可采收」永远显示「—」。这类错误不会让页面白屏，只会让人以为没做完。
+    assert "\n  const pad = (n) =>" in js, \
+        "pad 要定义在模块作用域（两空格缩进），不要塞进 todayISO 内部"
+    i = js.find("function updateEarliest")
+    assert i >= 0, "找不到 updateEarliest"
+    assert "pad(" in js[i:i + 1200], "updateEarliest 仍在调用 pad，两者必须同作用域"
+
+    # 2. 「重新解析」的绑定要在打开模态时完成，不能只写在 renderParsed 里 ——
+    #    renderParsed 只有解析成功后才跑，于是「自己打字 → 点重新解析」永远没反应。
+    assert "function bindReparse" in js, "缺少 bindReparse"
+    i = js.find("function openVoiceModal")
+    assert "bindReparse()" in js[i:i + 1600], "打开模态时就要把「重新解析」绑上"
+    i = js.find("function renderParsed")
+    seg = js[i:i + 2600]
+    assert "voice-reparse" not in seg, \
+        "重新解析的 onclick 不能留在 renderParsed 里（首次解析前点它没有任何反应）"
+
+    # 3. 解析原因那条 warning 在 HTML 上带 hidden，必须显式取消隐藏才看得见。
+    i = js.find("function setVoiceReason")
+    assert i >= 0, "缺少 setVoiceReason"
+    assert "el.hidden = !text" in js[i:i + 400], "写了 textContent 却没取消 hidden，提示等于没写"
+    i = js.find("function openVoiceModal")
+    assert "setVoiceReason(\"\")" in js[i:i + 1600], "打开模态时要把上一条原因清掉（连 hidden 一起）"
+
+
+# ==================================================================== 虫害分类复核（2.8）
+
+class _FakePestClassifier:
+    """替身分类器：只回预设候选，不碰 ONNX。用来锁编排规则，不锁模型精度。"""
+
+    def __init__(self, probs: list[dict]):
+        self.probs = probs
+
+    def classify_image(self, image, topk: int = 5):
+        return self.probs[:topk]
+
+    def classify_crop(self, image, bbox, topk: int = 1):
+        return self.probs[:topk]
+
+
+def _det(index: int, label: str, conf: float) -> dict:
+    return {"index": index, "label_cn": label, "label_en": "x", "crop": "水稻",
+            "pest_type": "", "confidence": conf, "bbox": [10, 10, 110, 110]}
+
+
+@case("虫害复核：改判只换类别，绝不动检测置信度（融合值不许覆盖 confidence）")
+def _():
+    from src.infer.pest_review import apply_rewrites
+
+    dets = [_det(48, "蝗虫", 0.42)]
+    review = {
+        "mode": "cascade", "applied": True,
+        "rewrites": [{
+            "index": 0, "from_index": 48, "from_label": "蝗虫",
+            "to_index": 70, "to_label": "盲蝽", "to_label_en": "miridae",
+            "det_confidence": 0.42, "cls_prob": 0.5, "fused": 0.21,
+        }],
+    }
+    apply_rewrites(dets, review)
+    assert dets[0]["label_cn"] == "盲蝽", "类别没改过来"
+    assert dets[0]["index"] == 70, "类别下标没改过来"
+    assert dets[0]["confidence"] == 0.42, (
+        "置信度被改成了 %.3f —— 融合值是联合概率，覆盖它会让前端与台账里"
+        "所有「低于阈值就不显示」的判断跟着变" % dets[0]["confidence"]
+    )
+
+
+@case("虫害复核：检测有底时不请分类器（避免全量换两阶段掉点）")
+def _():
+    from src.infer.pest_review import PestReviewer
+
+    cls = _FakePestClassifier([{"index": 70, "label_cn": "盲蝽", "label_en": "miridae", "prob": 0.9}])
+    rv = PestReviewer(cls, gate=0.6, margin=0.0)
+    out = rv.review(None, [_det(48, "蝗虫", 0.85), _det(70, "盲蝽", 0.30)])
+    assert out["mode"] == "single", "最高分 0.85 已过门控 0.6，不该介入，实际 %s" % out["mode"]
+    assert out["applied"] is False
+    assert out["rewrites"] == []
+
+
+@case("虫害复核：检测没底时改判，并留下前后两侧的记录")
+def _():
+    from src.infer.pest_review import PestReviewer
+
+    cls = _FakePestClassifier([{"index": 70, "label_cn": "盲蝽", "label_en": "miridae", "prob": 0.72}])
+    rv = PestReviewer(cls, gate=0.6, margin=0.0)
+    out = rv.review(None, [_det(48, "蝗虫", 0.40)])
+    assert out["mode"] == "cascade" and out["applied"] is True, out
+    assert out["trigger"] == "low_confidence"
+    rw = out["rewrites"][0]
+    assert (rw["from_label"], rw["to_label"]) == ("蝗虫", "盲蝽"), "改判记录要留前后两侧，否则不可审计"
+    assert abs(rw["fused"] - 0.40 * 0.72) < 1e-6
+
+
+@case("虫害复核：复核后结论一致时 mode 报 cascade、applied 报 False（不能装成没复核过）")
+def _():
+    from src.infer.pest_review import PestReviewer
+
+    cls = _FakePestClassifier([{"index": 48, "label_cn": "蝗虫", "label_en": "x", "prob": 0.9}])
+    rv = PestReviewer(cls, gate=0.6, margin=0.0)
+    out = rv.review(None, [_det(48, "蝗虫", 0.40)])
+    assert out["mode"] == "cascade", "复核走过了，mode 不能还是 single"
+    assert out["applied"] is False, "结论没变，applied 应为 False"
+    assert out["rewrites"] == []
+
+
+@case("虫害复核：一个框都没检出时，分类没把握就不报虫名（只提示补拍）")
+def _():
+    from src.infer.pest_review import PestReviewer
+
+    weak = _FakePestClassifier([{"index": 70, "label_cn": "盲蝽", "label_en": "x", "prob": 0.20}])
+    out = PestReviewer(weak, fallback_min_prob=0.35).review(None, [])
+    assert out["mode"] == "none", "0.20 低于门槛 0.35，不该给结论，实际 %s" % out["mode"]
+    assert out["applied"] is False and out["rewrites"] == []
+    assert "补拍" in out["note"], "没结论时必须提示补拍，实际：%s" % out["note"]
+
+    strong = _FakePestClassifier([{"index": 70, "label_cn": "盲蝽", "label_en": "x", "prob": 0.62}])
+    out2 = PestReviewer(strong, fallback_min_prob=0.35).review(None, [])
+    assert out2["mode"] == "fallback" and out2["applied"] is True, out2
+    assert "线索" in out2["note"], (
+        "兜底路径的分类器没有「不是虫」这一类，对病害叶片也会给自信的错答案，"
+        "措辞必须停在「线索」而不是「检出」"
+    )
+
+
+@case("虫害类别覆盖：102 类名单齐全，5 个零框类必须在表里（口径不许漂移）")
+def _():
+    import json
+    from pathlib import Path
+
+    from src.common.constants import PEST_NUM_CLASSES, PEST_ZERO_BOX_CLASSES
+
+    blob = json.loads(Path("data/pest_label_map.json").read_text(encoding="utf-8"))
+    i2l = blob["index_to_label"]
+    assert blob["num_classes"] == PEST_NUM_CLASSES == 102, blob["num_classes"]
+    assert len(i2l) == 102, "标签表只有 %d 条" % len(i2l)
+    for c in PEST_ZERO_BOX_CLASSES:
+        assert str(c) in i2l, "零框类 %d 不在标签表里" % c
+        assert i2l[str(c)]["label_cn"], "零框类 %d 缺中文名" % c
+    # 这 5 类的存在意义是「检测标注缺失、只能靠分类」，标签表里必须是虫、且不能是病害
+    for c in PEST_ZERO_BOX_CLASSES:
+        assert i2l[str(c)]["pest_type"], "零框类 %d 缺 pest_type" % c
+
+
+@case("虫害复核：review 的键与 REVIEW_KEYS 一致，前端不会拿到半个对象")
+def _():
+    from src.infer.pest_review import REVIEW_KEYS, PestReviewer
+
+    cls = _FakePestClassifier([{"index": 70, "label_cn": "盲蝽", "label_en": "x", "prob": 0.9}])
+    out = PestReviewer(cls).review(None, [_det(48, "蝗虫", 0.40)])
+    assert set(out) == set(REVIEW_KEYS), (
+        "多了 %s、少了 %s" % (sorted(set(out) - set(REVIEW_KEYS)),
+                            sorted(set(REVIEW_KEYS) - set(out)))
+    )
 
 
 # ==================================================================== 主流程

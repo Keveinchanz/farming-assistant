@@ -214,6 +214,9 @@ def main() -> int:
     ap.add_argument("--provinces", nargs="*", default=None,
                     help="只拉这些省（按 admin_divisions 的省名，如 湖北省）")
     ap.add_argument("--limit", type=int, default=0, help="只处理前 N 个县（试跑用）")
+    ap.add_argument("--per-province", type=int, default=0,
+                    help="每个省最多取 N 个县，按 adcode 均匀抽样。"
+                         "直接截前 N 个只会取到省会城区，那样扩省等于只扩了省会的天气。")
     ap.add_argument("--force", action="store_true", help="已缓存的也重拉")
     ap.add_argument("--gap", type=float, default=REQUEST_GAP, help="两次请求之间的间隔秒数")
     ap.add_argument("--wait-quota", action="store_true",
@@ -240,6 +243,28 @@ def main() -> int:
     if args.provinces:
         wanted = set(args.provinces)
         targets = [c for c in targets if index[c]["province"] in wanted]
+
+    # 每省均匀抽样：把该省的县按 adcode 排好，等间距取 N 个。
+    # 一省之内 adcode 的编号大致跟着地市顺序走，等间距取就得到「跨地市」的样本；
+    # 直接取前 N 个则会密集落在最小编号那一个市，跨省的意义被削掉大半。
+    if args.per_province:
+        by_prov: dict[str, list[str]] = {}
+        for c in targets:
+            by_prov.setdefault(index[c]["province"], []).append(c)
+        picked: list[str] = []
+        for prov in sorted(by_prov):
+            lst = sorted(by_prov[prov])
+            n = args.per_province
+            if len(lst) <= n:
+                picked.extend(lst)
+                logger.info("  %s：只有 %d 个县，全取", prov, len(lst))
+                continue
+            step = len(lst) / n
+            chosen = sorted({lst[min(int(i * step + step / 2), len(lst) - 1)] for i in range(n)})
+            picked.extend(chosen)
+            logger.info("  %s：%d 个县中均匀取 %d 个", prov, len(lst), len(chosen))
+        targets = sorted(set(picked))
+
     if args.limit:
         targets = targets[: args.limit]
 

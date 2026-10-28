@@ -113,6 +113,55 @@ def pcm_from_wav(audio: bytes) -> bytes:
     raise ValueError("WAV 文件里找不到 data 段，无法取出 PCM 数据")
 
 
+def container_of(audio: bytes) -> str:
+    """按文件头判断容器格式；认不出来的一律当裸 PCM。
+
+    用途只有一个：把「把 mp3 当裸 PCM 喂给引擎」这种错挡在发请求之前。
+    encoding="raw" 的接口不校验字节内容，mp3 也能一路送进去，最后拿回一段
+    谁也看不懂的识别文本 —— 从现象上完全看不出是格式问题，所以必须提前判。
+    """
+    if len(audio) >= 12 and audio[4:8] == b"ftyp":
+        return "m4a"                        # ISO-BMFF：m4a/mp4 的 box 结构
+    for magic, name in (
+        (b"RIFF", "wav"),
+        (b"ID3", "mp3"),
+        (b"\xff\xfb", "mp3"),
+        (b"\xff\xf3", "mp3"),
+        (b"\xff\xf2", "mp3"),
+        (b"OggS", "ogg"),
+        (b"fLaC", "flac"),
+        (b"\x1a\x45\xdf\xa3", "webm"),
+        (b"#!AMR", "amr"),
+        (b"FORM", "aiff"),
+    ):
+        if audio.startswith(magic):
+            return name
+    return "pcm"
+
+
+def wav_params(audio: bytes) -> tuple[int, int, int] | None:
+    """读出 WAV 的 (采样率, 声道数, 位深)；不是 WAV 返回 None。
+
+    引擎对采样率是「照着声明的值解码」而不是「自动适配」：44.1kHz 的音频
+    按 16kHz 解出来会变成慢放加变调，识别结果像是另一个人在说外语。
+    """
+    if len(audio) < 36 or audio[:4] != b"RIFF" or audio[8:12] != b"WAVE":
+        return None
+
+    pos = 12
+    while pos + 8 <= len(audio):
+        chunk_id = audio[pos:pos + 4]
+        size = int.from_bytes(audio[pos + 4:pos + 8], "little")
+        body = pos + 8
+        if chunk_id == b"fmt " and size >= 16 and body + 16 <= len(audio):
+            channels = int.from_bytes(audio[body + 2:body + 4], "little")
+            rate = int.from_bytes(audio[body + 4:body + 8], "little")
+            bits = int.from_bytes(audio[body + 14:body + 16], "little")
+            return rate, channels, bits
+        pos = body + size + (size & 1)
+    return None
+
+
 def asr_frames(pcm: bytes, frame_bytes: int = FRAME_BYTES) -> list[tuple[int, int, bytes]]:
     """把 PCM 切成讯飞要的帧，返回 [(seq, status, 数据)]。
 
@@ -196,6 +245,25 @@ class IflytekVoice(BaseVoice):
         t0 = time.perf_counter()
         if not audio:
             raise ValueError("音频内容为空")
+
+        fmt = audio_format.lower().lstrip(".") if audio_format != "auto" else container_of(audio)
+        if fmt not in ("wav", "pcm"):
+            raise ValueError(
+                f"方言识别只接受 16kHz 单声道 WAV 或裸 PCM，收到的是 {fmt}。"
+                "网页上「上传本地音频」会在浏览器里自动转成 WAV，无需处理；"
+                f"若是直接调接口，请先转码：ffmpeg -i in.{fmt} -ar 16000 -ac 1 out.wav"
+            )
+
+        params_wav = wav_params(audio)
+        if params_wav:
+            rate, channels, bits = params_wav
+            if rate != 16000 or channels != 1 or bits != 16:
+                raise ValueError(
+                    f"WAV 参数为 {rate}Hz / {channels} 声道 / {bits} 位，"
+                    "方言识别要求 16000Hz / 1 声道 / 16 位。"
+                    "网页上「上传本地音频」会自动转换；"
+                    "直接调接口请先转码：ffmpeg -i in.wav -ar 16000 -ac 1 out.wav"
+                )
 
         pcm = pcm_from_wav(audio)
         if not pcm:
@@ -399,5 +467,7 @@ class IflytekVoice(BaseVoice):
             "tts_endpoint": TTS_URL,
             "asr_accent": "mulacc（一个模型覆盖 202 种方言，无需按方言切换）",
             "supported_formats": ["wav", "pcm"],
+            "ui_formats": ["wav", "mp3", "m4a", "aac", "ogg", "opus", "flac", "webm", "aiff"],
+            "ui_note": "网页端在浏览器内把所选音频转成 16kHz 单声道 WAV 再提交，接口本身仍只收 WAV/PCM",
             "timeout_seconds": self.timeout,
         }

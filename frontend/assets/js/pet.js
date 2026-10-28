@@ -15,6 +15,7 @@
   const MODE_KEY = "agri.pet.mode";
   const HISTORY_KEY = "agri.pet.history";
   const MUTE_KEY = "agri.pet.mute";
+  const HINT_KEY = "agri.pet.hint";
   const MAX_HISTORY = 20;
 
   const PAGE = (() => {
@@ -51,10 +52,16 @@
   let switchBtn = null;
   let muteBtn = null;
   let chipsEl = null;
+  let voiceTipEl = null;
+  let stopTick = null;
 
   let mode = sessionStorage.getItem(MODE_KEY) || "";
   let history = loadHistory();
   let muted = localStorage.getItem(MUTE_KEY) === "1";
+  // 气泡引导只在同一个标签页里出现一次：换功能页时不该再打招呼一次。
+  let hintShown = (() => {
+    try { return sessionStorage.getItem(HINT_KEY) === "1"; } catch (_) { return false; }
+  })();
   let busy = false;
   let greeted = false;
 
@@ -94,35 +101,86 @@
 
   // ---------------------------------------------------------------- 构建
 
+  /* 中华田园犬：立耳、黄褐毛、白吻白胸、黑鼻。头部与身体分组名保持不变，
+     pet.css 里的呼吸、摇尾、眨眼、口型与歪头动画全部沿用。 */
   const DOG_SVG = `
 <svg viewBox="0 0 120 120" aria-hidden="true">
+  <defs>
+    <linearGradient id="pet-dog-fur" x1="0" y1="0" x2="0.25" y2="1">
+      <stop offset="0" stop-color="#DDA664"/>
+      <stop offset="1" stop-color="#B87B3E"/>
+    </linearGradient>
+    <linearGradient id="pet-dog-head" x1="0.15" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#E2AE6D"/>
+      <stop offset="1" stop-color="#C0864A"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="60" cy="112.5" rx="30" ry="3.4" fill="#2B2118" opacity="0.13"/>
+
   <g class="dog__tail">
-    <path d="M84 94 q20 -4 16 -26 q-2 -11 -11 -9" fill="none" stroke="#B4763C"
-          stroke-width="10" stroke-linecap="round"/>
+    <path d="M83 97 C99 100 109 89 105 76 C103 68 97 65 92.5 68.5"
+          fill="none" stroke="#B4763C" stroke-width="10.5" stroke-linecap="round"/>
+    <path d="M84 95.5 C96 97.5 104 89 102.5 79"
+          fill="none" stroke="#D29A5B" stroke-width="3.6" stroke-linecap="round" opacity="0.5"/>
+    <ellipse cx="93" cy="68" rx="5.2" ry="4.6" fill="#F5EAD7" transform="rotate(-24 93 68)"/>
   </g>
+
   <g class="dog__body">
-    <ellipse cx="60" cy="94" rx="26" ry="20" fill="#C98A4B"/>
-    <ellipse cx="60" cy="100" rx="15" ry="13" fill="#F3E4CB"/>
-    <ellipse cx="45" cy="112" rx="8" ry="5" fill="#B4763C"/>
-    <ellipse cx="75" cy="112" rx="8" ry="5" fill="#B4763C"/>
+    <ellipse cx="36" cy="97" rx="15" ry="14" fill="#B4793E"/>
+    <ellipse cx="84" cy="97" rx="15" ry="14" fill="#B4793E"/>
+    <path d="M60 59 C40 59 32.5 77 34.5 93 C36.5 104 47 108.5 60 108.5
+             C73 108.5 83.5 104 85.5 93 C87.5 77 80 59 60 59 Z"
+          fill="url(#pet-dog-fur)"/>
+    <path d="M60 63 C49.5 68.5 46.5 86 52.5 98.5 C54.5 103.5 57.6 104.6 60 104.6
+             C62.4 104.6 65.5 103.5 67.5 98.5 C73.5 86 70.5 68.5 60 63 Z"
+          fill="#F8F0E1"/>
+    <ellipse cx="47" cy="108" rx="9.5" ry="5.4" fill="#F1E3CB"/>
+    <ellipse cx="73" cy="108" rx="9.5" ry="5.4" fill="#F1E3CB"/>
+    <path d="M47 105.4 v4.8 M52.4 105.8 v4" fill="none" stroke="#CBB795"
+          stroke-width="1" stroke-linecap="round" opacity="0.65"/>
+    <path d="M73 105.4 v4.8 M78.4 105.8 v4" fill="none" stroke="#CBB795"
+          stroke-width="1" stroke-linecap="round" opacity="0.65"/>
   </g>
+
   <g class="dog__head">
     <g class="dog__ears">
-      <path d="M41 34 q-10 -13 1 -18 q9 -3 12 11 z" fill="#A96A32"/>
-      <path d="M79 34 q10 -13 -1 -18 q-9 -3 -12 11 z" fill="#A96A32"/>
+      <path d="M53 31 C47 20 39 11 36 10 C33 9 32.6 14 33.8 19 C35.4 27 38 35 41 41 Z" fill="#9A5F30"/>
+      <path d="M49.6 30.5 C45.4 22.4 40.4 15.8 38.4 14.3 C37.2 13.7 37.2 16.3 38 19.8
+               C39.3 25.7 41.2 31.2 43.2 35.6 Z" fill="#E3B385"/>
+      <path d="M67 31 C73 20 81 11 84 10 C87 9 87.4 14 86.2 19 C84.6 27 82 35 79 41 Z" fill="#9A5F30"/>
+      <path d="M70.4 30.5 C74.6 22.4 79.6 15.8 81.6 14.3 C82.8 13.7 82.8 16.3 82 19.8
+               C80.7 25.7 78.8 31.2 76.8 35.6 Z" fill="#E3B385"/>
     </g>
-    <circle cx="60" cy="46" r="23" fill="#C98A4B"/>
-    <path d="M60 23 q-11 0 -15 11 q8 -5 15 -5 q7 0 15 5 q-4 -11 -15 -11z" fill="#B4763C"/>
-    <ellipse cx="60" cy="58" rx="13" ry="10" fill="#F3E4CB"/>
-    <ellipse cx="60" cy="53" rx="5" ry="4" fill="#2B2118"/>
+
+    <ellipse cx="60" cy="48" rx="24" ry="23" fill="url(#pet-dog-head)"/>
+    <path d="M38 49 C33.8 55 35 61.5 40 63.6 C42 58.4 41.2 52.8 38 49 Z" fill="#D29A5B" opacity="0.75"/>
+    <path d="M82 49 C86.2 55 85 61.5 80 63.6 C78 58.4 78.8 52.8 82 49 Z" fill="#D29A5B" opacity="0.75"/>
+
+    <path d="M60 41 C54.2 46.5 52.4 53.5 53.4 59.8 C55.2 64.9 64.8 64.9 66.6 59.8
+             C67.6 53.5 65.8 46.5 60 41 Z" fill="#F8F0E1" opacity="0.92"/>
+    <ellipse cx="60" cy="60" rx="14.4" ry="10.8" fill="#F8F0E1"/>
+
+    <circle cx="48" cy="37.2" r="1.5" fill="#F2DDBB" opacity="0.7"/>
+    <circle cx="72" cy="37.2" r="1.5" fill="#F2DDBB" opacity="0.7"/>
+
     <g class="dog__eyes">
-      <circle cx="51" cy="42" r="3.4" fill="#2B2118"/>
-      <circle cx="69" cy="42" r="3.4" fill="#2B2118"/>
-      <circle cx="52" cy="40.8" r="1.1" fill="#ffffff"/>
-      <circle cx="70" cy="40.8" r="1.1" fill="#ffffff"/>
+      <path d="M44.4 45.6 C46.8 41.6 51.8 41.4 54.6 45.2 C51.8 47.5 47.2 47.8 44.4 45.6 Z" fill="#3A2A1D"/>
+      <path d="M65.4 45.2 C68.2 41.4 73.2 41.6 75.6 45.6 C72.8 47.8 68.2 47.5 65.4 45.2 Z" fill="#3A2A1D"/>
+      <circle cx="47.8" cy="44.1" r="1.2" fill="#FFFFFF"/>
+      <circle cx="68.8" cy="44.1" r="1.2" fill="#FFFFFF"/>
     </g>
-    <path class="dog__mouth" d="M60 57 v4 M60 61 q-5 5 -9 2 M60 61 q5 5 9 2"
-          fill="none" stroke="#2B2118" stroke-width="1.7" stroke-linecap="round"/>
+
+    <path d="M54.6 55.2 C54.6 52.4 56.9 51 60 51 C63.1 51 65.4 52.4 65.4 55.2
+             C65.4 58 62.9 59.8 60 59.8 C57.1 59.8 54.6 58 54.6 55.2 Z" fill="#2B2118"/>
+    <ellipse cx="57.8" cy="53.8" rx="1.5" ry="1" fill="#8A7A6A" opacity="0.55"/>
+
+    <g class="dog__mouth">
+      <ellipse cx="60" cy="65.4" rx="3.2" ry="2.2" fill="#E8837F"/>
+      <path d="M60 59.8 v3.2 M60 63 C57.2 65.8 53.6 65.8 51.6 63.6
+               M60 63 C62.8 65.8 66.4 65.8 68.4 63.6"
+            fill="none" stroke="#4A3425" stroke-width="1.6" stroke-linecap="round"/>
+    </g>
   </g>
 </svg>`;
 
@@ -193,6 +251,7 @@
     switchBtn = root.querySelector("[data-pet-switch]");
     muteBtn = root.querySelector("[data-pet-mute]");
     chipsEl = root.querySelector("[data-pet-chips]");
+    voiceTipEl = root.querySelector("[data-pet-voice-tip]");
 
     avatar.addEventListener("click", onAvatar);
     bubble.addEventListener("click", openPanel);
@@ -218,10 +277,20 @@
     });
 
     applyMuted();
-    if (mode) {
-      openPanel();
-    } else {
+    /* 换到另一个功能页时只保留右下角的小禾，面板不自动展开。
+       早先这里写的是 mode ? openPanel() : bubble.hidden = false —— 而 mode 存在
+       sessionStorage 里、跨页面保留，结果用户在诊断页聊过一句，之后每点一次导航，
+       小禾的整块面板都会跟着弹出来挡住正文。面板改为只在用户点头像/气泡时打开；
+       气泡引导在同一个标签页里只出现一次（首次进入），之后切页不再重复打招呼。 */
+    panel.hidden = true;
+    root.dataset.open = "false";
+    avatar.setAttribute("aria-expanded", "false");
+    if (!hintShown) {
       bubble.hidden = false;
+      hintShown = true;
+      try { sessionStorage.setItem(HINT_KEY, "1"); } catch (_) { /* 忽略 */ }
+    } else {
+      bubble.hidden = true;
     }
   }
 
@@ -254,6 +323,7 @@
   }
 
   function minimize() {
+    if (recording) cancelRecording();
     panel.hidden = true;
     root.dataset.open = "false";
     avatar.setAttribute("aria-expanded", "false");
@@ -263,6 +333,7 @@
   }
 
   function chooseMode(next) {
+    if (recording) cancelRecording();
     mode = next === "voice" ? "voice" : "typing";
     try { sessionStorage.setItem(MODE_KEY, mode); } catch (_) { /* 忽略 */ }
     chooserEl.hidden = true;
@@ -401,15 +472,44 @@
   // ---------------------------------------------------------------- 语音
 
   let recording = false;
+  const VOICE_TIP = "点一下开始说话，再点一下结束";
+
+  function setVoiceTip(text) {
+    if (voiceTipEl) voiceTipEl.textContent = text;
+  }
+
+  function releaseTick() {
+    if (typeof stopTick === "function") stopTick();
+    stopTick = null;
+  }
+
+  /* 收起面板或切回打字时调用：同步停掉采集并丢弃这段音频，
+     否则浏览器的录音指示灯会一直亮着。 */
+  function cancelRecording() {
+    if (!recording) return;
+    recording = false;
+    releaseTick();
+    micBtn.dataset.recording = "false";
+    setVoiceTip(VOICE_TIP);
+    try { if (typeof Recorder !== "undefined") Recorder.cancel(); } catch (_) { /* 忽略 */ }
+    setState("idle");
+    statusEl.textContent = mode === "voice" ? "中华田园犬 · 语音中" : "中华田园犬 · 打字中";
+  }
 
   async function toggleRecord() {
     if (recording) { await stopRecord(); return; }
-    if (typeof Recorder === "undefined" || !Recorder.isSupported()) {
-      toast("浏览器不支持录音，请改用打字");
+    /* 顺序有讲究：先判断「页面到底有没有加载录音模块」，再判断浏览器能力。
+       否则首页、政策页漏引 recorder.js 时，会把「页面缺模块」误报成「浏览器不支持」。 */
+    if (typeof Recorder === "undefined") {
+      toast("当前页面没有加载录音模块，请刷新页面或改用打字");
       return;
     }
     if (!Recorder.isSecureContext()) {
       toast("录音需要 https 或 localhost 环境");
+      return;
+    }
+    if (!Recorder.isSupported()) {
+      toast("浏览器不支持录音，请改用打字");
       return;
     }
     if (Recorder.isRecording()) {
@@ -422,7 +522,14 @@
       micBtn.dataset.recording = "true";
       setState("listening");
       statusEl.textContent = "中华田园犬 · 正在听";
+      setVoiceTip("00:00 · 再点一下结束");
+      stopTick = Recorder.on("tick", (ms) => {
+        const label = Recorder.formatDuration(ms);
+        setVoiceTip(label + " · 再点一下结束");
+        statusEl.textContent = "中华田园犬 · 正在听 " + label;
+      });
     } catch (e) {
+      setVoiceTip(VOICE_TIP);
       toast((e && e.message) || "麦克风打开失败");
     }
   }
@@ -430,7 +537,9 @@
   async function stopRecord() {
     if (!recording) return;
     recording = false;
+    releaseTick();
     micBtn.dataset.recording = "false";
+    setVoiceTip(VOICE_TIP);
     setState("thinking");
     statusEl.textContent = "中华田园犬 · 识别中";
 

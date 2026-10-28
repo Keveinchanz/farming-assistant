@@ -14,6 +14,7 @@ from backend.app.schemas.models import (
     DiagnoseMultimodalData,
 )
 from src.common.logging_utils import setup_logger
+from src.llm.prompts import QA_SYSTEM_PROMPT
 
 logger = setup_logger("agri.api.diagnose")
 
@@ -73,14 +74,14 @@ async def diagnose_image(file: UploadFile = File(..., description="作物叶片�
     description=(
         "整合「图片识别结果 + 语音转写内容 + 文字描述」，调用大模型生成完整诊断方案。\n\n"
         "三个输入至少要提供一个（可为空则忽略该路）。\n\n"
-        "- 语音请上传 16kHz 单声道 WAV/PCM（浏览器录音请用前端页面自带的录音功能，"
-        "它会直接产出合规的 WAV；讯飞侧后端会自行剥掉 WAV 头，无需前端转码）\n"
-        "- 未配置讯飞/百度/DeepSeek Key 时会自动降级为 Mock，响应里的 `degraded` 字段会如实标注"
+        "- 语音接口接收 16kHz 单声道 WAV/PCM；网页的「上传本地音频」已在浏览器内"
+        "把 mp3 / m4a / ogg / flac / webm 等转成合规 WAV，直接调接口则需自行转码\n"
+        "- 未配置语音服务或 DeepSeek 的 Key 时会自动降级为 Mock，响应里的 `degraded` 字段会如实标注"
     ),
 )
 async def diagnose_multimodal(
     image: UploadFile | None = File(None, description="作物照片（可选）"),
-    audio: UploadFile | None = File(None, description="语音描述（可选，16kHz WAV/PCM/AMR）"),
+    audio: UploadFile | None = File(None, description="语音描述（可选，16kHz 单声道 WAV/PCM；网页上传会自动转码）"),
     text: str = Form("", description="文字症状描述（可选）"),
     dialect: str = Form("", description="方言 key，留空用默认（见 /api/dialect/list）"),
 ):
@@ -140,7 +141,10 @@ async def ask(req: AskRequest):
 
     llm = deps.get_llm()
     try:
-        answer = llm.answer(question, context=(req.context or "").strip())
+        # 用问答专用系统提示：诊断那套要求「必须输出严格 JSON」，
+        # 拿它做追问会让模型把答案包成 JSON，前端按纯文本渲染就是一坨花括号
+        answer = llm.answer(question, context=(req.context or "").strip(),
+                            system=QA_SYSTEM_PROMPT)
     except Exception as e:  # noqa: BLE001
         logger.exception("问答失败")
         raise ApiError(f"问答失败：{e}", CODE_UPSTREAM_ERROR, http_status=502) from e

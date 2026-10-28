@@ -41,8 +41,14 @@ class BaseLLM(ABC):
         """
 
     @abstractmethod
-    def answer(self, question: str, *, context: str = "") -> str:
-        """问答交互（任务 3.3 的"问答交互"能力）。"""
+    def answer(self, question: str, *, context: str = "",
+               system: str | None = None) -> str:
+        """问答交互（任务 3.3 的"问答交互"能力）。
+
+        `system` 为空时沿用诊断那套「必须输出严格 JSON」的系统提示
+        —— 叙述层与语音解析靠它拿到可解析的 JSON。追问这类结果要直接
+        显示给农户的场景，传 `prompts.QA_SYSTEM_PROMPT`，返回值即为正文。
+        """
 
     # ---- 以下两个是给「AI 助手」用的可选能力，不是抽象方法 ----
     # 不做成 abstractmethod 的原因：Mock 与未来的 provider 不必为了通过类型检查

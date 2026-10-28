@@ -15,7 +15,7 @@ import base64
 import binascii
 import sqlite3
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Response
 
 from backend.app.core.auth_deps import check_origin, current_user_id, db_conn
 from backend.app.core.errors import CODE_BAD_REQUEST, CODE_NOT_FOUND, ApiError
@@ -26,12 +26,17 @@ from backend.app.schemas.farm import (
     CreateLogRequest,
     FieldData,
     FieldsData,
+    FollowupDoneRequest,
+    FollowupsData,
     GrowthData,
     HarvestMarkRequest,
+    LedgerData,
     LogData,
     LogsData,
     ModelData,
+    PesticidesData,
     SnoozeRequest,
+    SprayLockData,
     TodayData,
     UpdateFieldRequest,
     VoiceParseData,
@@ -45,15 +50,18 @@ from src.farm import (
     gdd,
     growth,
     harvest_model,
+    ledger as ledger_mod,
     management,
     narrator,
+    pesticides as pesticide_mod,
     repo,
+    spray as spray_mod,
     stages,
     users,
     voice_parse,
 )
 from src.farm.repo import NotFound
-from src.farm.timeutil import days_between, today_str
+from src.farm.timeutil import days_between, is_date, today_str
 
 logger = setup_logger("agri.api.farm")
 
@@ -174,6 +182,7 @@ async def create_log(
         log = repo.create_log(
             conn, user_id, field_id=body.field_id, type=body.type, date=date,
             item=body.item, amount=body.amount, note=body.note, source=body.source,
+            reg_no=body.reg_no, interval_days=body.interval_days,
         )
     except NotFound as e:
         raise ApiError(str(e), CODE_NOT_FOUND, http_status=404) from e
@@ -213,14 +222,26 @@ async def today(
     logs = repo.list_logs(conn, user_id, field_id=field["id"], limit=50)
     talk = narrator.narrative(field, g, weather, h, rem["reminders"], logs)
 
+    # 安全间隔期：单独查一次全量（不截断的）记录来判 —— 上面那 50 条是给历史卡片看的，
+    # 一块田真要打了几十次药，用截断的列表算「最晚解禁」会算错。
+    spray_state = spray_mod.constraint(
+        repo.list_logs(conn, user_id, field_id=field["id"], limit=500), today_str())
+
     # 记一条当日生长快照：仓库里那张表就是为这个存在的，
     # 「同一天重复请求」由主键幂等兜住，不会堆出多行。
-    repo.upsert_snapshot(
-        conn, user_id, field_id=field["id"], date=today_str(),
-        gdd=g["gdd_cum"], stage=g["stage"], height=m["height"],
-        leaf_count=m["leafCount"], color_idx=None,
-        source="gdd",
-    )
+    #
+    # 写失败不连坐整个面板：这是一个 GET 请求里唯一的写，快照只是给趋势图用的
+    # telemetry —— 为它把天气、生长、提醒一起 500 掉，用户看到的是「我的农田打不开」。
+    # 真出问题（比如库被别的进程锁住）会在日志里留下痕迹，也能被下面这条 warning 发现。
+    try:
+        repo.upsert_snapshot(
+            conn, user_id, field_id=field["id"], date=today_str(),
+            gdd=g["gdd_cum"], stage=g["stage"], height=m["height"],
+            leaf_count=m["leafCount"], color_idx=None,
+            source="gdd",
+        )
+    except sqlite3.OperationalError as e:
+        logger.warning("当日生长快照写入失败（不影响本次返回）：%s", e)
 
     return {
         "code": 0, "msg": "ok",
@@ -233,6 +254,8 @@ async def today(
             # 收割窗口挂在收获建议上一起给前端（7.4.3 的产物就是这个字符串）
             "reminders": rem["reminders"],
             "reminders_notes": rem["notes"],
+            # null = 这块田没有任何一条记了间隔期的施药（不知道），不是「没有约束」
+            "spray": spray_state,
             "logs": logs,
             "narrative": talk["text"],
             "narrative_why": talk["why"],
@@ -347,12 +370,17 @@ async def attach_diagnosis(
             raise _bad(f"图片过大（>{DIAGNOSIS_MAX_BYTES // 1024 // 1024} MB）")
 
     # 先建记录拿到 id，再按 7.1 约定的路径落盘：{user_id}/{field_id}/{date}_{id}.jpg
-    record = repo.create_diagnosis(
-        conn, user_id, field_id=field["id"], date=date,
-        label=body.label, confidence=body.confidence,
-        pest_json=body.pest,      # 虫害模型不可用时这里是 None → 存 NULL，不编（7.9）
-        report_json=body.report,
-    )
+    try:
+        record = repo.create_diagnosis(
+            conn, user_id, field_id=field["id"], date=date,
+            label=body.label, confidence=body.confidence,
+            pest_json=body.pest,      # 虫害模型不可用时这里是 None → 存 NULL，不编（7.9）
+            report_json=body.report,
+            subject=body.subject,
+            recheck_date=body.recheck_date,
+        )
+    except ValueError as e:
+        raise _bad(str(e))
 
     if image_bytes:
         folder = path_of("farm_images") / str(user_id) / field["id"]
@@ -373,14 +401,63 @@ async def attach_diagnosis(
         source="diagnose",
     )
 
-    logger.info("诊断入档：user=%s field=%s label=%s", user_id, field["id"], body.label)
+    logger.info("诊断入档：user=%s field=%s label=%s 回访=%s",
+                user_id, field["id"], body.label, body.recheck_date or "未排")
     return {
         "code": 0, "msg": "ok",
         "data": {
             "diagnosis_id": record["id"], "field_id": field["id"], "date": date,
             "label": body.label, "image_path": saved_path, "log_id": log.get("id", ""),
+            "subject": record.get("subject", ""),
+            "recheck_date": record.get("recheck_date", ""),
         },
     }
+
+
+# ---------------------------------------------------------------- 回访队列
+
+@router.get("/followups", response_model=ApiResponse[FollowupsData],
+            summary="回访队列：哪些诊断该回去看一眼了",
+            description=(
+                "按 `recheck_date` 取未回访的诊断，分「已过期 / 今天 / 未来 7 天」三组。\n\n"
+                "农技员的考核里有一条是「回访率」，所以这条队列是**待办**而不是**历史**：\n"
+                "过期那组单独给出，且拖得最久的排最前 —— 混在一起排，最该补的那几条会被淹掉。"
+            ))
+async def followups(
+    date: str = Query("", description="以哪一天为「今天」，留空用服务器当天（便于演示与测试）"),
+    upcoming_days: int = Query(7, ge=1, le=60),
+    conn=Depends(db_conn), user_id: int = Depends(current_user_id),
+):
+    day = date or today_str()
+    if not is_date(day):
+        raise _bad(f"date 不是合法日期（应为 YYYY-MM-DD）：{day!r}")
+
+    groups = repo.list_followups(conn, user_id, today=day, upcoming_days=upcoming_days)
+    return {
+        "code": 0, "msg": "ok",
+        "data": {
+            "date": day,
+            "overdue": groups["overdue"],
+            "today": groups["today"],
+            "upcoming": groups["upcoming"],
+            "due_count": len(groups["overdue"]) + len(groups["today"]),
+        },
+    }
+
+
+@router.post("/followups/done", response_model=ApiResponse[dict],
+             summary="标记某条诊断「已回访」",
+             description="幂等：重复调用不报错、不改语义（列表是异步刷新的，连点两下很常见）。")
+async def followup_done(
+    body: FollowupDoneRequest, request: Request,
+    conn=Depends(db_conn), user_id: int = Depends(current_user_id),
+):
+    check_origin(request)
+    try:
+        result = repo.mark_followup_done(conn, user_id, body.diagnosis_id)
+    except NotFound as e:
+        raise ApiError(str(e), CODE_NOT_FOUND, http_status=404) from e
+    return {"code": 0, "msg": "ok", "data": result}
 
 
 # ---------------------------------------------------------------- 语音录入（7.8）
@@ -415,3 +492,115 @@ async def voice_reparse(
     if not result["ok"]:
         result = voice_parse.parse_with_llm(body.text, result, fields)
     return {"code": 0, "msg": "ok", "data": result}
+
+
+# ---------------------------------------------------------------- 用药台账（A + B）
+#
+# 三条接口对应一件事的三个面：查药（记打药时选药剂）、看台账（方案 B 的那一页）、
+# 把台账交出去（导给合作社/农资店对账）。判定核心在 src/farm/spray.py，
+# 聚合在 src/farm/ledger.py —— 这里只做参数校验和权限收口。
+
+@router.get("/pesticides", response_model=ApiResponse[PesticidesData],
+            summary="查农药登记（药剂下拉 / 按病害找药）",
+            description="数据来自项目内置的农业农村部《农药登记信息》索引，离线可查。"
+                        "**q 与 target 都不给时返回空列表**：三千多条一次塞进下拉等于没筛选。"
+                        "接口不返回安全间隔期 —— 公开登记数据里没有这一项，它只印在瓶身标签上。")
+async def list_pesticides(
+    q: str = Query("", description="药名 / 有效成分 / 登记证号关键词"),
+    target: str = Query("", description="防治对象，如「稻瘟病」「大斑病」"),
+    crop: str = Query("", description="登记作物，如「水稻」；传了才按作物过滤"),
+    limit: int = Query(20, ge=1, le=100),
+    user_id: int = Depends(current_user_id),
+):
+    items = pesticide_mod.search(q=q, target=target, crop=crop, limit=limit)
+    meta = pesticide_mod.stats()
+    return {
+        "code": 0, "msg": "ok",
+        "data": {
+            "items": items,
+            "count": len(items),
+            "total": meta.get("total", 0),
+            "notice": meta.get("notice", "") or
+                      "药剂信息摘自农业农村部农药管理司《农药登记信息》；"
+                      "安全间隔期以农药标签为准，由施药人填写。",
+        },
+    }
+
+
+@router.get("/ledger", response_model=ApiResponse[LedgerData],
+            summary="用药台账（按地块 / 按药剂 / 用药史）",
+            description="区间默认「本季」= 从最早一块田的播种日算起（最多回看 365 天）。"
+                        "「是否还在间隔期」始终按全部记录判定，不受区间影响 —— "
+                        "否则把区间调成「本月」，一块还在间隔期的田会突然显示可采收。")
+async def get_ledger(
+    field_id: str = Query("", description="只看某块田，留空为全部"),
+    period: str = Query("season", pattern="^(season|recent|all)$",
+                        description="season 本季 | recent 近 90 天 | all 全部"),
+    date_from: str = Query("", description="自定义起始日（给了就以它为准）"),
+    date_to: str = Query("", description="自定义结束日"),
+    conn=Depends(db_conn), user_id: int = Depends(current_user_id),
+):
+    if field_id:
+        _field_or_404(conn, user_id, field_id)
+    try:
+        data = ledger_mod.build(conn, user_id, field_id=field_id, period=period,
+                                date_from=date_from, date_to=date_to)
+    except NotFound as e:
+        raise ApiError(str(e), CODE_NOT_FOUND, http_status=404) from e
+    return {"code": 0, "msg": "ok", "data": data}
+
+
+@router.get("/ledger/export", summary="导出台账（xlsx 明细 / pdf 一页纸）",
+            description="Excel 给对账（可排序、可求和）；PDF 给签字存档（一页装下）。"
+                        "两者都与页面同口径：没记录间隔期的行写「未记录间隔期」，不写「可采收」。")
+async def export_ledger(
+    fmt: str = Query("xlsx", pattern="^(xlsx|pdf)$"),
+    field_id: str = Query(""),
+    period: str = Query("season", pattern="^(season|recent|all)$"),
+    date_from: str = Query(""),
+    date_to: str = Query(""),
+    conn=Depends(db_conn), user_id: int = Depends(current_user_id),
+):
+    from src.export import ledger_sheet
+
+    if field_id:
+        _field_or_404(conn, user_id, field_id)
+    try:
+        data = ledger_mod.build(conn, user_id, field_id=field_id, period=period,
+                                date_from=date_from, date_to=date_to)
+    except NotFound as e:
+        raise ApiError(str(e), CODE_NOT_FOUND, http_status=404) from e
+
+    try:
+        if fmt == "xlsx":
+            blob = ledger_sheet.build_xlsx(data)
+            media = ("application/vnd.openxmlformats-officedocument"
+                     ".spreadsheetml.sheet")
+        else:
+            blob = ledger_sheet.build_pdf(data)
+            media = "application/pdf"
+    except ImportError as e:      # xlsxwriter / reportlab 没装
+        raise ApiError(f"导出组件未安装：{e}", CODE_BAD_REQUEST, http_status=503) from e
+
+    # 文件名保持 ASCII：Content-Disposition 里塞中文要写 filename*，多一层编码，
+    # 而前端本来就是用 blob + a.download 自己命名，这里只是直连下载时的兜底。
+    stamp = str(data.get("today", "")).replace("-", "") or "export"
+    return Response(
+        content=blob, media_type=media,
+        headers={
+            "Content-Disposition": f'attachment; filename="ledger-{stamp}.{fmt}"',
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+@router.get("/spray/{field_id}", response_model=ApiResponse[SprayLockData],
+            summary="这块田当前的安全间隔期状态",
+            description="给问诊单的「本地产收提醒」用。返回 null 表示这块田没有任何一条"
+                        "记了间隔期的施药 —— 是「不知道」，不是「没有约束」。")
+async def get_spray(field_id: str, conn=Depends(db_conn),
+                    user_id: int = Depends(current_user_id)):
+    _field_or_404(conn, user_id, field_id)
+    logs = repo.list_logs(conn, user_id, field_id=field_id, limit=500)
+    state = spray_mod.constraint(logs, today_str())
+    return {"code": 0, "msg": "ok", "data": state}

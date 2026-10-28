@@ -89,6 +89,7 @@
       `<span class="policy-row__unit-label">发布单位</span>` +
       `<span class="policy-row__unit">${UI.escapeHtml(p.publish_unit)}</span>` +
       `<span class="policy-row__date">发布日期：${UI.escapeHtml(p.publish_date_iso || p.publish_date)}</span>` +
+      `<span class="source-note source-note--inline">来源：${UI.escapeHtml(p.publish_unit)}《${UI.escapeHtml(p.title)}》</span>` +
       `</aside>` +
       `</article>`
     );

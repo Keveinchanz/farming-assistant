@@ -85,11 +85,27 @@ def ensure_history(
     return _cached_status(conn, uid, fid, sow, today, reason="")
 
 
-def _cached_status(
-    conn: sqlite3.Connection, uid: int, fid: str, sow: str, today: str, *, reason: str
+def status_from_rows(
+    rows: list[dict], sow: str, today: str, *,
+    reason: str = "", source: str = "cache",
 ) -> dict:
-    """把库里的缓存整理成状态说明。**这里是「降级不编造」落地的唯一位置。**"""
-    rows = repo.list_daily_temp(conn, uid, fid, start=sow, end=today)
+    """由逐日气温行构造状态说明；纯函数，不碰数据库。
+
+    `ensure_history()` 原来把这段逻辑写在 `_cached_status()` 里，技能层需要
+    在不登录、不建库的前提下复用，所以抽出来。过滤 `[sow, today]`、按日期去重、
+    缺 `tmean` 时用 `(tmax + tmin) / 2` 补齐 —— 与线上缓存整理出的结构完全一致。
+    """
+    by_date: dict[str, dict] = {}
+    for row in rows or []:
+        day = str(row.get("date") or "")
+        if not day or day < sow or day > today:
+            continue
+        item = dict(row)
+        if item.get("tmean") is None and item.get("tmax") is not None and item.get("tmin") is not None:
+            item["tmean"] = (float(item["tmax"]) + float(item["tmin"])) / 2
+        by_date[day] = item
+
+    rows = [by_date[d] for d in sorted(by_date)]
     as_of = rows[-1]["date"] if rows else ""
 
     if not rows:
@@ -100,6 +116,7 @@ def _cached_status(
             "source_note": "暂无气温数据，无法计算积温",
             "as_of": "",
             "confidence": "低",
+            "source": source,
         }
 
     expected_days = days_between(sow, today) + 1
@@ -116,12 +133,22 @@ def _cached_status(
             "rows": rows, "degraded": True,
             "degraded_reason": reason or "部分日期的气温缺失",
             "source_note": note, "as_of": as_of, "confidence": conf,
+            "source": source,
         }
 
     return {
         "rows": rows, "degraded": False, "degraded_reason": "",
         "source_note": f"气温数据截至 {as_of}", "as_of": as_of, "confidence": "高",
+        "source": source,
     }
+
+
+def _cached_status(
+    conn: sqlite3.Connection, uid: int, fid: str, sow: str, today: str, *, reason: str
+) -> dict:
+    """把库里的缓存整理成状态说明。**这里是「降级不编造」落地的唯一位置。**"""
+    rows = repo.list_daily_temp(conn, uid, fid, start=sow, end=today)
+    return status_from_rows(rows, sow, today, reason=reason, source="cache")
 
 
 # ---------------------------------------------------------------- 生长状态

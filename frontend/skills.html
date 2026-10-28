@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>技能接口 · 田头农技台</title>
+<meta name="description" content="两个模型技能的介绍与调用教程：病虫害检测与多模态诊断、农田生长与收获预测。支持 HTTP 与命令行调用。">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/layout.css">
+<link rel="stylesheet" href="/assets/css/pages.css">
+</head>
+<body>
+
+<a class="visually-hidden" data-skip-link href="#main">跳到主要内容</a>
+
+<header class="site-header">
+  <div class="site-header__inner" data-layout-header></div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <div class="page-head__title">
+      <h1 class="mb-0">技能接口</h1>
+    </div>
+    <p class="page-head__desc">
+      平台的两个模型能力按功能封装成独立技能。每个技能都有说明文档、输入输出
+      JSON Schema、HTTP 接口和命令行入口，可以单独接入其他系统。
+    </p>
+  </div>
+
+  <p class="notice" data-skills-offline hidden>
+    后端未启动，以下为离线教程；页面上的可用性状态暂不可用。
+  </p>
+
+  <section class="card skill-card">
+    <h2 class="skill-card__title">快速开始</h2>
+    <p class="text-sm text-muted">
+      所有调用都在项目根目录执行。先启动服务，再打开接口文档查看最新 schema。
+    </p>
+    <div class="skill-code-wrap">
+      <button type="button" class="skill-copy" data-copy>复制</button>
+      <pre class="skill-code"><code># 1. 启动服务
+python scripts/20_run_backend.py --no-browser
+
+# 2. 查看技能清单
+curl http://127.0.0.1:8000/api/skills
+
+# 3. 接口文档
+#    http://127.0.0.1:8000/docs</code></pre>
+    </div>
+    <p class="text-sm text-muted">
+      命令行同样可以调用：<code>python -m skills list</code>、
+      <code>python -m skills show crop-diagnosis</code>、
+      <code>python -m skills run &lt;技能名&gt; --input payload.json</code>。
+    </p>
+  </section>
+
+  <section class="card skill-card" data-skill="crop-diagnosis">
+    <div class="skill-card__head">
+      <div>
+        <h2 class="skill-card__title">技能一 · 病虫害检测与多模态融合诊断</h2>
+        <p class="skill-card__desc">
+          上传作物照片、方言语音或文字症状，一次返回病害候选、虫害检测框、
+          融合诊断报告与防治方案。
+        </p>
+      </div>
+      <p class="skill-status" data-skill-status>状态读取中</p>
+    </div>
+
+    <div class="skill-meta">
+      <span>接口：<code>POST /api/skills/crop-diagnosis</code></span>
+      <span>版本：<span data-skill-version>1.0.0</span></span>
+    </div>
+
+    <h3 class="skill-subtitle">能做什么</h3>
+    <ul class="skill-list">
+      <li>病害分类：271 类作物病害，返回 Top-K 候选与置信度</li>
+      <li>虫害检测：102 类害虫，返回检测框、类群与置信度</li>
+      <li>语音与文字：方言转写、症状关键词匹配</li>
+      <li>知识库检索与大模型报告：防治方案、用药提醒、知识库引用</li>
+    </ul>
+
+    <h3 class="skill-subtitle">输入</h3>
+    <div class="skill-table-wrap">
+      <table class="skill-input-table">
+        <thead><tr><th>字段</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>image_base64</code> / <code>image_path</code></td><td>图片，二选一。HTTP 只接受 base64，CLI 可用本地路径</td></tr>
+          <tr><td><code>audio_base64</code> / <code>audio_path</code></td><td>音频，二选一，可选</td></tr>
+          <tr><td><code>audio_format</code></td><td><code>auto</code> / <code>wav</code> / <code>pcm</code> / <code>amr</code> / <code>mp3</code></td></tr>
+          <tr><td><code>text</code></td><td>文字症状描述，最长 4000 字</td></tr>
+          <tr><td><code>dialect</code></td><td>方言 key，留空使用默认方言</td></tr>
+          <tr><td><code>topk</code></td><td>病害候选数量，1–10，默认 5</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="text-sm text-muted">
+      图片、语音、文字至少提供一项。只有图片或只有文字都可以正常诊断。
+    </p>
+
+    <h3 class="skill-subtitle">调用示例</h3>
+    <div class="skill-code-wrap">
+      <button type="button" class="skill-copy" data-copy>复制</button>
+      <pre class="skill-code"><code>curl -X POST http://127.0.0.1:8000/api/skills/crop-diagnosis \
+  -H "Content-Type: application/json" \
+  -d '{"text":"水稻叶片有褐色斑点，最近多雨"}'</code></pre>
+    </div>
+    <div class="skill-code-wrap">
+      <button type="button" class="skill-copy" data-copy>复制</button>
+      <pre class="skill-code"><code>python -m skills run crop-diagnosis --input payload.json --pretty</code></pre>
+    </div>
+
+    <h3 class="skill-subtitle">输出</h3>
+    <ul class="skill-list">
+      <li><code>recognition</code>：病害 Top-K；无图时为 <code>null</code></li>
+      <li><code>pest</code>：虫害检测结果；<code>null</code> 表示本次没跑检测，<code>count = 0</code> 表示跑了但没检出</li>
+      <li><code>report</code>：诊断报告，含防治方案、用药提醒与 <code>source_notes</code></li>
+      <li><code>candidates</code> / <code>sources</code>：病害候选与知识库引用</li>
+      <li><code>degraded</code>：<code>llm / rag / voice / pest</code> 各自的降级状态</li>
+    </ul>
+
+    <details class="skill-schema" data-skill-schema hidden>
+      <summary>查看输入 JSON Schema</summary>
+      <pre class="skill-code"><code data-schema-body></code></pre>
+    </details>
+  </section>
+
+  <section class="card skill-card" data-skill="farm-growth">
+    <div class="skill-card__head">
+      <div>
+        <h2 class="skill-card__title">技能二 · 农田生长与收获预测</h2>
+        <p class="skill-card__desc">
+          由田块、播种日期与逐日气温计算积温、生育阶段、收获区间和 3D 植株参数。
+          不登录、不读数据库，可以直接嵌入其他系统。
+        </p>
+      </div>
+      <p class="skill-status" data-skill-status>状态读取中</p>
+    </div>
+
+    <div class="skill-meta">
+      <span>接口：<code>POST /api/skills/farm-growth</code></span>
+      <span>版本：<span data-skill-version>1.0.0</span></span>
+    </div>
+
+    <h3 class="skill-subtitle">能做什么</h3>
+    <ul class="skill-list">
+      <li>有效积温与生育阶段：当前进度、剩余积温、下一阶段</li>
+      <li>3D 植株参数：株高、叶片数、叶色、穗形态，可直接交给 Three.js 渲染</li>
+      <li>收获预测：最早、最可能、最晚日期，样本不足时回退积温法</li>
+      <li>收割建议：推荐收割窗口与注意事项</li>
+    </ul>
+
+    <h3 class="skill-subtitle">输入</h3>
+    <div class="skill-table-wrap">
+      <table class="skill-input-table">
+        <thead><tr><th>字段</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>field</code></td><td>田块：<code>crop</code>、<code>sow_date</code> 必填；经纬度可选</td></tr>
+          <tr><td><code>today</code></td><td>计算基准日，默认今天</td></tr>
+          <tr><td><code>history</code></td><td>逐日气温，元素含 <code>date</code>、<code>tmax</code>、<code>tmin</code></td></tr>
+          <tr><td><code>forecast</code></td><td>未来天气，可选</td></tr>
+          <tr><td><code>management</code></td><td>施肥等管理措施对成熟期的影响</td></tr>
+          <tr><td><code>include</code></td><td><code>growth / model / harvest / advice / weather</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="skill-subtitle">调用示例</h3>
+    <div class="skill-code-wrap">
+      <button type="button" class="skill-copy" data-copy>复制</button>
+      <pre class="skill-code"><code>curl -X POST http://127.0.0.1:8000/api/skills/farm-growth \
+  -H "Content-Type: application/json" \
+  -d '{
+    "field": {"crop":"水稻","sow_date":"2026-05-01","area_mu":1.2,
+              "province":"湖北省","city":"武汉市","lng":114.3,"lat":30.58},
+    "today": "2026-10-22",
+    "history": [{"date":"2026-08-01","tmax":32,"tmin":24},
+                {"date":"2026-08-02","tmax":33,"tmin":25}]
+  }'</code></pre>
+    </div>
+    <div class="skill-code-wrap">
+      <button type="button" class="skill-copy" data-copy>复制</button>
+      <pre class="skill-code"><code>python -m skills run farm-growth --input payload.json --pretty</code></pre>
+    </div>
+
+    <h3 class="skill-subtitle">输出</h3>
+    <ul class="skill-list">
+      <li><code>growth</code>：积温、生育阶段、进度、成熟标记与数据置信度</li>
+      <li><code>model</code>：3D 植株参数，与农田页使用的是同一结构</li>
+      <li><code>harvest</code>：收获日期区间、预测方法与样本数</li>
+      <li><code>harvest_advice</code> / <code>harvest_window</code>：收割建议与推荐窗口</li>
+      <li><code>degraded</code>：天气、历史气温、收获模型的降级状态</li>
+    </ul>
+
+    <h3 class="skill-subtitle">接入 3D 渲染</h3>
+    <p class="text-sm text-muted">
+      把返回的 <code>model</code> 直接交给现有的 Three.js 渲染器即可：
+    </p>
+    <div class="skill-code-wrap">
+      <button type="button" class="skill-copy" data-copy>复制</button>
+      <pre class="skill-code"><code>const view = Farm3D.create(canvas, { areaMu: () => 1 });
+view.setModel(result.model);</code></pre>
+    </div>
+
+    <details class="skill-schema" data-skill-schema hidden>
+      <summary>查看输入 JSON Schema</summary>
+      <pre class="skill-code"><code data-schema-body></code></pre>
+    </details>
+  </section>
+
+  <section class="card skill-card">
+    <h2 class="skill-card__title">通用约定</h2>
+    <ul class="skill-list">
+      <li>两个技能都是公开接口，不需要登录。</li>
+      <li>请求体上限 30 MB，单个图片或音频解码后上限 20 MB。</li>
+      <li>HTTP 不接受本地文件路径，只接受 base64；命令行两种都支持。</li>
+      <li>输入错误返回 400，未知技能返回 404，请求体过大返回 413，模型不可用返回 503。</li>
+      <li>降级不会伪装成成功：<code>degraded</code> 会如实标明哪一路不可用。</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div data-layout-footer></div>
+</footer>
+
+<script src="/assets/js/icons.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/dialect.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script src="/assets/js/skills.js"></script>
+</body>
+</html>

@@ -1149,6 +1149,24 @@
       ro.observe(container);
     }
 
+    // 投影圆点用的暂存向量：projectPoints 会连着算几十个点，每次 new 一个就是白扔几十个对象
+    var pointVec = new THREE.Vector3();
+
+    /** 一批经纬度 → canvas 像素。转到相机背后（z > 1）的点返回 null，调用方据此隐藏。 */
+    function projectOnScreen(pts) {
+      var rect = canvas.getBoundingClientRect();
+      var out = new Array(pts.length);
+      for (var i = 0; i < pts.length; i++) {
+        var q = project(pts[i].lon, pts[i].lat);
+        pointVec.set(q.x, heightOf(elevAt(pts[i].lon, pts[i].lat)), q.z).project(camera);
+        out[i] = pointVec.z > 1
+          ? null
+          : { x: ((pointVec.x + 1) / 2) * rect.width,
+              y: ((1 - pointVec.y) / 2) * rect.height };
+      }
+      return out;
+    }
+
     return {
       canvas: canvas,
 
@@ -1162,6 +1180,19 @@
       },
       setTheme: applyTheme,
       setHover: function (name) { setHover(name, null); },
+
+      /* 经纬度 → canvas 像素。首页「山川地貌」图层要在沙盘上钉圆点，
+         而 anchor() 只认省名，地貌点是任意坐标，所以补一个通用投影。
+
+         为什么批量接口要单独给：单点版每调一次都读一次 canvas 的 rect，而调用方
+         紧接着会写 style.transform —— 读一次布局、写一次样式、再读一次布局，
+         五十多个圆点就是五十多次强制重排，拖动时会明显掉帧。批量版只读一次 rect，
+         调用方也就能「先把坐标全算完、再统一写样式」。 */
+      projectPoint: function (lon, lat) {
+        return projectOnScreen([{ lon: lon, lat: lat }])[0];
+      },
+      projectPoints: projectOnScreen,
+
       anchor: function (name) {
         var found = null;
         built.provs.forEach(function (p) { if (p.name === name) found = p; });

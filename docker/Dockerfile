@@ -38,6 +38,7 @@ RUN pip install -r requirements.txt
 # 拷贝项目代码与运行期需要的产物
 COPY src/ ./src/
 COPY backend/ ./backend/
+COPY skills/ ./skills/
 COPY frontend/ ./frontend/
 COPY configs/ ./configs/
 COPY scripts/ ./scripts/

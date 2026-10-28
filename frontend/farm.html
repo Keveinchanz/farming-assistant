@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>我的农田 · 多方言 AI 农技与农田数字孪生平台</title>
+<title>我的农田 · 田头农技台</title>
 <meta name="description" content="按积温推算作物生育阶段与收获期，3D 展示田块长势，支持方言语音记账与诊断入档。">
 <link rel="stylesheet" href="/assets/css/base.css">
 <link rel="stylesheet" href="/assets/css/layout.css">
@@ -29,7 +29,19 @@
     <span class="farm-toolbar__label" id="my-fields-label">我的田块</span>
     <button type="button" class="btn btn--outline btn--sm" id="btn-new-field">+ 新建田地</button>
     <button type="button" class="btn btn--outline btn--sm" id="farm-scan">扫一下病虫害</button>
+    <!-- 用药台账独立成页（跨田块的汇总视图），但入口留在这里：
+         农技员是从某块田的疑问出发的（"这块地能不能摘"），台账是顺着这个疑问找过去的。
+         放主导航会挤掉一格（7 项就把"技能"挤成一个字），放这里反而更符合来路。 -->
+    <a class="btn btn--outline btn--sm" href="/ledger.html">用药台账</a>
   </div>
+
+  <!-- 回访队列：今天（或更早）该回去看一眼的诊断。
+       放在 8 格**上面**而不是下面 —— 它是「今天必须处理的事」，格子是「去哪儿」。
+       顺序反了的话，队列就退化成页面底部一段没人往下滚的说明。
+       只出现在 8 格这一屏（进了某块田就是在看那块地，不需要再问今天跑哪几家）。
+       没有待办时整块隐藏，不占位置。 -->
+  <section class="card farm-followup" id="followup-card" hidden
+           aria-labelledby="followup-title"></section>
 
   <!-- 8 格：已有的田块各占一格，空的几格显示「新建田地」，点进去先填信息。
        有 3 条示例田的新用户打开就是 3 格实田 + 5 格空位。 -->
@@ -118,6 +130,9 @@
         <div class="farm-field-head" id="field-head">
           <strong>加载中…</strong>
         </div>
+        <!-- 安全间隔期：这块田最近一次记了间隔期的施药还没解禁时，这里出现一条黄条。
+             没有记录时整块不出现（不用"未知"占位去打扰人），与回访队列同一取舍。 -->
+        <div id="spray-lock" hidden></div>
       </section>
       <div id="panel"></div>
     </aside>
@@ -175,6 +190,32 @@
               <input class="input" id="voice-amount" maxlength="20" placeholder="如：20斤">
             </div>
           </div>
+
+          <!-- 打药才需要这几格：药剂从登记库里挑，间隔期照瓶身标签填。
+               不做成"选药剂就自动带出间隔期" —— 登记公告里没有这个数，
+               自动填出来的任何一个数字都会让农户提前采收。 -->
+          <div class="farm-newform__grid" id="voice-spray-box" hidden>
+            <div class="form-field">
+              <label class="form-label" for="voice-pesticide-q">药剂<span class="text-muted">（搜药名或病害）</span></label>
+              <input class="input" id="voice-pesticide-q" maxlength="20" placeholder="如：稻瘟灵">
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="voice-pesticide">选一条登记</label>
+              <select class="select" id="voice-pesticide"></select>
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="voice-interval">安全间隔期（天）</label>
+              <input class="input" id="voice-interval" type="number" min="0" max="365"
+                     inputmode="numeric" placeholder="照标签填">
+              <p class="form-hint">标签写几天填几天。不记得就留空，台账里会写「未记录」。</p>
+            </div>
+            <div class="form-field">
+              <label class="form-label">最早可采收</label>
+              <div class="voice-earliest" id="voice-earliest">—</div>
+              <p class="form-hint">施药日 + 间隔期，自动算。</p>
+            </div>
+          </div>
+
           <div class="voice-ops voice-ops--confirm">
             <button type="button" class="btn btn--primary" id="voice-confirm">确认落库</button>
             <button type="button" class="btn btn--outline" id="voice-cancel">取消</button>

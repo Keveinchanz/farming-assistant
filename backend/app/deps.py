@@ -24,10 +24,10 @@ logger = setup_logger("agri.deps")
 @lru_cache(maxsize=1)
 def get_predictor():
     """图像识别器（优先 ONNX，回退 PyTorch 权重）。"""
-    from src.infer.predictor import get_predictor as _build
+    from src.infer.predictor import get_shared_predictor
 
     try:
-        return _build()
+        return get_shared_predictor()
     except FileNotFoundError as e:
         raise ApiError(
             f"图像识别模型不可用：{e}",
@@ -40,13 +40,19 @@ def get_predictor():
 def get_fusion():
     """多模态诊断编排器。
 
-    显式把 get_pest_detector() 的结果传进去（可能是 None），而不是让它走 "auto"：
-    那样会让融合器自己再建一个检测器实例，同一份 ONNX 在进程里被加载两次，
-    白占几百 MB 内存，而且 /api/admin/reload 后两份实例的版本可能不一致。
+    实例由 `src.llm.fusion.get_fusion()` 统一持有，HTTP 路由与 skills 技能共用，
+    避免同一份 ONNX 在进程里被加载两次。
     """
-    from src.llm.fusion import build_fusion
+    from src.llm.fusion import get_fusion as _build
 
-    return build_fusion(predictor=get_predictor(), pest_detector=get_pest_detector())
+    try:
+        return _build()
+    except FileNotFoundError as e:
+        raise ApiError(
+            f"图像识别模型不可用：{e}",
+            code=CODE_MODEL_UNAVAILABLE,
+            http_status=503,
+        ) from e
 
 
 @lru_cache(maxsize=1)
@@ -58,13 +64,9 @@ def get_pest_detector():
     因此这里不抛 503，只返回 None，由 fusion 侧当作"没有这一路证据"处理。
     （对比 get_predictor：分类模型缺席时整条链路确实没法工作，所以那里必须报错。）
     """
-    from src.infer.pest_detector import get_pest_detector as _build
+    from src.infer.pest_detector import get_shared_pest_detector
 
-    try:
-        return _build()
-    except Exception as e:  # noqa: BLE001
-        logger.warning("虫害检测模型不可用，诊断将不含虫害证据：%s", e)
-        return None
+    return get_shared_pest_detector()
 
 
 # ---------------------------------------------------------------- 语音 / 大模型 / RAG
@@ -132,5 +134,13 @@ def refresh_caches() -> None:
     """清掉全部缓存，让下次请求重新加载（改完数据文件后可调用 /api/admin/reload）。"""
     for fn in (get_predictor, get_pest_detector, get_fusion, get_voice, get_llm, get_rag,
                load_json_cached, load_library):
+        fn.cache_clear()
+    # src/ 层的共享单例也要清：否则 deps 重建后，fusion 仍拿到旧的 predictor/detector，
+    # reload 对模型实例不生效。
+    from src.infer.pest_detector import get_shared_pest_detector
+    from src.infer.predictor import get_shared_predictor
+    from src.llm.fusion import get_fusion as get_shared_fusion
+
+    for fn in (get_shared_predictor, get_shared_pest_detector, get_shared_fusion):
         fn.cache_clear()
     logger.info("已清空后端缓存，下次请求将重新加载模型与数据")

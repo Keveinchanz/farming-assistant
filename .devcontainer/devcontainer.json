@@ -1,5 +1,5 @@
 {
-  "name": "田语智农 · 演示环境",
+  "name": "田头农技台 · 演示环境",
   "image": "mcr.microsoft.com/devcontainers/python:3.11",
 
   "postCreateCommand": "bash scripts/52_codespace_setup.sh",
@@ -8,7 +8,7 @@
   "forwardPorts": [8000],
   "portsAttributes": {
     "8000": {
-      "label": "田语智农",
+      "label": "田头农技台",
       "onAutoForward": "notify",
       "visibility": "public"
     }

@@ -83,10 +83,12 @@
   min-height: 90dvh;   /* 手机地址栏收放时按可视高度算 */
 }
 
-/* 左上角季节切换 */
+/* 左上角季节切换。排在选项控件下面（那颗是 54px 高：按钮 44 + 上下内距 2×4 +
+   上下边框 2；再加 8px 缝），两颗控件因此落在同一条竖线上 —— 先选图层、
+   再选季节，是一个从上往下的动作，而不是横跨整块沙盘去找另一个开关。 */
 .season-switch {
   position: absolute;
-  top: var(--space-5);
+  top: calc(var(--space-5) + 62px);
   left: var(--space-5);
   z-index: 10;
   display: flex;
@@ -318,7 +320,14 @@
 }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
-.submit-row { display: flex; justify-content: center; margin-top: var(--space-6); }
+/* 提交行下面紧跟的是「批量巡检」卡片 —— 那是另一条路（单张问诊 / 整批巡检），
+   不属于上面这张表单的第 4 步。下边距不能是 0：贴着时绿色主按钮正好压在卡片
+   上沿，看着像卡片自己的标题按钮，两个「开始」也分不清各管什么。 */
+.submit-row {
+  display: flex; justify-content: center;
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-7);
+}
 
 /* ---- 结果区 ---- */
 .result-panel { position: relative; padding: var(--space-6); }
@@ -505,6 +514,10 @@
 }
 .result-block__title svg { color: var(--color-primary); flex: 0 0 auto; }
 .result-block__text { margin: 0; color: var(--color-fg-body); white-space: pre-wrap; }
+
+/* 追问回答是多段正文，模型给出的换行要保留，否则带编号的几点会挤成一行 */
+.notice--answer { align-items: flex-start; }
+.notice--answer .answer-text { white-space: pre-line; line-height: 1.75; }
 
 .treatment-list { display: flex; flex-direction: column; gap: var(--space-3); }
 /* 去掉了左侧那道 3px 彩色竖条：每个小节自带标题，竖条不承载信息 */
@@ -1113,6 +1126,31 @@ body.modal-open { overflow: hidden; }   /* 挡住背景滚动穿透 */
 .voice-ops { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
 .voice-ops--confirm { margin-top: var(--space-4); }
 
+/* 打药表单里的「最早可采收」。没填间隔期时是一行虚线的灰杠（—），
+   填完变成实线的绿框 + 日期 —— 用户不用点保存就能看到那个日子。 */
+.voice-earliest {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-muted);
+  color: var(--color-muted-fg);
+  font-size: var(--text-sm);
+  line-height: 44px;
+}
+.voice-earliest.is-on {
+  border-style: solid;
+  border-color: var(--color-primary-line);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-fg);
+}
+.voice-earliest strong { font-family: var(--font-mono); font-size: var(--text-md); }
+.voice-earliest span { font-size: var(--text-xs); }
+
 @media (max-width: 900px) {
   /* 窄屏堆叠：3D 在上、面板在下（7.11）。
      单列下"两栏底边对齐"没有意义，height:100% 的百分比也无从解析 ——
@@ -1186,6 +1224,8 @@ body.modal-open { overflow: hidden; }   /* 挡住背景滚动穿透 */
   .season-switch { top: var(--space-3); left: var(--space-3); }
   .season-switch__btn { min-width: 48px; padding: 0 var(--space-3); }
   .input-section { padding: var(--space-4); }
+  /* 窄屏整页更长，48px 的空档会显得断成两截，收一档但仍要分得开 */
+  .submit-row { margin-bottom: var(--space-6); }
   .result-panel { padding: var(--space-4); }
   .result-hero__name { font-size: var(--text-xl); }
   .result-action { padding: var(--space-4); }
@@ -1311,4 +1351,1007 @@ body.modal-open { overflow: hidden; }   /* 挡住背景滚动穿透 */
   .plot-card {
     min-height: 44px;
   }
+}
+
+/* --------------------------------------------------------------------------
+   来源标注
+   --------------------------------------------------------------------------
+   只写「机构 + 文件/数据集」，不生成链接。放在结果末尾，用一条浅分隔线
+   与正文区分；颜色走 --color-muted-fg，深色模式下自动跟随。
+   -------------------------------------------------------------------------- */
+
+.source-note {
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--color-border);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--color-muted-fg);
+}
+
+.source-note--inline {
+  margin: 0;
+  padding: 0;
+  border-top: 0;
+}
+
+/* --------------------------------------------------------------------------
+   技能介绍页
+   --------------------------------------------------------------------------
+   静态教程为主，代码块用深色底保证长命令可读；不用徽章，状态只用小字。
+   -------------------------------------------------------------------------- */
+
+.skill-card {
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+}
+
+.skill-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.skill-card__title { margin: 0 0 var(--space-2); font-size: var(--text-lg); }
+.skill-card__desc {
+  margin: 0;
+  max-width: 68ch;
+  color: var(--color-muted-fg);
+  line-height: 1.7;
+}
+.skill-status {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+  white-space: nowrap;
+}
+.skill-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+}
+.skill-subtitle {
+  margin: var(--space-5) 0 var(--space-2);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+.skill-list { margin: 0; padding-left: 1.2em; font-size: var(--text-sm); line-height: 1.85; }
+
+.skill-card code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--color-muted);
+}
+
+.skill-table-wrap { margin-top: var(--space-2); overflow-x: auto; }
+.skill-input-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.skill-input-table th,
+.skill-input-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+.skill-input-table th { color: var(--color-muted-fg); font-weight: 600; white-space: nowrap; }
+
+.skill-code-wrap { position: relative; margin-top: var(--space-3); }
+.skill-code {
+  margin: 0;
+  padding: var(--space-4);
+  padding-right: 76px;
+  border-radius: var(--radius);
+  background: #0f2119;
+  color: #dbe7df;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: var(--text-xs);
+  line-height: 1.75;
+}
+.skill-code code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.skill-copy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  border: 1px solid rgba(219, 231, 223, 0.3);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  color: #dbe7df;
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+.skill-copy:hover { background: rgba(255, 255, 255, 0.14); }
+
+.skill-schema { margin-top: var(--space-4); }
+.skill-schema summary { cursor: pointer; font-size: var(--text-sm); color: var(--color-primary); }
+.skill-schema[open] summary { margin-bottom: var(--space-2); }
+
+@media (max-width: 640px) {
+  .skill-card { padding: var(--space-4); }
+  .skill-card__head { flex-direction: column; gap: var(--space-2); }
+  .skill-status { white-space: normal; }
+  .skill-code { font-size: var(--text-xs); }
+}
+
+/* ==========================================================================
+   首页沙盘 · 三个图层（山川地貌 / 主要作物 / 当季病害）
+
+   左上角一颗选项控件切换整块沙盘的内容。三层的共性：同一块 canvas、同一套投影、
+   同一张 #map-card；差异只在「上色依据、图例、卡片内容、圆点」四样。
+   所以这里要写的主要是控件的选中态、圆点、以及舞台底色随图层换一套。
+
+   规则一律追加在文件末尾：单元测试的 _rule_body 取的是同名选择器**第一次出现**的
+   位置，在更靠前处重写会改变那些断言的对象。
+   ========================================================================== */
+
+/* ---- 左上角选项控件 ----
+   与季节切换同处左上角、上下排成一列：两颗都是「沙盘看什么」的开关，
+   挤在同一个角里，切完图层顺手就能切季节。
+   z-index 16 是为了压过卡片（15）—— 卡片跟着省份走，盖住控件时切层按钮
+   必须还点得到；但 season-switch 那条仍留在 16，图例（10）则故意更低。 */
+.map-modes {
+  position: absolute;
+  top: var(--space-5);
+  left: var(--space-5);
+  z-index: 16;
+  display: flex;
+  gap: var(--space-1);
+  max-width: calc(100% - 48px);
+  padding: var(--space-1);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+}
+
+.map-modes__btn {
+  min-height: 44px;              /* 触控目标 ≥44px，与季节按钮同档 */
+  padding: 0 var(--space-4);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-fg-body);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.map-modes__btn:hover { background: var(--color-primary-soft); color: var(--color-primary-fg); }
+.map-modes__btn:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+/* 选中项用实底：三选一里必须一眼看出「现在是哪一层」，
+   和季节按钮的选中态是同一套语言（实底 = 当前）。 */
+.map-modes__btn[aria-pressed="true"] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+/* ---- 舞台与分带的底色跟着图层走 ----
+   地形偏土黄（沙盘）、作物偏淡绿（田块），病害那一层不在这里写 ——
+   它仍归四季规则管（.map-stage[data-season=…]）。 */
+.map-stage[data-layer="terrain"] { background: #e6dcc6; }
+.map-stage[data-layer="crop"] { background: #dfe9d7; }
+.season-band[data-layer="terrain"] { background: #dcd0b6; }
+.season-band[data-layer="crop"] { background: #d3e2cb; }
+
+/* 季节切换只对「当季病害」有意义：另两层里留着它会让人以为能切，实则无效果。 */
+.map-stage[data-layer="terrain"] .season-switch,
+.map-stage[data-layer="crop"] .season-switch { display: none; }
+
+@media (prefers-color-scheme: dark) {
+  .map-stage[data-layer="terrain"] { background: #17140e; }
+  .map-stage[data-layer="crop"] { background: #10170f; }
+  .season-band[data-layer="terrain"] { background: #221d12; }
+  .season-band[data-layer="crop"] { background: #16211a; }
+}
+
+/* ---- 地貌圆点 ----
+   容器铺满舞台但不吃指针，只有圆点自己可点；卡片（z-index 15）压在它上面，
+   所以点开卡片后不会被圆点挡住。 */
+.map-pins {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.map-pin {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  /* 往左上退半个圆点，让圆点圆心正好落在投影点上 */
+  margin: -4px 0 0 -4px;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--color-fg-body);
+  font: inherit;
+  font-size: var(--text-xs);
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+  will-change: transform;
+}
+.map-pin[hidden] { display: none; }
+.map-pin:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 1px; border-radius: var(--radius-sm); }
+
+.map-pin__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--map-terrain-mountain);
+  box-shadow: 0 0 0 2px var(--color-card);
+}
+.map-pin--mountain .map-pin__dot { background: var(--map-terrain-mountain); }
+.map-pin--plateau .map-pin__dot { background: var(--map-terrain-plateau); }
+.map-pin--basin .map-pin__dot { background: var(--map-terrain-basin); }
+.map-pin--plain .map-pin__dot { background: var(--map-terrain-plain); }
+.map-pin--river .map-pin__dot { background: var(--map-terrain-river); }
+.map-pin--lake .map-pin__dot { background: var(--map-terrain-lake); }
+
+/* 标签是贴着地块的一枚小签，不透明底 + 发丝边：压在深浅不一的地形上也读得清 */
+.map-pin__label {
+  padding: 2px var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-fg-body);
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+}
+/* 标签挤在一起时只留圆点（由 map.js 的 placePins 判距离后加这个类） */
+.map-pin--dotOnly .map-pin__label { display: none; }
+.map-pin:hover .map-pin__label {
+  border-color: var(--color-primary);
+  color: var(--color-fg);
+  font-weight: 600;
+}
+
+/* ---- 图例里的筛选钮 ---- */
+.map-legend__chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+
+.map-legend__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 var(--space-2);
+  font: inherit;
+  font-size: var(--text-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-fg-body);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.map-legend__chip:hover { background: var(--color-primary-soft); }
+.map-legend__chip:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 1px; }
+.map-legend__chip.is-on {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-fg);
+  font-weight: 600;
+}
+.map-legend__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+.map-legend__num {
+  margin-left: 2px;
+  color: var(--color-muted-fg);
+  font-variant-numeric: tabular-nums;
+}
+.map-legend__item .map-legend__num { margin-left: auto; }
+.map-legend__chip.is-on .map-legend__num { color: inherit; }
+.map-legend__sub { font-size: var(--text-xs); color: var(--color-muted-fg); }
+.map-legend__ramp { display: flex; align-items: center; gap: 3px; }
+.map-legend__ramp .map-legend__swatch { width: 20px; height: 8px; }
+.map-legend__rampText {
+  margin-left: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+}
+
+/* ---- 卡片里新增的两种内容：地貌简介、作物分组 ---- */
+.map-card__note {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  line-height: 1.75;
+  color: var(--color-fg-body);
+}
+.map-card__group + .map-card__group { margin-top: var(--space-3); }
+.map-card__groupLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+}
+.map-card__chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.map-card__chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 var(--space-2);
+  font: inherit;
+  font-size: var(--text-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-fg-body);
+  cursor: pointer;
+}
+.map-card__chip:hover { background: var(--color-primary-soft); }
+.map-card__chip.is-on {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-fg);
+  font-weight: 600;
+}
+/* 预览态点不动，把按钮的交互暗示一起收起来（与 .map-card__pick 同一处理） */
+.map-card:not([data-pinned="true"]) .map-card__chip { cursor: default; }
+.map-card:not([data-pinned="true"]) .map-card__chip:hover { background: var(--color-card); }
+
+/* ---- 响应式 ----
+   ≤940：两颗控件贴到角上 12px（选项控件在上、季节切换在下，同一条竖线）；
+   ≤640：选项控件撑满一行的可用宽度，三个按钮等分，季节切换继续排在它下面。
+   圆点只留点、标签藏起来 —— 手机上把五十多个名字铺开等于一团字。 */
+@media (max-width: 940px) {
+  .map-modes { top: var(--space-3); left: var(--space-3); }
+  /* 54px = 按钮 44 + 上下内距 2×4 + 上下边框 2；再加 8px 缝 */
+  .map-stage .season-switch { top: calc(var(--space-3) + 62px); left: var(--space-3); }
+}
+
+@media (max-width: 640px) {
+  /* 撑满一行而不是贴角留白：手机上一行三个按钮，等分后每个都够手指点 */
+  .map-modes { width: calc(100% - 2 * var(--space-3)); }
+  .map-modes__btn { flex: 1 1 auto; padding: 0 var(--space-2); }
+  .map-pin__label { display: none; }
+  .map-pin__dot { width: 10px; height: 10px; }
+}
+
+/* 季节切换也要压在卡片之上（选项控件的层级写在 .map-modes 自己的规则里）：
+   卡片是跟着省份位置走的，停住时很容易盖住它们 —— 一旦盖住，用户想换层
+   或换季就得先关卡片，等于把全局控件变成了局部控件。
+   z-index 15 是 .map-card，20 是加载遮罩，取 16 正好夹在中间。 */
+.season-switch { z-index: 16; }
+
+/* ==========================================================================
+   农技员问诊台：问诊单 / 归档回访 / 回访队列（这一屏是给「替别人做判断的人」用的）
+
+   三条约束写在样式之前，因为它们是这一屏存在的前提：
+     1. 问诊单是**纸**。它要能打印、能复印、能被农技员塞进包里，所以配色只用
+        黑白与一档墨绿，不跟随深色主题（深色纸上打印出来是黑块）。
+     2. 「先做这一步」在纸上只能有一个，字号要比正文大 —— 农户是拿着纸在田里看的。
+     3. 问诊单里**不出现剂量**，样式也就不给「数字强调」留位置。
+   ========================================================================== */
+
+/* ---- 结果页的「这一页要交给农户」条 ---- */
+.handout-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-4); flex-wrap: wrap;
+  margin-top: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-primary-line);
+  border-radius: var(--radius);
+  background: var(--color-primary-soft);
+}
+.handout-bar__main { flex: 1 1 260px; min-width: 0; }
+.handout-bar__title {
+  display: flex; align-items: center; gap: 6px;
+  font-weight: 600; color: var(--color-primary-fg);
+}
+.handout-bar__title svg { flex: 0 0 auto; }
+.handout-bar__desc { margin: 4px 0 0; font-size: var(--text-sm); color: var(--color-fg-body); }
+.handout-bar__ops { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+/* ---- 归档与回访 ---- */
+.result-record {
+  border-top: 1px dashed var(--color-border);
+  padding-top: var(--space-5);
+}
+.result-record__desc {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-muted-fg);
+}
+.result-record__grid {
+  display: grid; gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+.result-record__ops {
+  display: flex; align-items: center; gap: var(--space-3);
+  flex-wrap: wrap; margin-top: var(--space-4);
+}
+
+/* ---- 问诊单（一页纸） ---- */
+.modal__panel--sheet { width: min(760px, 100%); }
+
+/* 纸就是纸：**不跟随深色主题**。
+   深色主题下 --color-card 是深色，白字压在深卡上还看得过去，但那不是一张能打印的纸 ——
+   而且屏幕上白字的「纸」，打出来是黑字，两边长得不一样最容易出事。
+   所以这里显式给白底，并加一圈边框把它从面板上「浮」出来。 */
+.sheet {
+  color: #16211b;
+  background: #ffffff;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  line-height: 1.65;
+}
+.sheet__top {
+  display: flex; justify-content: space-between; gap: var(--space-4);
+  align-items: flex-start;
+  padding-bottom: var(--space-3);
+  /* 右边给关闭按钮留一点余量：那个 44px 的键是绝对定位压在面板上的，
+     现在纸上已经有一圈内距（面板内距 + 纸内距 > 56），这里只需 8px 兜底。 */
+  padding-right: 8px;
+  border-bottom: 2px solid #16211b;
+}
+.sheet__brand { font-size: var(--text-lg); font-weight: 700; letter-spacing: 0.3px; }
+.sheet__sub { font-size: var(--text-xs); color: #5b6660; }
+.sheet__no { text-align: right; font-size: var(--text-xs); color: #3d4842; line-height: 1.8; }
+
+.sheet__meta {
+  width: 100%; border-collapse: collapse;
+  margin: var(--space-3) 0 var(--space-4); font-size: var(--text-xs);
+}
+.sheet__meta th,
+.sheet__meta td { border: 1px solid #d7dcd9; padding: 6px 8px; text-align: left; }
+.sheet__meta th {
+  width: 13%; white-space: nowrap;
+  background: #f4f6f5; font-weight: 600; color: #47524c;
+}
+
+.sheet__sec { margin-top: var(--space-4); }
+.sheet__sec h3 {
+  margin: 0 0 4px; font-size: var(--text-xs);
+  letter-spacing: 0.5px; color: #166534;
+}
+.sheet__sec p { margin: 0 0 4px; white-space: pre-wrap; }
+.sheet__result { font-size: var(--text-base); }
+.sheet__tag {
+  display: inline-block; padding: 0 6px;
+  border: 1px solid #b45309; border-radius: 4px;
+  font-size: var(--text-xs); color: #92400e;
+}
+.sheet__first { color: #14532d; }
+.sheet__sub2 { color: #2b3630; }
+.sheet__note { font-size: var(--text-xs); color: #667270; }
+.sheet__alert { font-size: var(--text-xs); }
+.sheet__sign {
+  display: flex; gap: var(--space-5); flex-wrap: wrap;
+  margin-top: var(--space-6); padding-top: var(--space-3);
+  border-top: 1px dashed #c9d0cc; font-size: var(--text-xs);
+}
+.sheet__foot { margin: var(--space-4) 0 0; font-size: var(--text-xs); color: #667270; }
+
+/* ---- 只读问诊单页（/share.html） ----
+   打开它的是农户：扫码、不登录、只想看清「我家这块地咋说」。
+   所以这一页没有导航、没有账号入口，只有品牌、那张纸，和一颗打印键。 */
+.share-wrap { max-width: 820px; margin: 0 auto; }
+.share-bar {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--space-3); flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+.share-bar__brand {
+  display: flex; flex-direction: column; gap: 2px;
+  font-weight: 700; font-size: var(--text-lg);
+}
+.share-bar__hint { font-size: var(--text-sm); color: var(--color-muted-fg); }
+.share-state {
+  margin: 0;
+  padding: var(--space-7) var(--space-5);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-muted-fg);
+}
+.share-state__title {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-md); font-weight: 600; color: var(--color-fg);
+}
+.share-state__desc { margin: 0; font-size: var(--text-sm); }
+.share-ops { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-4); }
+.share-foot {
+  margin: var(--space-4) 0 0;
+  font-size: var(--text-xs); color: var(--color-muted-fg); text-align: right;
+}
+
+@media print {
+  /* 农户打印这张单时，只留纸：品牌条和按钮都不是内容 */
+  .share-bar, .share-ops, .share-foot { display: none !important; }
+  .share-wrap { max-width: none; }
+  .page { padding: 0; }
+  .sheet { border: 0; padding: 0; }
+  @page { margin: 14mm; }
+}
+.sheet-ops {
+  display: flex; gap: var(--space-2); flex-wrap: wrap;
+  margin-top: var(--space-5);
+  padding: var(--space-3) 0 var(--space-2);
+  border-top: 1px solid var(--color-border);
+  /* 贴在模态底部：这张纸有一屏半高，「打印」按钮掉在滚动区外面等于没有。
+     粘住之后滚动时它一直在拇指够得到的位置。 */
+  position: sticky; bottom: 0;
+  background: var(--color-card);
+}
+
+/* ---- 分享面板（问诊单底部，点「分享给农户」才展开） ----
+   农技员走后农户还得能翻到这张纸：二维码贴在村里、链接发到微信。
+   二维码**强制白底**——它是给摄像头认的，不跟随深色主题。 */
+.sheet-share {
+  display: grid;
+  grid-template-columns: 132px 1fr;
+  gap: var(--space-4);
+  align-items: start;
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-muted);
+}
+/* .sheet-share 是 grid，hidden 属性会被 display 覆盖，必须显式复位 */
+.sheet-share[hidden] { display: none; }
+.sheet-share__qr {
+  width: 132px; height: 132px;
+  padding: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+.sheet-share__title { font-weight: 600; }
+.sheet-share__desc {
+  margin: 4px 0 var(--space-3);
+  font-size: var(--text-sm); color: var(--color-muted-fg);
+}
+.sheet-share__row { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.sheet-share__url { flex: 1 1 220px; min-width: 0; font-size: var(--text-sm); }
+.sheet-share__hint { margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--color-muted-fg); }
+
+@media (max-width: 640px) {
+  .sheet-share { grid-template-columns: 1fr; }
+  .sheet-share__qr { justify-self: start; }
+  /* 手机上这四颗按钮如果还吸底，会占掉四分之一屏、并且盖住分享面板的
+     「复制链接」—— 改成跟随文档流，滚到底就能全部看到、全部点得到。 */
+  .sheet-ops { position: static; }
+  .sheet-ops .btn { padding: 0 var(--space-4); font-size: var(--text-sm); }
+}
+
+/* ---- 农田页的回访队列 ---- */
+.farm-followup { margin: 0 0 var(--space-4); }
+.farm-followup__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-3); flex-wrap: wrap;
+}
+.farm-followup__title { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.farm-followup__count {
+  padding: 1px 10px; border-radius: var(--radius-sm);
+  border: 1px solid var(--color-warning-line);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-fg);
+  font-size: var(--text-xs); font-weight: 600;
+}
+.farm-followup__desc {
+  margin: 4px 0 var(--space-3);
+  font-size: var(--text-sm); color: var(--color-muted-fg);
+}
+.farm-followup__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.farm-followup__item {
+  display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+}
+/* 过期那条要能一眼看见 —— 队列里最容易被跳过的就是它 */
+.farm-followup__item.is-overdue {
+  border-color: var(--color-warning-line);
+  background: var(--color-warning-soft);
+}
+.farm-followup__who { flex: 1 1 200px; min-width: 0; }
+.farm-followup__name { font-weight: 600; }
+.farm-followup__meta { font-size: var(--text-xs); color: var(--color-muted-fg); }
+.farm-followup__ops { display: flex; gap: var(--space-2); }
+.farm-followup__empty { margin: 0; font-size: var(--text-sm); color: var(--color-muted-fg); }
+
+/* 空态 / 取不到：同一块卡片，不换位置、不改高度太多，只把「为什么空」说清楚。
+   角标退成灰色 —— 空的时候还用黄色警示色，看着像出事了。 */
+.farm-followup__count--quiet {
+  border-color: var(--color-border);
+  background: var(--color-muted);
+  color: var(--color-muted-fg);
+}
+.farm-followup__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+
+/* ---- 打印：只留那张纸 ----
+   不新开窗口（新窗口要重新加载样式与字体，打出来常是错版的），
+   而是把「不是纸」的东西全部隐藏掉。body.sheet-open 由 doPrint() 打开，
+   afterprint 或 600ms 后关掉 —— 两条路都幂等。 */
+@media print {
+  body.sheet-open { background: #fff; }
+  body.sheet-open .site-header,
+  body.sheet-open .site-footer,
+  body.sheet-open .page > *:not(#sheet-modal) { display: none !important; }
+
+  body.sheet-open #sheet-modal {
+    position: static; display: block;
+    padding: 0; background: #fff;
+  }
+  body.sheet-open #sheet-modal .modal__backdrop,
+  body.sheet-open #sheet-modal .modal__close,
+  body.sheet-open .sheet-share,
+  body.sheet-open .sheet-ops { display: none !important; }
+
+  body.sheet-open #sheet-modal .modal__panel {
+    width: 100%; max-height: none;
+    border: 0; border-radius: 0; box-shadow: none; overflow: visible;
+  }
+  body.sheet-open #sheet-modal .modal__body { padding: 0; overflow: visible; }
+
+  /* 纸上的字号按打印收敛一档：屏幕上 14px 打到 A4 上会偏大，正文挤成两页 */
+  body.sheet-open .sheet {
+    font-size: var(--text-xs);
+    padding: 0; border: 0;
+  }
+  @page { margin: 14mm; }
+}
+
+/* ---- 批量巡检 ----
+   一张表，四列：照片 / 判读 / 结论 / 置信度。判读用色块而不是文字排序，
+   是因为农技员扫这张表的方式是「找红的和黄的那几行」，不是逐字读。 */
+.batch-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--space-3); flex-wrap: wrap;
+}
+.batch-head__title { margin: 0; font-size: var(--text-lg); }
+.batch-bar {
+  height: 6px; margin: var(--space-3) 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-muted);
+  overflow: hidden;
+}
+.batch-bar__fill {
+  display: block; height: 100%; width: 0;
+  background: var(--color-primary);
+  transition: width 300ms ease;
+}
+.batch-summary {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm); color: var(--color-fg-body);
+}
+.batch-table-wrap { overflow-x: auto; }
+.batch-table {
+  width: 100%; border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.batch-table th,
+.batch-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left; vertical-align: top;
+}
+.batch-table th {
+  font-size: var(--text-xs); font-weight: 600;
+  color: var(--color-muted-fg); white-space: nowrap;
+}
+.batch-table__file { max-width: 220px; overflow-wrap: anywhere; }
+.batch-table__op { text-align: right; white-space: nowrap; }
+.batch-verdict {
+  display: inline-block; margin-right: 6px;
+  padding: 1px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs); font-weight: 600;
+}
+.batch-verdict--ok {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-fg);
+  border-color: var(--color-primary-line);
+}
+.batch-verdict--warn {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-fg);
+  border-color: var(--color-warning-line);
+}
+.batch-verdict--alert {
+  background: var(--color-destructive-soft);
+  color: var(--color-destructive-fg);
+  border-color: var(--color-destructive-line);
+}
+
+/* ==========================================================================
+   用药台账（ledger.html）
+   
+   这一页的排版取舍：先给四个数，再给红条，最后才是明细表。
+   农技员打开它想问的是「今天哪块地不能摘」，不是「让我先看一张表」。
+   ========================================================================== */
+
+.page--ledger { padding-top: var(--space-5); }
+
+.ledger-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.ledger-head__main { min-width: 0; }
+.ledger-ops { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.ledger-ops .select { width: auto; min-width: 132px; }
+
+/* ---- 四个数 ---- */
+.ledger-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.ledger-stat {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-card);
+  box-shadow: var(--shadow-sm);
+}
+.ledger-stat__k { font-size: var(--text-xs); color: var(--color-muted-fg); }
+.ledger-stat__v {
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-fg);
+}
+.ledger-stat__v small { margin-left: 3px; font-size: var(--text-sm); font-weight: 400;
+  color: var(--color-muted-fg); }
+/* 「还剩 17 天」这类补充说明另起一行：28px 与 13px 并排会读成一整串 */
+.ledger-stat__v small.sub { display: block; margin-left: 0; font-size: var(--text-xs); }
+.ledger-stat--warn .ledger-stat__v { color: var(--color-destructive-fg); }
+
+/* ---- 红条 ---- */
+.ledger-alert { margin-bottom: var(--space-3); align-items: flex-start; }
+.ledger-alert p { margin: 2px 0 0; font-size: var(--text-sm); line-height: 1.65; }
+.ledger-alert .icon { flex: 0 0 auto; margin-top: 2px; }
+
+/* ---- 视图切换 ---- */
+.ledger-tabs {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+.ledger-tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-muted-fg);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.ledger-tab:hover { color: var(--color-fg); background: var(--color-muted); }
+.ledger-tab.is-on {
+  color: var(--color-fg);
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--color-primary);
+}
+
+/* ---- 表 ---- */
+.ledger-table-wrap {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-card);
+  box-shadow: var(--shadow-sm);
+  overflow: auto;
+}
+.ledger-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.ledger-table th {
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-muted-fg);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+  background: var(--color-card);
+}
+.ledger-table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-fg-body);
+  vertical-align: top;
+}
+.ledger-table tr:last-child td { border-bottom: 0; }
+.ledger-table td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  color: var(--color-fg); white-space: nowrap; }
+.ledger-table .reg {
+  display: block;
+  margin-top: 1px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+}
+/* 日期与天数这类窄列压到内容宽度，把富余宽度让给药名列。
+   两个表列数不同，分开写：一张表里"第 3 列"是日期、另一张里是毒性，
+   共用一组 nth-child 会把两边的分配都搞乱。
+
+   `width: 1%` 只在 nowrap 下才等于"尽量窄"——没有 nowrap，中文会逐字换行，
+   一块「示例田 · 水稻」会被压成竖排的五六个字。 */
+.ledger-table th,
+.ledger-table td { white-space: nowrap; }
+.ledger-table--field th:nth-child(1),
+.ledger-table--field th:nth-child(2),
+.ledger-table--field th:nth-child(3),
+.ledger-table--field th:nth-child(5),
+.ledger-table--field th:nth-child(6) { width: 1%; }
+.ledger-table--product th:nth-child(2),
+.ledger-table--product th:nth-child(3),
+.ledger-table--product th:nth-child(4),
+.ledger-table--product th:nth-child(6) { width: 1%; }
+.ledger-table th:last-child { width: 1%; }
+.ledger-table th:last-child,
+.ledger-table td:last-child { text-align: right; }
+
+/* ---- 状态胶囊（不是 badge：badge 是圆形胶囊，这里是有边的小方块，
+       因为它在表格里要跟等宽数字对齐，胶囊形会让右侧参差不齐） ---- */
+.ledger-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+.ledger-pill.is-locked {
+  background: var(--color-destructive-soft);
+  border-color: var(--color-destructive-line);
+  color: var(--color-destructive-fg);
+}
+.ledger-pill.is-ok {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-line);
+  color: var(--color-primary-fg);
+}
+.ledger-pill.is-unknown {
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning-line);
+  color: var(--color-warning-fg);
+}
+.ledger-pill.is-none { background: var(--color-muted); color: var(--color-muted-fg); }
+
+/* ---- 用药史时间线 ---- */
+.ledger-history { padding: var(--space-4) var(--space-5); }
+.ledger-tl {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 var(--space-4);
+  border-left: 2px solid var(--color-primary-line);
+}
+.ledger-tl li { position: relative; padding: 0 0 var(--space-4) var(--space-2); }
+.ledger-tl li:last-child { padding-bottom: 0; }
+.ledger-tl li::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--space-4) - 5px);
+  top: 7px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-card);
+  border: 2px solid var(--color-primary);
+}
+.ledger-tl__row { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+.ledger-tl__date {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-fg);
+}
+.ledger-tl__what { font-size: var(--text-sm); color: var(--color-fg-body); }
+.ledger-tl__field { margin-left: auto; font-size: var(--text-xs); color: var(--color-muted-fg); }
+.ledger-tl__meta { margin: 3px 0 0; font-size: var(--text-xs); color: var(--color-muted-fg); }
+
+/* ---- 空态与加载 ---- */
+.ledger-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  color: var(--color-muted-fg);
+}
+.ledger-empty { padding: var(--space-6) var(--space-5); text-align: center; }
+.ledger-empty strong { display: block; font-size: var(--text-md); color: var(--color-fg); }
+.ledger-empty p { margin: var(--space-2) auto var(--space-4); max-width: 52ch;
+  font-size: var(--text-sm); }
+.ledger-note {
+  margin: var(--space-4) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+  line-height: 1.7;
+}
+
+@media (max-width: 860px) {
+  .ledger-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+  .ledger-ops { width: 100%; }
+  .ledger-ops .select { flex: 1 1 auto; }
+  .ledger-history { padding: var(--space-4); }
+}
+
+/* 窄屏：7 列在 390px 上会挤成竖排单字，改成一块地一张卡。
+   这正好是农技员在地头的真实场景（拿手机看），所以不是"降级版"而是主用法。 */
+@media (max-width: 640px) {
+  .ledger-table-wrap { background: transparent; border: 0; box-shadow: none; overflow: visible; }
+  .ledger-table thead { display: none; }
+  .ledger-table, .ledger-table tbody, .ledger-table tr, .ledger-table td { display: block; }
+  .ledger-table tr {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-1) 0;
+  }
+  .ledger-table tr + tr { margin-top: var(--space-2); }
+  .ledger-table td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    border: 0;
+    padding: 5px var(--space-3);
+    text-align: right;
+    white-space: normal;
+  }
+  .ledger-table td::before {
+    content: attr(data-l);
+    flex: 0 0 auto;
+    text-align: left;
+    font-size: var(--text-xs);
+    color: var(--color-muted-fg);
+  }
+  /* 第一格当地块的卡片标题，不再重复「地块」这个标签 */
+  .ledger-table td:first-child {
+    display: block;
+    text-align: left;
+    font-weight: 600;
+    font-size: var(--text-md);
+    color: var(--color-fg);
+    padding-bottom: var(--space-2);
+    margin-bottom: var(--space-1);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .ledger-table td:first-child::before { content: none; }
+  .ledger-table .reg { display: inline; margin-left: var(--space-1); }
+  .ledger-tl__field { margin-left: 0; }
 }

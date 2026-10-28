@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>用药台账 · 田头农技台</title>
+<meta name="description" content="按地块与药剂汇总本季施药记录，自动算出每块田最早可采收日，可导出 Excel 明细与 A4 一页纸。">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/layout.css">
+<link rel="stylesheet" href="/assets/css/pages.css">
+<link rel="stylesheet" href="/assets/css/pet.css">
+</head>
+<body>
+
+<a class="visually-hidden" data-skip-link href="#main">跳到主要内容</a>
+
+<header class="site-header">
+  <div class="site-header__inner" data-layout-header></div>
+</header>
+
+<main id="main" class="page page--ledger">
+
+  <p class="notice" data-degraded-bar hidden></p>
+
+  <div class="page-head ledger-head">
+    <div class="ledger-head__main">
+      <div class="page-head__title">
+        <h1 class="mb-0">用药台账</h1>
+        <span class="badge badge--primary" id="ledger-period-badge" hidden></span>
+      </div>
+      <p class="page-head__desc" id="ledger-sub">正在读取…</p>
+    </div>
+    <div class="ledger-ops">
+      <label class="visually-hidden" for="ledger-field">地块</label>
+      <select class="select" id="ledger-field">
+        <option value="">全部地块</option>
+      </select>
+      <label class="visually-hidden" for="ledger-period">区间</label>
+      <select class="select" id="ledger-period">
+        <option value="season">本季</option>
+        <option value="recent">近 90 天</option>
+        <option value="all">全部</option>
+      </select>
+      <button type="button" class="btn btn--outline btn--sm" id="btn-export-xlsx">
+        <span id="ico-export-xlsx"></span><span>导出 Excel</span>
+      </button>
+      <button type="button" class="btn btn--outline btn--sm" id="btn-export-pdf">
+        <span id="ico-export-pdf"></span><span>导出 PDF</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 四个数：这一页要先回答问题，再给明细 -->
+  <div class="ledger-stats" id="ledger-stats" aria-live="polite"></div>
+
+  <!-- 还在间隔期的田：一进来就该看见，所以放在明细上面 -->
+  <div id="ledger-alerts"></div>
+
+  <div class="ledger-tabs" role="tablist" aria-label="台账视图">
+    <button type="button" class="ledger-tab is-on" role="tab" aria-selected="true"
+            data-view="field">按地块</button>
+    <button type="button" class="ledger-tab" role="tab" aria-selected="false"
+            data-view="product">按药剂</button>
+    <button type="button" class="ledger-tab" role="tab" aria-selected="false"
+            data-view="history">用药史</button>
+  </div>
+
+  <div id="ledger-body">
+    <div class="card ledger-loading">
+      <span class="spinner" role="status" aria-label="加载中"></span>
+      <span class="text-muted">正在汇总本季施药记录…</span>
+    </div>
+  </div>
+
+  <p class="ledger-note" id="ledger-note"></p>
+
+</main>
+
+<footer class="site-footer">
+  <div data-layout-footer></div>
+</footer>
+
+<script src="/assets/js/icons.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/dialect.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script src="/assets/js/ledger.js"></script>
+<script src="/assets/js/pet.js"></script>
+</body>
+</html>

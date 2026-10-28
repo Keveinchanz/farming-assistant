@@ -18,7 +18,7 @@ from typing import Any, Iterable
 
 from src.common.logging_utils import setup_logger
 from src.farm import stages as stage_cfg
-from src.farm.timeutil import is_date, utc_now_iso
+from src.farm.timeutil import days_between, is_date, utc_now_iso
 
 logger = setup_logger("agri.farm.repo")
 
@@ -161,6 +161,8 @@ def create_log(
     amount: str = "",
     note: str = "",
     source: str = "manual",
+    reg_no: str = "",
+    interval_days: int | None = None,
     log_id: str | None = None,
 ) -> dict:
     get_field(conn, user_id, field_id)          # 不允许往别人的田里记账
@@ -170,12 +172,18 @@ def create_log(
         raise ValueError(f"未知的来源「{source}」，可选：{'、'.join(LOG_SOURCES)}")
     _require_date(date, "农事日期")
 
+    # 登记证号与间隔期只对「打药」有意义。前端理论上只在 type=spray 时提交，
+    # 但接口是公开的 —— 一条 type=fertilize 却带着间隔期的记录，会让台账把
+    # 这块田误判成「还在间隔期」。所以这里按 type 收口，不信任调用方。
+    if type != "spray":
+        reg_no, interval_days = "", None
+
     lid = log_id or new_id("log")
     conn.execute(
         "INSERT INTO logs (user_id, id, field_id, type, date, item, amount, note, source, "
-        "created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "reg_no, interval_days, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (user_id, lid, field_id, type, date, item or "", amount or "", note or "",
-         source, utc_now_iso()),
+         source, reg_no or "", interval_days, utc_now_iso()),
     )
     row = conn.execute(
         "SELECT * FROM logs WHERE user_id = ? AND id = ?", (user_id, lid)
@@ -375,21 +383,29 @@ def create_diagnosis(
     confidence: float | None = None,
     pest_json: Any = None,
     report_json: Any = None,
+    subject: str = "",
+    recheck_date: str = "",
     diagnosis_id: str | None = None,
 ) -> dict:
     get_field(conn, user_id, field_id)
     _require_date(date, "诊断日期")
+    # 回访日期允许为空（这次不排回访），但只要给了就必须是合法日期 ——
+    # 否则它会在回访队列里变成一条永远不出现的记录，静默丢失。
+    if recheck_date:
+        _require_date(recheck_date, "回访日期")
 
     did = diagnosis_id or new_id("dgn")
     conn.execute(
         "INSERT INTO diagnoses (user_id, id, field_id, date, image_path, label, confidence, "
-        "pest_json, report_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "pest_json, report_json, subject, recheck_date, recheck_done, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)",
         (user_id, did, field_id, date, image_path or "", label or "", confidence,
          # pest_json 为 None 时**存 NULL**（不是字符串 'null'）：虫害模型不可用时
          # 就是「没有这一路证据」，读回来必须还是 None，不能在「无虫害证据」和
          # 「确实没有虫」之间含糊。
          json.dumps(pest_json, ensure_ascii=False) if pest_json is not None else None,
          json.dumps(report_json, ensure_ascii=False) if report_json is not None else None,
+         (subject or "").strip(), recheck_date or "",
          utc_now_iso()),
     )
     row = conn.execute(
@@ -428,6 +444,74 @@ def get_diagnosis(conn: sqlite3.Connection, user_id: int, diagnosis_id: str) -> 
     if row is None:
         raise NotFound(f"未找到诊断记录：{diagnosis_id}")
     return _decode_diagnosis(dict(row))
+
+
+# ------------------------------------------------------------------ 回访队列
+
+def list_followups(
+    conn: sqlite3.Connection, user_id: int, *, today: str, upcoming_days: int = 7
+) -> dict:
+    """待回访的诊断，按「已到期 / 未来 7 天」两组返回。
+
+    判定只认 `recheck_date`：没排回访的诊断（空串）不参与，
+    否则每次诊断都会在队列里冒出来，队列就没意义了。
+
+    过期不隐藏、也不合并成一句「共 N 条」—— 农技员真正会漏掉的是**上周就该看、
+    到现在还没看**的那几条，把它们和时间上更近的混在一起排，它们就会被淹掉。
+    所以 overdue 单独一组，并按过期天数倒序（拖得最久的排最前）。
+    """
+    rows = conn.execute(
+        "SELECT d.id, d.field_id, d.date, d.label, d.confidence, d.subject, d.recheck_date, "
+        "       f.name AS field_name, f.crop AS crop "
+        "FROM diagnoses d JOIN fields f ON f.id = d.field_id AND f.user_id = d.user_id "
+        "WHERE d.user_id = ? AND d.recheck_done = 0 AND d.recheck_date != '' "
+        "ORDER BY d.recheck_date ASC",
+        (user_id,),
+    ).fetchall()
+
+    overdue: list[dict] = []
+    today_due: list[dict] = []
+    upcoming: list[dict] = []
+    for r in rows:
+        item = dict(r)
+        gap = days_between(today, item["recheck_date"])
+        item["days_left"] = gap          # 负数=已过期多少天，0=今天，正数=还有几天
+        if gap < 0:
+            overdue.append(item)
+        elif gap == 0:
+            today_due.append(item)
+        elif gap <= upcoming_days:
+            upcoming.append(item)
+
+    # 同一批里最该先看的排前面：过期越久越前，其余按日期正序
+    overdue.sort(key=lambda x: x["days_left"])
+    return {"overdue": overdue, "today": today_due, "upcoming": upcoming}
+
+
+def mark_followup_done(conn: sqlite3.Connection, user_id: int, diagnosis_id: str) -> dict:
+    """把一条诊断标成「已回访」。**已经回访过的再点一次不算错**（幂等）：
+    列表是异步刷新的，农技员连点两下很常见。"""
+    row = conn.execute(
+        "SELECT id, recheck_done FROM diagnoses WHERE user_id = ? AND id = ?",
+        (user_id, diagnosis_id),
+    ).fetchone()
+    if row is None:
+        raise NotFound(f"未找到诊断记录：{diagnosis_id}")
+    conn.execute(
+        "UPDATE diagnoses SET recheck_done = 1 WHERE user_id = ? AND id = ?",
+        (user_id, diagnosis_id),
+    )
+    return {"diagnosis_id": diagnosis_id, "done": True}
+
+
+def count_pending_followups(conn: sqlite3.Connection, user_id: int, *, today: str) -> int:
+    """到期待回访条数（含已过期的）。给首页/工具栏一个角标用，只数不取内容。"""
+    row = conn.execute(
+        "SELECT COUNT(*) AS n FROM diagnoses "
+        "WHERE user_id = ? AND recheck_done = 0 AND recheck_date != '' AND recheck_date <= ?",
+        (user_id, today),
+    ).fetchone()
+    return int(row["n"] if row else 0)
 
 
 # ------------------------------------------------------------------ 生长快照

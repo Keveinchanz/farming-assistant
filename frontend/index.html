@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>首页 · 多方言 AI 农技与农田数字孪生平台</title>
-<meta name="description" content="交互式中国地图，一屏查看各省当季高发的 TOP3 病虫害，点击省份直达防治知识。">
+<title>首页 · 田头农技台</title>
+<meta name="description" content="一块可转动的中国 3D 沙盘：默认看全国的名山大川与地形区，切一下看各省主要作物，再切一下看当季高发的病虫害，点省份或圆点直达详情。">
 <link rel="stylesheet" href="/assets/css/base.css">
 <link rel="stylesheet" href="/assets/css/layout.css">
 <link rel="stylesheet" href="/assets/css/pages.css">
@@ -30,13 +30,30 @@
   </div>
 
   <section class="map-stage" data-season-host aria-labelledby="map-heading">
-    <h1 id="map-heading" class="visually-hidden">各省当季高发病虫害地图</h1>
+    <h1 id="map-heading" class="visually-hidden">中国山川地貌、主要作物与当季病虫害分布沙盘</h1>
 
-    <!-- 左上角季节切换 -->
+    <!-- 左上角选项控件：切换沙盘上展示的三类内容（山川地貌 / 主要作物 / 当季病害）。
+         三个按钮是静态的 —— 标签不随数据变，只有选中态（aria-pressed）与舞台上的
+         data-layer 由 map.js 维护，见 setLayer / syncLayerButtons。
+         放在 HTML 里而不是 JS 里生成：这是页面骨架，禁 JS 时至少还看得见选项。
+         和季节切换同处左上角、上下排：两颗都是「沙盘看什么」的开关，
+         挤在同一个角上，切完图层顺手就能切季节，不必把视线挪到另一个角。 -->
+    <div class="map-modes" id="map-modes" role="group" aria-label="切换沙盘展示的内容">
+      <button type="button" class="map-modes__btn" data-layer-btn="terrain" aria-pressed="true">山川地貌</button>
+      <button type="button" class="map-modes__btn" data-layer-btn="crop" aria-pressed="false">主要作物</button>
+      <button type="button" class="map-modes__btn" data-layer-btn="pest" aria-pressed="false">当季病害</button>
+    </div>
+
+    <!-- 左上角季节切换：只对「当季病害」图层有效，另两个图层里会被隐藏 -->
     <div class="season-switch" role="group" aria-label="按季节切换病虫害数据" id="season-switch"></div>
 
     <!-- 地图容器 -->
-    <div id="china-map" role="img" aria-label="中国各省高发病虫害分布地图"></div>
+    <div id="china-map" role="img" aria-label="中国各省地形与农业分布沙盘"></div>
+
+    <!-- 地貌圆点层：绝对定位在 canvas 之上，位置由 map.js 用 Map3D.projectPoint
+         把经纬度投影到屏幕上算出来（转动、缩放、改窗口时重算）。
+         圆点是按钮，所以不能用 aria-hidden 盖住；只在「山川地貌」图层里有内容。 -->
+    <div class="map-pins" id="map-pins"></div>
 
     <!-- 省份卡片：悬停预览、点击停住，由 map.js 填充与定位。
          做成自有 DOM 而不是 ECharts tooltip，是为了拿到固定宽度与真正的换行
@@ -54,7 +71,7 @@
     <div class="map-overlay" id="map-overlay">
       <div>
         <span class="spinner" role="status" aria-label="地图数据加载中"></span>
-        <p class="mt-0" style="margin-top:12px">正在加载各省病虫害数据…</p>
+        <p class="mt-0" style="margin-top:12px">正在加载中国地形与农业数据…</p>
       </div>
     </div>
   </section>
@@ -71,12 +88,16 @@
      map.js 执行时数据一定已就位，首屏不发任何接口请求，接口没起也能正常显示。
      生成：python scripts/15_bundle_frontend_data.py（04 号脚本会自动刷新它） -->
 <script src="/assets/data/home_preload.js"></script>
+<!-- 图层词典（山川地貌条目 + 作物类别）。同样是静态 JS、同步加载：
+     「山川地貌」是首页的默认图层，它不能等接口，也不该多一次 fetch。 -->
+<script src="/assets/data/home_layers.js"></script>
 <script src="/assets/js/icons.js"></script>
 <script src="/assets/js/api.js"></script>
 <script src="/assets/js/dialect.js"></script>
 <script src="/assets/js/layout.js"></script>
 <script src="/assets/js/map3d.js"></script>
 <script src="/assets/js/map.js"></script>
+<script src="/assets/js/recorder.js"></script>
 <script src="/assets/js/pet.js"></script>
 </body>
 </html>

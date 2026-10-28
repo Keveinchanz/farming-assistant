@@ -232,6 +232,23 @@
         { timeout: SLOW_TIMEOUT.farm_today });
     },
 
+    /* 农药登记库检索（记打药时选药剂 / 按病害找药）。
+       q 与 target 都不给时后端直接返回空 —— 三千多条一次性拉下来没有意义。 */
+    pesticides(params) {
+      return api.get("/api/farm/pesticides", params);
+    },
+
+    /* 用药台账：按地块 / 按药剂 / 用药史，一次拿齐 */
+    farmLedger(params) {
+      return api.get("/api/farm/ledger", params);
+    },
+
+    /* 这块田当前受哪次施药约束（问诊单的「本地产收提醒」用）。
+       返回 null = 没有任何一条记了间隔期的施药，是「不知道」而不是「可以摘」。 */
+    farmSpray(fieldId) {
+      return api.get("/api/farm/spray/" + encodeURIComponent(fieldId));
+    },
+
     farmGrowth(id) {
       return api.get("/api/farm/growth/" + encodeURIComponent(id));
     },
@@ -254,6 +271,54 @@
 
     attachDiagnosis(body) {
       return api.post("/api/farm/attach_diagnosis", body);
+    },
+
+    /* 问诊单交付：存一份快照换一条短链（农户扫码可看，30 天过期） */
+    shareSheet(payload) {
+      return api.post("/api/diagnose/share", { payload });
+    },
+
+    /** 下载问诊单 PDF。
+     *
+     *  不能走 request()：那条路会 `res.json()`，而 PDF 是二进制。
+     *  失败时后端仍然返回 JSON 错误包，所以这里要按 Content-Type 分流 ——
+     *  否则「PDF 组件未安装」这种提示会变成一句看不懂的解析异常。 */
+    async sheetPdf(payload) {
+      let res;
+      try {
+        res = await fetch("/api/diagnose/report.pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ payload }),
+        });
+      } catch (e) {
+        throw new ApiError("无法连接到服务器，请确认后端服务已启动", -1, 0);
+      }
+      const type = res.headers.get("Content-Type") || "";
+      if (!res.ok || type.indexOf("application/pdf") < 0) {
+        let msg = `生成失败（HTTP ${res.status}）`;
+        try {
+          const body = await res.json();
+          if (body && body.msg) msg = body.msg;
+        } catch (e) { /* 非 JSON 就用手上的状态码 */ }
+        throw new ApiError(msg, -1, res.status);
+      }
+      const disposition = res.headers.get("Content-Disposition") || "";
+      const m = /filename="([^"]+)"/.exec(disposition);
+      return { blob: await res.blob(), filename: m ? m[1] : "sheet.pdf" };
+    },
+
+    shareQrUrl(token) {
+      return "/api/share/" + encodeURIComponent(token) + "/qr.svg";
+    },
+
+    /* 回访队列（农技员的待办）。date 可传一个「假今天」，演示与测试都用得上 */
+    followups(date) {
+      return api.get("/api/farm/followups", date ? { date } : null);
+    },
+
+    followupDone(diagnosisId) {
+      return api.post("/api/farm/followups/done", { diagnosis_id: diagnosisId });
     },
 
     /* 语音录入：只解析，不落库（落库要用户点确认 → createLog）。
@@ -337,6 +402,16 @@
     return new URLSearchParams(location.search).get(name) || "";
   }
 
+  /** 渲染一行「来源：机构 + 文件」。没有 notes 时返回空串；不生成链接。 */
+  function sourceNote(notes, label) {
+    const list = (notes || []).filter((n) => n && (n.organization || n.document));
+    if (!list.length) return "";
+    const text = list
+      .map((n) => `${n.organization || ""}${n.document || ""}`)
+      .join("；");
+    return `<p class="source-note">${escapeHtml(label || "来源")}：${escapeHtml(text)}</p>`;
+  }
+
   window.Api = api;
-  window.UI = { toast, busy, escapeHtml, percent, setText, query };
+  window.UI = { toast, busy, escapeHtml, percent, setText, query, sourceNote };
 })();

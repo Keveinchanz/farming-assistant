@@ -15,6 +15,7 @@ from __future__ import annotations
 import io
 import json
 import time
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -279,8 +280,19 @@ def get_predictor(
     )
 
 
+@lru_cache(maxsize=1)
+def get_shared_predictor() -> BasePredictor:
+    """进程内共享的图像分类器。
+
+    HTTP 接口与 skills 技能都会用到分类模型。若各自调用 `get_predictor()`，
+    同一份 ONNX 会在进程里被加载两次，白占几百 MB；技能层与后端必须共用这一份。
+    首次调用才加载，import 本模块不会读权重。
+    """
+    return get_predictor()
+
+
 __all__ = [
     "BasePredictor", "OnnxPredictor", "TorchPredictor",
-    "get_predictor", "load_label_map", "registry_entry",
+    "get_predictor", "get_shared_predictor", "load_label_map", "registry_entry",
     "ONNX_INPUT_NAME", "ONNX_OUTPUT_NAME",
 ]

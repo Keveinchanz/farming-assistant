@@ -52,6 +52,9 @@ MIGRATIONS: list[tuple[int, str]] = [
     (3, "003_reminder_snooze.sql"), # 7.7 的「[改天] snooze 2 天」需要一个落库的地方
     (4, "004_daily_temp_detail.sql"),  # 7.3.4 的 11 个特征要用最高/最低气温与降水
     (5, "005_add_field_county.sql"),   # 田块选址补「县/区」一级（省市区联动 → 推经纬度）
+    (6, "006_diagnosis_followup.sql"), # 诊断补「服务对象 + 回访日期」：农技员的闭环
+    (7, "007_diag_share.sql"),         # 问诊单只读分享（扫码/短链）：交付给农户的那一步
+    (8, "008_spray_interval.sql"),     # 农事记录补「登记证号 + 安全间隔期」：用药台账
 ]
 
 

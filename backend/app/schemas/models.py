@@ -106,6 +106,66 @@ class PestDetection(BaseModel):
     bbox: list[float] = Field(default_factory=list)
 
 
+class PestCandidate(BaseModel):
+    """分类复核给出的一条候选。
+
+    `index` 与检测框的 `index` 是**同一套 102 类标签空间**，可以直接互换。
+    """
+
+    index: int = 0
+    label_cn: str = ""
+    label_en: str = ""
+    crop: str = ""
+    pest_type: str = ""
+    prob: float = Field(0.0, ge=0, le=1)
+
+
+class PestRewrite(BaseModel):
+    """一次改判的完整记录。
+
+    保留 `from_*` 与 `to_*` 两侧，是为了台账与复核页能回答「这条结论原来是什么、
+    为什么被改」——只留最终结果的话，改判本身就是不可审计的。
+    `fused` 是检测置信度与分类概率的乘积，只作参考，不覆盖 `PestDetection.confidence`。
+    """
+
+    index: int = 0
+    from_index: int = 0
+    from_label: str = ""
+    to_index: int = 0
+    to_label: str = ""
+    to_label_en: str = ""
+    det_confidence: float = Field(0.0, ge=0, le=1)
+    cls_prob: float = Field(0.0, ge=0, le=1)
+    fused: float = Field(0.0, ge=0, le=1)
+
+
+class PestReview(BaseModel):
+    """分类复核的结果块（任务 2.8）。
+
+    `mode` 的四种取值对应四条不同路径，前端据此决定怎么显示：
+
+    | mode | 含义 | 前端表现 |
+    |---|---|---|
+    | `single` | 检测置信度过门控，分类器没介入 | 与旧版一致 |
+    | `cascade` | 检测没底，交分类器改判，见 `rewrites` | 框上标注「复核」 |
+    | `fallback` | 一个框都没检出，整图分类给候选 | 不画框，列候选并提示补拍 |
+    | `none` | 无框且分类也没把握 | 只提示补拍，不给虫名 |
+
+    `fallback` 是 IP102 缺 5 个类检测标注的补救：这 5 类个体 0.1–1 mm、成群分布，
+    检测永远不出框，只能靠整图分类。这类结论的可信度低于绘图路径，`note` 里会写明。
+    """
+
+    mode: str = "single"
+    applied: bool = False
+    gate: float = 0
+    margin: float = 0
+    trigger: str = ""
+    candidates: list[PestCandidate] = Field(default_factory=list)
+    rewrites: list[PestRewrite] = Field(default_factory=list)
+    note: str = ""
+    elapsed_ms: float = 0
+
+
 class PestResult(BaseModel):
     """虫害检测结果（任务 2.7）。
 
@@ -129,6 +189,7 @@ class PestResult(BaseModel):
     iou_threshold: float = 0
     backend: str = ""
     elapsed_ms: float = 0
+    review: PestReview | None = None
 
 
 class PrimaryConclusion(BaseModel):
@@ -149,8 +210,24 @@ class PrimaryConclusion(BaseModel):
     note: str = Field("", description="次要结论，例如「另疑似病害：小麦斑枯病（25%）」")
 
 
+class SourceNote(BaseModel):
+    """外部数据来源。
+
+    只写「机构 + 文件/数据集名称」，不生成链接。`kind` 用于前端区分来源类型：
+    registry（农药登记）/ dataset（PDD271、IP102）/ policy（惠农政策）。
+    """
+
+    organization: str = ""
+    document: str = ""
+    kind: str = Field("", description="registry / dataset / policy")
+
+
 class DiagnosisReport(BaseModel):
     disease_name: str = ""
+    healthy: bool | None = Field(
+        None,
+        description="判为健康类（未见明显病斑）时为 true。有它就说明本次没有病名，"
+                    "前端不该渲染防治方案区块，也不该把它当成「没能确定病害」")
     confidence: float = 0
     summary: str = ""
     symptom_match: str = ""
@@ -169,6 +246,10 @@ class DiagnosisReport(BaseModel):
         default_factory=list,
         description="虫害结论。未启用检测器时上游根本不写这个字段，"
                     "这里会补成空列表——前端是拿 `pest` 是否为 null 来判三态的，不受影响")
+    source_notes: list[SourceNote] = Field(
+        default_factory=list,
+        description="服务端判定的真实外部来源；不是模型生成的引用。"
+                    "当前仅虫害主结论使用农药登记数据时出现")
 
 
 class SourceItem(BaseModel):
@@ -270,6 +351,12 @@ class LibraryDetailData(LibraryItem):
     sections: list[LibrarySection] = Field(default_factory=list)
     read_text: str = Field("", description="纯文本版内容，供方言朗读")
     content_source: str = ""
+    source_notes: list[SourceNote] = Field(
+        default_factory=list,
+        description="用药段的外部来源；只有登记索引命中时才返回，养护卡为空")
+    image_source_notes: list[SourceNote] = Field(
+        default_factory=list,
+        description="卡片配图来源：PDD271 或 IP102 数据集")
 
 
 # ---------------------------------------------------------------- 4.6 地图

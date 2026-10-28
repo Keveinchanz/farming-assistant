@@ -85,6 +85,74 @@ def mae(errors: list[int]) -> float:
     return sum(abs(e) for e in errors) / len(errors) if errors else float("nan")
 
 
+def lopo_calibration(train_rows: list[dict], staging: Path, *,
+                     level: float = 0.80, min_rows: int = 200) -> dict:
+    """用「留一省」的残差定出区间该放宽多少天（跨省保形校准）。
+
+    ## 为什么需要它
+
+    三个分位模型是各自独立训练的，没有联合约束；换到一个**没见过的省**上，
+    名义 80% 的区间会明显偏窄（实测留出湖北只盖住 55%）。这不是模型坏了，
+    而是分位数回归在分布偏移下本来就不保证覆盖率。保形预测给的就是这个修法：
+    量出一个常数 w，把区间两边各放宽 w 天。
+
+    ## 为什么 w 可以算在训练集上
+
+    留出的那个省是**训练省之间**互相留出，留出省（湖北）一次都没参与。
+    所以把这个 w 用到湖北上仍然是盲测，闸门量到的不是调出来的数。
+
+    返回 {w_days, level, scores, by_province}；样本太少的省跳过 —— 只有 28 行的省
+    留出来的是噪声，把它算进分位数只会把 w 抬歪。
+    """
+    codes = [hx.province_code(r["group"].split("|")[0]) for r in train_rows]
+    X = [harvest_model.feature_vector(r) for r in train_rows]
+    y = [float(r["y"]) for r in train_rows]
+    uniq = sorted(set(codes))
+
+    scores: list[float] = []
+    by_prov: dict[str, dict] = {}
+    for code in uniq:
+        te = [i for i, c in enumerate(codes) if c == code]
+        tr = [i for i, c in enumerate(codes) if c != code]
+        if len(te) < min_rows or len(tr) < min_rows:
+            by_prov[code] = {"rows": len(te), "skipped": True}
+            continue
+        pred = harvest_model.predict_quantiles_at(
+            [X[i] for i in tr], [y[i] for i in tr], [X[i] for i in te])
+        at = [y[i] for i in te]
+        prov_scores = [max(p10 - a, a - p90) for p10, p90, a in zip(pred[10], pred[90], at)]
+        prov_err = [p - a for p, a in zip(pred[50], at)]
+        scores.extend(prov_scores)
+        by_prov[code] = {
+            "rows": len(te),
+            "mae": round(sum(abs(e) for e in prov_err) / len(prov_err), 3),
+            "raw_coverage": round(sum(1 for s in prov_scores if s <= 0) / len(prov_scores), 4),
+        }
+        logger.info("  留一省 %s：%d 行，MAE %.2f，原始覆盖 %.3f",
+                    code, len(te), by_prov[code]["mae"], by_prov[code]["raw_coverage"])
+
+    if not scores:
+        return {"w_days": 0.0, "level": level, "scores": 0, "by_province": by_prov,
+                "note": "可留出的省不足（每个都要 ≥ %d 行），不做校准" % min_rows}
+
+    ordered = sorted(scores)
+    idx = min(int(round(level * len(ordered))), len(ordered) - 1)
+    w = float(ordered[idx])
+
+    payload = {
+        "w_days": round(w, 3),
+        "level": level,
+        "scores": len(scores),
+        "basis": "leave-one-province-out（只用训练省，留出省未参与）",
+        "by_province": by_prov,
+    }
+    staging.mkdir(parents=True, exist_ok=True)
+    (staging / harvest_model.CALIBRATION_NAME).write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    logger.info("跨省校准：留一省 %d 个分数，%g%% 分位 → w = %.1f 天", len(scores), level * 100, w)
+    return payload
+
+
 def bias(errors: list[int]) -> float:
     return sum(errors) / len(errors) if errors else float("nan")
 
@@ -128,11 +196,27 @@ def covered(pred: dict, today: str, actual_days: int) -> bool:
     return date.fromisoformat(pred["earliest"]) <= target <= date.fromisoformat(pred["latest"])
 
 
-def evaluate(train_rows: list[dict], val_rows: list[dict], staging: Path) -> dict:
-    """训练 + 评估。返回指标字典（含闸门用的那几项）。"""
+def evaluate(train_rows: list[dict], val_rows: list[dict], staging: Path, *,
+             calibrate: bool = False) -> dict:
+    """训练 + 校准 + 评估。返回指标字典（含闸门用的那几项）。
+
+    `calibrate` 只在闸门那一档打开：留一省要按省逐个重训，代价是三次训练的量级，
+    而 group/time 两档只是参考，不需要为它们再付一遍。
+    """
     X = [harvest_model.feature_vector(r) for r in train_rows]
     y = [float(r["y"]) for r in train_rows]
     hx_fit = harvest_model.fit_quantile_models(X, y, staging)
+
+    # 校准要在 predict_all **之前**算好并落盘：predict_harvest 读的就是这个文件，
+    # 先算后预测，线上那条路径才会真的按校准后的区间走，闸门量的才是线上的东西。
+    if calibrate:
+        calib = lopo_calibration(train_rows, staging)
+    else:
+        stale = staging / harvest_model.CALIBRATION_NAME
+        if stale.exists():
+            stale.unlink()          # 上一轮留下的校准文件不能套到这一档上
+        calib = {"w_days": 0.0, "note": "本档不做校准"}
+    w = float(calib.get("w_days") or 0.0)
 
     dead = staging / "__baseline__"          # 故意不存在的目录 = 纯积温法
     pred_model = predict_all(val_rows, lambda: staging)
@@ -160,6 +244,7 @@ def evaluate(train_rows: list[dict], val_rows: list[dict], staging: Path) -> dic
     err_q50 = [v - a for v, a in zip(q50, actual)]
 
     covered_raw = sum(1 for lo, hi, a in zip(q10, q90, actual) if lo <= a <= hi)
+    covered_cal = sum(1 for lo, hi, a in zip(q10, q90, actual) if lo - w <= a <= hi + w)
     covered_final = sum(1 for r, p in zip(val_rows, pred_model) if covered(p, r["cutoff_date"], r["y"]))
 
     return {
@@ -171,6 +256,8 @@ def evaluate(train_rows: list[dict], val_rows: list[dict], staging: Path) -> dic
         "model_bias": round(bias(err_model), 3),
         "baseline_bias": round(bias(err_base), 3),
         "raw_coverage": round(covered_raw / len(val_rows), 4),
+        "calibrated_coverage": round(covered_cal / len(val_rows), 4),
+        "calibration_w": round(w, 3),
         "final_coverage": round(covered_final / len(val_rows), 4),
         "staging": {f"q{q}": p for q, p in hx_fit.items()},
     }
@@ -182,6 +269,11 @@ def install(staging: Path, report: dict, *, rows: int, groups: int) -> None:
     target.mkdir(parents=True, exist_ok=True)
     for q in harvest_model.QUANTILES:
         shutil.copyfile(staging / f"harvest_xgb_q{q}.json", target / f"harvest_xgb_q{q}.json")
+    # 校准文件必须与模型一起装 —— 只装模型会退化成未校准的窄区间，
+    # 而闸门是通过校准后的区间才过的，漏了这个文件等于装了半个东西。
+    calib = staging / harvest_model.CALIBRATION_NAME
+    if calib.exists():
+        shutil.copyfile(calib, target / harvest_model.CALIBRATION_NAME)
 
     write_json(target / "provenance.json", {
         "origin": ORIGIN,
@@ -236,13 +328,16 @@ def main() -> int:
 
         logger.info("=" * 70)
         logger.info("[%s] %s", mode, meta)
-        metrics = evaluate(train_rows, val_rows, staging_root / mode)
+        metrics = evaluate(train_rows, val_rows, staging_root / mode,
+                           calibrate=(mode == "province"))
         report[mode] = {**meta, **metrics}
         logger.info("[%s] 模型 MAE %.2f 天 | 仅 q50 %.2f 天 | 基线 MAE %.2f 天",
                     mode, metrics["model_mae"], metrics["q50_mae"], metrics["baseline_mae"])
-        logger.info("[%s] 偏差 model %+.2f / baseline %+.2f 天；覆盖率 q10–q90 %.3f，最终区间 %.3f",
+        logger.info("[%s] 偏差 model %+.2f / baseline %+.2f 天；覆盖率 原始 %.3f → 校准后 %.3f（w=%.1f）；"
+                    "最终区间 %.3f",
                     mode, metrics["model_bias"], metrics["baseline_bias"],
-                    metrics["raw_coverage"], metrics["final_coverage"])
+                    metrics["raw_coverage"], metrics["calibrated_coverage"],
+                    metrics["calibration_w"], metrics["final_coverage"])
 
     gate_src = report.get("province")
     if not gate_src:
@@ -252,7 +347,8 @@ def main() -> int:
 
     verdict = hx.gate_check(
         model_mae=gate_src["model_mae"], baseline_mae=gate_src["baseline_mae"],
-        coverage=gate_src["raw_coverage"], val_rows=gate_src["rows"], val_groups=gate_src["groups"],
+        coverage=gate_src["calibrated_coverage"], val_rows=gate_src["rows"],
+        val_groups=gate_src["groups"],
     )
 
     logger.info("=" * 70)
@@ -288,8 +384,10 @@ def main() -> int:
         logger.info("闸门通过。要装进 models/farm/ 请加 --install 重跑。")
         return 0
 
+    # 传的是**训练侧**的行数与组数：这两项是在说明「这个模型吃了多少数据」，
+    # 以前误传了留出集的（1005 行 / 134 组），读 provenance 的人会以为模型只用了一千行训练。
     install(staging_root / "province", report["province"],
-            rows=gate_src["rows"], groups=gate_src["groups"])
+            rows=gate_src["train_rows"], groups=gate_src["train_groups"])
     payload = json.loads(out.read_text(encoding="utf-8"))
     payload["installed"] = True
     out.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

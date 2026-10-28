@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>田间问诊单 · 田头农技台</title>
+<meta name="description" content="农技员用田头农技台开出的田间问诊单：结论、处置建议、用药提醒与回访安排。">
+<!-- 这张单是私人的：不进搜索引擎，也不该被当成公开内容索引 -->
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/pages.css">
+</head>
+<body>
+
+<!-- 这一页**不套站点导航**：打开它的是农户，不是农技员。
+     他只需要认出「这是谁给我开的单」和那张纸，导航条在这里只会占掉一屏。 -->
+<main class="page">
+  <div class="share-wrap">
+    <header class="share-bar">
+      <span class="share-bar__brand">田头农技台</span>
+      <span class="share-bar__hint">农技员留给你的一张田间问诊单</span>
+    </header>
+
+    <div id="share-root" aria-live="polite">
+      <p class="share-state">正在打开问诊单…</p>
+    </div>
+
+    <div class="share-ops" id="share-ops" hidden>
+      <button type="button" class="btn btn--primary" id="btn-share-print">打印 / 存 PDF</button>
+      <a class="btn btn--outline" href="/index.html">田头农技台是什么</a>
+    </div>
+
+    <p class="share-foot" id="share-foot"></p>
+  </div>
+</main>
+
+<div id="toast-host"></div>
+
+<script src="/assets/js/share.js"></script>
+</body>
+</html>

@@ -79,3 +79,13 @@ pyyaml==6.0.3
 # 注意：**pypi.org 在国内常常直连超时**，装它请走镜像：
 #     python -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple xgboost
 xgboost>=2.0
+
+# ---- 问诊单交付：PDF 与二维码 ----
+#
+# reportlab 出 A4 一页纸（字体用内置的 STSong-Light CID，不额外带字体文件）；
+# qrcode 出分享二维码的 SVG（矢量，打印成 A5 贴纸不糊）。
+#
+# 两者都是**懒加载**：没装的时候 /api/diagnose/report.pdf 与 .../qr.svg 返回
+# 503 并说明缺什么，诊断、问诊单打印、分享快照本身都不受影响。
+reportlab>=4.0
+qrcode>=7.4

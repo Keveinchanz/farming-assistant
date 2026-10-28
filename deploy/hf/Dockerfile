@@ -1,4 +1,4 @@
-# 田语智农 —— Hugging Face Spaces 运行镜像
+# 田头农技台 —— Hugging Face Spaces 运行镜像
 #
 # 与 docker/Dockerfile 的区别只有三点：
 #   1. 资源**烤进镜像**（`runtime_assets/`），不再靠挂载卷 —— Spaces 没有免费持久卷；
@@ -32,6 +32,7 @@ RUN pip install -r requirements.txt && pip install -r requirements-rag.txt
 # 代码
 COPY src/ ./src/
 COPY backend/ ./backend/
+COPY skills/ ./skills/
 COPY frontend/ ./frontend/
 COPY configs/ ./configs/
 COPY scripts/ ./scripts/

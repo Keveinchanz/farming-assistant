@@ -42,6 +42,10 @@ CONTENT_SOURCE = (
     "用药提醒摘自农业农村部农药管理司《农药登记信息》公开登记（无对应登记的为通用提示）"
 )
 
+# 页面上的结构化来源标注只写「机构 + 文件」，由前端统一渲染成一行文字。
+PESTICIDE_SOURCE_ORG = "农业农村部农药管理司"
+PESTICIDE_SOURCE_DOC = "《农药登记信息》"
+
 SAFETY_NOTE = (
     "用药提醒：具体农药品种、剂型与用量请以当地植保部门指导、农药登记标签和最新禁限用名录为准；"
     "注意轮换用药以延缓抗性，严格遵守安全间隔期，采收前停药。"
@@ -429,6 +433,24 @@ def medication_text(condition: str, crop: str = "") -> str:
         f"例如：{'；'.join(examples)}。"
         f"登记信息随公告更新，以上仅为可查证的真实登记，不构成推广建议 —— {_MEDICATION_TAIL}"
     )
+
+
+def medication_source(condition: str) -> dict | None:
+    """用药段的外部来源；只有登记索引确实命中时才返回。
+
+    为什么不能只看「有没有 medication 小节」：卡片在匹配不到登记时会回退到通用
+    安全提示，那段不是登记数据。只有 match_target 命中，才能说这段用了登记信息。
+    返回结构供接口层直接序列化，前端只拼「机构 + 文件」，不生成链接。
+    """
+    registry = load_pesticide_registry()
+    targets = registry.get("targets") or {}
+    if not match_target(condition, targets):
+        return None
+    return {
+        "organization": PESTICIDE_SOURCE_ORG,
+        "document": PESTICIDE_SOURCE_DOC,
+        "kind": "registry",
+    }
 
 
 _MARKERS = "①②③④⑤⑥"

@@ -7,9 +7,14 @@
    不碰 DOM、不碰 UI/Api —— 界面怎么呈现由各页面自己决定。
 
    坑一：不用 MediaRecorder。
-       浏览器 MediaRecorder 默认产出 webm/opus，而百度短语音识别 REST 接口只接受
-       wav/pcm/amr。所以这里改用 Web Audio API 采集原始 PCM，线性重采样到 16kHz
-       单声道后自行封装成 WAV 再上传 —— 不做这一步，后端必然报「不支持的音频格式」。
+       浏览器 MediaRecorder 默认产出 webm/opus，而语音接口要的是 16kHz 单声道 PCM。
+       所以这里改用 Web Audio API 采集原始 PCM，线性重采样到 16kHz 单声道后
+       自行封装成 WAV 再上传 —— 不做这一步，后端必然报「不支持的音频格式」。
+
+   上传已有音频文件走下面的 fileToWav()：用的是浏览器自带的解码器
+   （decodeAudioData），mp3 / m4a(aac) / wav / ogg / opus / flac / webm / aiff
+   都能解，解完同样重采样到 16kHz 单声道 WAV。这样「支持哪些格式」由浏览器决定，
+   后端不必为此装 ffmpeg。
 
    坑二：采集链必须经一个增益为 0 的节点再连到输出。
        直接 processor.connect(ctx.destination) 的话，麦克风采集到的声音会从扬声器
@@ -19,7 +24,7 @@
 (function () {
   "use strict";
 
-  const TARGET_SAMPLE_RATE = 16000;   // 百度短语音识别只接受 16000 / 8000
+  const TARGET_SAMPLE_RATE = 16000;   // 识别接口只接受 16000（或 8000）采样率
 
   /* 当前这次采集的全部句柄；null 表示没在录。 */
   let rec = null;
@@ -97,9 +102,78 @@
     return new Blob([buffer], { type: "audio/wav" });
   }
 
+  /* 多声道混成单声道。讯飞与百度都只收单声道，立体声直接送过去会被判成噪音。 */
+  function mixToMono(audioBuffer) {
+    const channels = audioBuffer.numberOfChannels;
+    if (channels <= 1) return audioBuffer.getChannelData(0);
+
+    const length = audioBuffer.length;
+    const out = new Float32Array(length);
+    for (let c = 0; c < channels; c++) {
+      const data = audioBuffer.getChannelData(c);
+      for (let i = 0; i < length; i++) out[i] += data[i];
+    }
+    for (let i = 0; i < length; i++) out[i] /= channels;
+    return out;
+  }
+
+  /* decodeAudioData 在老 Safari 上只有回调式、新浏览器返回 Promise，
+     两种都接住；重复 resolve 对 Promise 是幂等的。 */
+  function decodeAudio(ctx, arrayBuffer) {
+    return new Promise((resolve, reject) => {
+      let p = null;
+      try {
+        p = ctx.decodeAudioData(arrayBuffer, resolve, reject);
+      } catch (e) {
+        reject(e);
+        return;
+      }
+      if (p && typeof p.then === "function") p.then(resolve, reject);
+    });
+  }
+
+  /**
+   * 把用户选的音频文件转成识别接口要的 16kHz 单声道 WAV。
+   *
+   * 支持哪些格式取决于浏览器自带的解码器：Chrome / Edge / Safari 常见能解
+   * mp3、m4a(aac)、wav、ogg、opus、flac、webm、aiff，手机录音（m4a/amr 里的 m4a）
+   * 基本都在其中。amr、wma 这类浏览器解不开，调用方 catch 之后仍可把原文件送上去，
+   * 由后端判断能否识别。
+   *
+   * 返回结构与 stop() 一致：{ blob, durationMs, byteLength }。
+   */
+  async function fileToWav(file) {
+    if (!file) throw recErr("decode", "没有选中音频文件");
+
+    const arrayBuffer = await file.arrayBuffer();
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) throw recErr("unsupported", "浏览器不支持音频解码");
+
+    const ctx = new AudioCtx();
+    let audio;
+    try {
+      audio = await decodeAudio(ctx, arrayBuffer);
+    } catch (e) {
+      throw recErr(
+        "decode",
+        "这个音频格式浏览器解不开，请换成 MP3、M4A、WAV、OGG 或 FLAC"
+      );
+    } finally {
+      try { ctx.close(); } catch (_) { /* 忽略清理异常 */ }
+    }
+
+    const mono = mixToMono(audio);
+    if (!mono.length) throw recErr("decode", "音频里没有声音数据");
+
+    return {
+      blob: makeWav(mono, audio.sampleRate),
+      durationMs: audio.duration * 1000,
+      byteLength: mono.length * 2,
+    };
+  }
+
   /** 毫秒 → "mm:ss"，与改造前诊断页计时器的输出逐字一致。 */
-  function formatDuration(ms) {
-    const s = Math.floor((ms || 0) / 1000);
+  function formatDuration(ms) {    const s = Math.floor((ms || 0) / 1000);
     return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
   }
 
@@ -240,6 +314,7 @@
     start,
     stop,
     cancel,
+    fileToWav,
     formatDuration,
     on,
   };

@@ -158,6 +158,167 @@
     syncFarmURL(null);
     // 进/出这一屏会改变页面高度（纵向滚动条出现或消失），出血基准要跟着重算
     syncFarmBleed();
+    // 回到目录屏就刷一次回访队列：刚在诊断页归过档，回来该看见那条新待办
+    loadFollowups();
+  }
+
+  /* ------------------------------------------------------------ 回访队列
+   *
+   * 这一块是整个「农技员问诊台」定位的落点：诊断页把结论排进队列，这里把它变成
+   * 每天打开就要处理的待办。所以三条都按「待办」而不是「历史」来做：
+   *   · 过期的单独一组、标黄、排最前 —— 它们才是真正会被漏掉的；
+   *   · 「已回访」一键勾掉，勾完立刻从列表消失（不用刷新页面）；
+   *   · 「看这块田」直接进那块地的 3D 与长势，回访时能对着看。
+   */
+  const FOLLOWUP_SHOW = 6;
+
+  async function loadFollowups() {
+    const card = $("followup-card");
+    if (!card) return;
+    try {
+      renderFollowups(await Api.followups());
+    } catch (e) {
+      // **取不到 ≠ 没有**。这里以前直接 card.hidden = true，于是「后端换了没重启、
+      // 断网、接口 404」这些情况下，整个功能会从页面上消失 —— 用户只会觉得坏了，
+      // 还查不出原因（刷新页面救不了，服务端才是旧的）。现在留一块可重试的提示。
+      renderFollowupError(card, e);
+    }
+  }
+
+  function followupHead(count) {
+    return (
+      `<div class="farm-followup__head">` +
+      `<div class="farm-followup__title" id="followup-title">${Icon.render("clock", 18)}回访队列</div>` +
+      count +
+      `</div>`
+    );
+  }
+
+  function renderFollowupError(card, err) {
+    card.hidden = false;
+    card.innerHTML =
+      followupHead(`<span class="farm-followup__count farm-followup__count--quiet">暂时取不到</span>`) +
+      `<p class="farm-followup__empty">` +
+      `回访队列没取到（${UI.escapeHtml(err && err.message ? err.message : "网络异常")}）。` +
+      `服务刚更新过、还没重启时最常见，重启后端即可。` +
+      `</p>` +
+      `<div class="farm-followup__actions">` +
+      `<button type="button" class="btn btn--sm btn--outline" data-followup-retry>重试</button>` +
+      `</div>`;
+    const retry = card.querySelector("[data-followup-retry]");
+    if (retry) retry.addEventListener("click", () => loadFollowups());
+  }
+
+  function renderFollowups(data) {
+    const card = $("followup-card");
+    if (!card) return;
+
+    const overdue = data.overdue || [];
+    const today = data.today || [];
+    const upcoming = data.upcoming || [];
+    const all = overdue.concat(today, upcoming);
+
+    // 一条待办都没有时不能整块隐藏：新账号、淡季都可能是空的，隐藏等于
+    // 「这个功能不存在」，而它恰恰是最该被知道的那一个。给一块空态，
+    // 说清楚「怎样才能让它有东西」—— 队列的入口在诊断页的归档区。
+    if (!all.length) {
+      card.hidden = false;
+      card.innerHTML =
+        followupHead(`<span class="farm-followup__count farm-followup__count--quiet">今天没有到期</span>`) +
+        `<p class="farm-followup__empty">` +
+        `今天没有要到期的回访。诊断时在结论下方填「服务对象 + 回访日期」，` +
+        `到那天就会排进这里；没排回访的诊断不会出现在队列里。` +
+        `</p>` +
+        `<div class="farm-followup__actions">` +
+        `<a class="btn btn--sm btn--outline" href="/diagnose.html">去问诊一张</a>` +
+        `</div>`;
+      return;
+    }
+
+    const shown = all.slice(0, FOLLOWUP_SHOW);
+    const more = all.length - shown.length;
+    const due = (data.due_count || 0);
+
+    const when = (it) => {
+      if (it.days_left < 0) return `已过 ${-it.days_left} 天`;
+      if (it.days_left === 0) return "今天";
+      return `${it.days_left} 天后`;
+    };
+
+    const items = shown.map((it) => {
+      const who = it.subject || it.field_name || "未填服务对象";
+      const meta = [
+        it.label || "未记结论",
+        `${it.date} 诊断`,
+        `${it.recheck_date} 回访（${when(it)}）`,
+      ].filter(Boolean).join(" · ");
+      return (
+        `<li class="farm-followup__item${it.days_left < 0 ? " is-overdue" : ""}">` +
+        `<div class="farm-followup__who">` +
+        `<div class="farm-followup__name">${UI.escapeHtml(who)}` +
+        (it.field_name && it.subject ? `　<span class="text-muted">${UI.escapeHtml(it.field_name)}</span>` : "") +
+        `</div>` +
+        `<div class="farm-followup__meta">${UI.escapeHtml(meta)}</div>` +
+        `</div>` +
+        `<div class="farm-followup__ops">` +
+        // 主操作是「去看那块田」——回访本身就是去地里看，勾掉只是收尾。
+        // 每行都放一颗实心绿按钮会把整屏压成一排色块，所以「已回访」用 ghost。
+        `<button type="button" class="btn btn--sm btn--primary" data-go="${UI.escapeHtml(it.field_id)}">` +
+        `看这块田</button>` +
+        `<button type="button" class="btn btn--sm btn--outline" data-done="${UI.escapeHtml(it.id)}">` +
+        `已回访</button>` +
+        `</div>` +
+        `</li>`
+      );
+    }).join("");
+
+    card.hidden = false;
+    card.innerHTML =
+      followupHead(due > 0
+        ? `<span class="farm-followup__count">${due} 户到期待回访</span>`
+        : `<span class="farm-followup__count">未来 7 天 ${upcoming.length} 户</span>`) +
+      `<p class="farm-followup__desc">` +
+      `诊断时约好的复查，到日子了会排在这里。勾掉「已回访」，它就离开队列。` +
+      `</p>` +
+      `<ul class="farm-followup__list">${items}</ul>` +
+      (more > 0
+        ? `<p class="farm-followup__desc" style="margin:10px 0 0">另有 ${more} 条未列出。</p>`
+        : "");
+
+    bindFollowupEvents(card);
+  }
+
+  function bindFollowupEvents(card) {
+    if (card.dataset.bound) return;   // 卡片每次重绘，事件只绑一次（委托）
+    card.dataset.bound = "1";
+
+    card.addEventListener("click", async (e) => {
+      const doneBtn = e.target.closest("[data-done]");
+      if (doneBtn) {
+        const id = doneBtn.getAttribute("data-done");
+        const restore = UI.busy(doneBtn, "处理中");
+        try {
+          await Api.followupDone(id);
+          restore();
+          const li = doneBtn.closest(".farm-followup__item");
+          if (li) li.remove();
+          // 剩下的条数要跟着变，重拉一次比本地算更省事也更准
+          loadFollowups();
+          UI.toast("已标记回访", "info");
+        } catch (err) {
+          restore();
+          UI.toast("标记失败：" + err.message, "error");
+        }
+        return;
+      }
+
+      const goBtn = e.target.closest("[data-go]");
+      if (goBtn) {
+        const fid = goBtn.getAttribute("data-go");
+        if (state.fields.some((f) => f.id === fid)) enterField(fid);
+        else UI.toast("这块田已不在列表里", "warning");
+      }
+    });
   }
 
   /** 拆掉大 3D：停在 8 格时留着一个 WebGL 上下文（还带一张阴影贴图）纯属浪费，
@@ -474,6 +635,9 @@
       `<span class="text-muted">${UI.escapeHtml(field.crop)} · ${field.area_mu} 亩 · ` +
       `播于 ${UI.escapeHtml(field.sow_date)}</span>` +
       (where ? `<span class="text-muted">${UI.escapeHtml(where)}</span>` : "");
+    // 上一块田的黄条不能留到这一块上（等新数据回来再画）
+    $("spray-lock").hidden = true;
+    $("spray-lock").innerHTML = "";
 
     // 把当前田同步进 URL：刷新后还停在同一块田，链接分享出去也是这一块
     syncFarmURL(id);
@@ -594,6 +758,7 @@
       `第 ${g.days_since_sow} 天 · ${UI.escapeHtml(g.stage)}</span>`;
 
     $("weather-overlay").innerHTML = renderWeatherBadge(w);
+    renderSprayLock(data.spray);
 
     $("panel").innerHTML = [
       renderWeatherCard(w),
@@ -607,8 +772,49 @@
     bindPanelEvents();
   }
 
-  function renderWeatherBadge(w) {
-    const d = (w.days || [])[0];
+  /* 安全间隔期黄条。
+   *
+   * 两种「没有黄条」必须分开，但都不显示：
+   *   · spray 为 null —— 这块田没有任何一条记了间隔期的施药，是「不知道」。
+   *     不显示是对的：农技员一进田就看到一块「不知道什么时候能摘」的黄条，
+   *     用两次就会学会无视所有黄条。真正的提醒放在记打药那一步（表单里那两格）。
+   *   · locked 为 false —— 已经过了间隔期，没什么要提醒的。
+   */
+  function renderSprayLock(spray) {
+    const host = $("spray-lock");
+    if (!host) return;
+    if (!spray || !spray.locked) {
+      host.hidden = true;
+      host.innerHTML = "";
+      return;
+    }
+    const days = spray.days_left == null ? 0 : spray.days_left;
+    const reg = spray.reg_no ? `（登记证 ${UI.escapeHtml(spray.reg_no)}）` : "";
+    host.hidden = false;
+    host.innerHTML =
+      `<div class="farm-reminder farm-reminder--warn">` +
+      `<div class="farm-reminder__head">` +
+      `<span class="badge badge--warning">间隔期</span>` +
+      `<strong>这块田还在安全间隔期</strong></div>` +
+      `<p class="farm-reminder__why">` +
+      `${UI.escapeHtml(spray.date)} 施了 <strong>${UI.escapeHtml(spray.item || "药剂")}</strong>${reg}，` +
+      `标签安全间隔期 ${spray.interval_days} 天 → 最早 ` +
+      `<strong>${UI.escapeHtml(spray.earliest_date)}</strong> 可收，` +
+      `距今 <strong>${days}</strong> 天。</p>` +
+      `<div class="farm-reminder__ops">` +
+      `<button type="button" class="btn btn--sm btn--outline" id="btn-spray-ledger">` +
+      `看用药记录</button>` +
+      `</div></div>`;
+
+    const btn = $("btn-spray-ledger");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        location.href = "/ledger.html?field=" + encodeURIComponent(state.field ? state.field.id : "");
+      });
+    }
+  }
+
+  function renderWeatherBadge(w) {    const d = (w.days || [])[0];
     if (!d) {
       return `<div class="farm-overlay__row text-muted">天气数据不可用</div>`;
     }
@@ -883,9 +1089,16 @@
     }
   }
 
+  /** 两位数补零。0–9 的月份/日期要补成 01–09：这些串会进 input[type=date]
+   *  和后端，写成 2026-11-9 会被当成非法日期。
+   *
+   *  以前这个函数只写在 todayISO() 里面，而「最早可采收」那处也调用了 pad ——
+   *  于是每次在间隔期框里打字都抛 ReferenceError，那个日期永远显示「—」。
+   *  提到共用作用域，两处用的是同一个补零。 */
+  const pad = (n) => String(n).padStart(2, "0");
+
   function todayISO() {
     const d = new Date();
-    const pad = (n) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 
@@ -895,16 +1108,153 @@
     state.voice = null;
     $("voice-text").value = presetText || "";
     $("voice-fields").hidden = true;
-    $("voice-reason").textContent = "";
+    setVoiceReason("");
     $("voice-result").hidden = true;
+    // 打药那组也要归零：上一笔填过的药名和间隔期不能带到下一笔上
+    $("voice-spray-box").hidden = true;
+    $("voice-pesticide-q").value = "";
+    $("voice-pesticide").innerHTML = "";
+    $("voice-interval").value = "";
+    $("voice-earliest").textContent = "—";
+    $("voice-earliest").classList.remove("is-on");
     $("voice-modal").hidden = false;
     $("modal-voice-close").focus();
+    bindReparse();
+  }
+
+  /** 解析原因写进那条 warning。
+   *
+   * 光写 textContent 是不够的：这个 <p> 在 HTML 上带着 hidden，不显式取消隐藏就
+   * 永远看不见 —— 于是「没听出是哪块田」这类真正有用的提示一次都没露过面，
+   * 用户看到的只是"点了没反应"。
+   */
+  function setVoiceReason(text) {
+    const el = $("voice-reason");
+    if (!el) return;
+    el.textContent = text || "";
+    el.hidden = !text;
+  }
+
+  /** 「重新解析」必须一打开就能用。
+   *
+   * 这行绑定原先写在 renderParsed 里 —— 而 renderParsed 只在第一次解析成功之后才跑，
+   * 于是「自己打字 → 点重新解析」这条最常用的路是死的：点了没有任何反应、没有提示，
+   * 用户只会以为页面卡住了（真正能触发的只剩麦克风那条 ASR 路径）。
+   * 绑到打开模态时，打字和语音两条路就都能走下去。
+   */
+  function bindReparse() {
+    const btn = $("voice-reparse");
+    if (!btn || btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.onclick = () => parseText($("voice-text").value, { reparse: true });
+    // 顺手支持 Ctrl/⌘ + Enter：手打一句话之后按下去就解析，不用挪到鼠标
+    $("voice-text").addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        parseText($("voice-text").value, { reparse: true });
+      }
+    });
   }
 
   function closeVoiceModal() {
     if (Recorder.isRecording()) Recorder.cancel();
     stopTick();
     $("voice-modal").hidden = true;
+  }
+
+  /* ------------------------------------------------------- 打药：药剂与安全间隔期
+   *
+   * 这两格只在「类型 = 打药」时出现。药剂从内置的农药登记库里搜（3253 条登记证，
+   * 离线可查）；**间隔期必须人填** —— 登记公告里没有这一项，它只印在瓶身标签上。
+   * 所以这里刻意不做「选中药剂 → 自动带出间隔期」：那个数字只能是编的，
+   * 而农户会照着它提前采收。
+   */
+
+  function syncSprayBox() {
+    const box = $("voice-spray-box");
+    if (!box) return;
+    const isSpray = $("voice-type").value === "spray";
+    box.hidden = !isSpray;
+    if (!isSpray) return;
+    // 语音里已经说了药名（「打了稻瘟灵」）就直接按它查一次，用户不用再打一遍；
+    // 没说药名就等他在搜索框里输入
+    if (!$("voice-pesticide").options.length) {
+      loadPesticideOptions($("voice-item").value.trim());
+    }
+    updateEarliest();
+  }
+
+  let pesticideSeq = 0;
+  let pesticideTimer = 0;
+
+  async function loadPesticideOptions(q) {
+    const sel = $("voice-pesticide");
+    if (!sel) return;
+    const seq = ++pesticideSeq;
+    const crop = (state.field && state.field.crop) || "";
+    sel.innerHTML = `<option value="">${q ? "搜索中…" : "（输入药名或病害后筛选）"}</option>`;
+    if (!q) {
+      // 没有关键词就不查：三千多条一次性塞进下拉等于没筛选。
+      // 但也不留空下拉 —— 用户会以为"没有登记"，直接手填。
+      return;
+    }
+    try {
+      const data = await Api.pesticides({ q, crop, limit: 20 });
+      if (seq !== pesticideSeq) return;        // 用户又敲了字，这次结果已经过期
+      const items = data.items || [];
+      if (!items.length) {
+        // 说清「是在哪种作物上没查到」：登记库是按作物登记的，稻瘟灵查不到
+        // 往往不是没这个药，而是这块田种的是油菜 —— 不点明，用户会去换药。
+        const where = crop ? `在「${crop}」上` : "";
+        sel.innerHTML = `<option value="">${UI.escapeHtml(where)}没查到「${UI.escapeHtml(q)}」· 换个词或直接手填</option>`;
+        return;
+      }
+      sel.innerHTML = items.map((it) => (
+        `<option value="${UI.escapeHtml(it.reg_no)}" ` +
+        `data-name="${UI.escapeHtml(it.product)}" data-form="${UI.escapeHtml(it.form)}">` +
+        `${UI.escapeHtml(it.product)}${it.form ? " " + UI.escapeHtml(it.form) : ""} · ` +
+        `${UI.escapeHtml(it.reg_no)}${it.toxicity ? " · " + UI.escapeHtml(it.toxicity) : ""}` +
+        `</option>`
+      )).join("");
+      if (!$("voice-item").value.trim()) syncPesticideToItem();
+    } catch (err) {
+      if (seq !== pesticideSeq) return;
+      sel.innerHTML = `<option value="">登记库暂时查不到 · 可直接手填药名</option>`;
+    }
+  }
+
+  function syncPesticideToItem() {
+    const sel = $("voice-pesticide");
+    const opt = sel && sel.selectedOptions && sel.selectedOptions[0];
+    if (!opt || !opt.dataset || !opt.dataset.name) return;
+    // 「物品」仍写药名：历史卡片、回访、叙述层都按 item 显示，不给它们加新字段。
+    $("voice-item").value = [opt.dataset.name, opt.dataset.form].filter(Boolean).join(" ");
+    updateEarliest();
+  }
+
+  function updateEarliest() {
+    const out = $("voice-earliest");
+    if (!out) return;
+    const days = parseInt($("voice-interval").value, 10);
+    const base = $("voice-date").value;
+    if (!base || isNaN(days) || days < 0) {
+      out.textContent = "—";
+      out.classList.remove("is-on");
+      return;
+    }
+    const d = new Date(base + "T00:00:00");
+    if (isNaN(d.getTime())) {
+      out.textContent = "—";
+      out.classList.remove("is-on");
+      return;
+    }
+    d.setDate(d.getDate() + days);
+    const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const zeroless = new Date();
+    zeroless.setHours(0, 0, 0, 0);
+    const left = Math.round((d - zeroless) / 86400000);
+    out.innerHTML = `<strong>${iso}</strong><span>${left > 0 ? "还剩 " + left + " 天" : "已过"}</span>`;
+    out.classList.add("is-on");
   }
 
   function stopTick() {
@@ -989,7 +1339,7 @@
   /** ③ 解析成结构化字段（规则优先，LLM 兜底）。改文字后重新走这一步（④ 双向联动）。 */
   async function parseText(text, { reparse = false } = {}) {
     if (!text.trim()) {
-      $("voice-reason").textContent = "请先说一句、或打一句农事记录";
+      setVoiceReason("请先说一句、或打一句农事记录");
       $("voice-fields").hidden = true;
       return;
     }
@@ -1029,20 +1379,29 @@
     $("voice-date").value = f.date || todayISO();
     $("voice-item").value = f.item || "";
     $("voice-amount").value = f.amount || "";
+    // 语音里听出「打药」，就把药剂/间隔期那组展开（语音不可能听出间隔期，得人填）
+    syncSprayBox();
 
     // 解析不完整时把原因说清楚，并且**不给"确认落库"这个错觉** ——
     // 按钮仍然可点（用户可以自己把字段补齐），但提示必须显眼
-    $("voice-reason").textContent = data.ok ? "" : (data.reason || "没能完全听懂，请核对下面的字段");
+    setVoiceReason(data.ok ? "" : (data.reason || "没能完全听懂，请核对下面的字段"));
     $("voice-result").hidden = false;
-
-    // ④ 改文字 → 重新解析（双向联动）
-    $("voice-reparse").onclick = () => parseText($("voice-text").value, { reparse: true });
   }
 
   /** ⑤ 确认落库。这一步之前数据库里什么都没有。 */
   async function confirmVoice() {
     const btn = $("voice-confirm");
     const restore = UI.busy(btn, "保存中");
+    const isSpray = $("voice-type").value === "spray";
+    const gapRaw = $("voice-interval").value.trim();
+    // 空串一律当「没记录」，不当 0：0 是「标签上写着 0 天」，两者后果完全不同
+    const gap = isSpray && gapRaw !== "" ? parseInt(gapRaw, 10) : null;
+    if (gap !== null && (isNaN(gap) || gap < 0 || gap > 365)) {
+      restore();
+      UI.toast("安全间隔期要填 0～365 之间的天数，不记得就留空", "error");
+      $("voice-interval").focus();
+      return;
+    }
     try {
       await Api.createLog({
         field_id: $("voice-field").value,
@@ -1053,6 +1412,8 @@
         // 原文存进 note：以后回头看时能知道这条记录是怎么来的
         note: (state.voice && state.voice.text) ? "语音：" + state.voice.text : "",
         source: state.voice ? "voice" : "manual",
+        reg_no: isSpray ? ($("voice-pesticide").value || "") : "",
+        interval_days: gap,
       });
       UI.toast("已记入农事记录");
       closeVoiceModal();
@@ -1161,6 +1522,19 @@
     $("voice-mic").addEventListener("click", toggleVoiceRecording);
     $("voice-confirm").addEventListener("click", confirmVoice);
     $("voice-cancel").addEventListener("click", closeVoiceModal);
+
+    // 打药那组的两向联动：类型决定显不显示，药名搜索决定下拉里有什么，
+    // 日期或间隔期一改就重算「最早可采收」—— 让用户在保存前就看到那个日期。
+    $("voice-type").addEventListener("change", syncSprayBox);
+    $("voice-pesticide").addEventListener("change", syncPesticideToItem);
+    $("voice-interval").addEventListener("input", updateEarliest);
+    $("voice-date").addEventListener("change", updateEarliest);
+    $("voice-pesticide-q").addEventListener("input", () => {
+      clearTimeout(pesticideTimer);
+      const q = $("voice-pesticide-q").value.trim();
+      // 防抖 320ms：一边打字一边打接口，输入「稻瘟灵」会发三次请求
+      pesticideTimer = setTimeout(() => loadPesticideOptions(q), 320);
+    });
     $("modal-voice-close").addEventListener("click", closeVoiceModal);
     $("voice-modal-backdrop").addEventListener("click", closeVoiceModal);
 

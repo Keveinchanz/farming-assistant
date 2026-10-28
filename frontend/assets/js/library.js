@@ -297,6 +297,8 @@
       Icon.render("volume", 16) + `<span>方言朗读</span></button>` +
       `</div>` +
       sections +
+      UI.sourceNote(item.source_notes, "来源") +
+      UI.sourceNote(item.image_source_notes, "图片来源") +
       `</div>`
     );
   }
